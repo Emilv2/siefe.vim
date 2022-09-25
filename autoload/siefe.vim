@@ -1,5 +1,5 @@
 """ ripgrep function, commands and maps
-function! RipgrepFzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, ...)
+function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, ...)
   let extraargs = get(a:, 1, "")
   let extrapromptarg = get(a:, 2, "")
   let extraprompt = get(a:, 3, "")
@@ -116,32 +116,32 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     call FzfTypeSelect('RipgrepFzfTypeNot', query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen)
   elseif key == 'ctrl-w'
     let word = a:word ? 0 : 1
-    call RipgrepFzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'ctrl-s'
     let case = a:case ? 0 : 1
-    call RipgrepFzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'alt-.'
     let hidden = a:hidden ? 0 : 1
-    call RipgrepFzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'ctrl-u'
     let no_ignore = a:no_ignore ? 0 : 1
-    call RipgrepFzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'alt-f'
     let fixed_strings = a:fixed_strings ? 0 : 1
-    call RipgrepFzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'ctrl-d'
     call FzfDirSelect('RipgrepFzfDir', 0, 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
     return
   elseif key == 'alt-p'
-    call RipgrepFzf(query,  s:get_git_root(), s:get_git_basename_or_pwd(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query,  siefe#get_git_root(), siefe#get_git_basename_or_pwd(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'ctrl-alt-p'
     let workarea = '$WORKAREA'
     if expand(workarea) != workarea
-      call RipgrepFzf(query,  expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+      call siefe#ripgrepfzf(query,  expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
     else
       call s:warn('no '.workarea)
       execute 'sleep' 500 . 'm'
-      call RipgrepFzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+      call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
     endif
   elseif key == 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
@@ -198,22 +198,22 @@ function! RipgrepFzfDir(query, dir, prompt, word, case, hidden, no_ignore, fixed
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
     call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings,  a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   else
-    call RipgrepFzf(a:query, trim(system('realpath '.new_dir)), s:get_relative_git_or_pwd(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), s:get_relative_git_or_pwd(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   endif
 endfunction
 
 function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
   let type = split(a:type_string, ":")[0]
-  call RipgrepFzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-t", type.' ')
+  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-t", type.' ')
 endfunction
 
 function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
   let type = split(a:type_string, ":")[0]
-  call RipgrepFzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-T ", type.' ', "!")
+  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-T ", type.' ', "!")
 endfunction
 
 """ ripgrep function, commands and maps
-function! GitPickaxeFzf(query, branches, notbranches, authors, G, regex, fullscreen)
+function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, fullscreen)
   let branches = join(map(a:branches, 'trim(v:val, " *")'), ' ')
   let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'), ' ')
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'), ' ')
@@ -355,22 +355,22 @@ function! s:warn(message)
   return 0
 endfunction
 
-function! s:get_git_root()
+function! siefe#get_git_root()
   let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
   return v:shell_error ? s:warn('Not in a git repository') : root
 endfunction
 
-function! s:get_git_root()
+function! siefe#get_git_root()
   let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
   return v:shell_error ? s:warn('Not in a git repository') : root
 endfunction
 
-function! s:get_git_basename_or_pwd()
+function! siefe#get_git_basename_or_pwd()
   let basename = '#'.systemlist('basename `git rev-parse --show-toplevel`')[0]
   return v:shell_error ? "." : basename
 endfunction
 
-function! s:get_relative_git_or_pwd(...)
+function! siefe#get_relative_git_or_pwd(...)
   if a:0 == 0
     let dir = get(a:, 1, "")
     let rel_dir = trim(system('git rev-parse --show-prefix'))
@@ -444,7 +444,7 @@ function! s:prettify_help(control, char, text)
 endfunction
 
 " https://stackoverflow.com/a/47051271
-function! VisualSelection()
+function! siefe#visual_selection()
     if mode()=="v"
         let [line_start, column_start] = getpos("v")[1:2]
         let [line_end, column_end] = getpos(".")[1:2]
