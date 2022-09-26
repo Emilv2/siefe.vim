@@ -133,7 +133,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     call FzfDirSelect('RipgrepFzfDir', 0, 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
     return
   elseif key == 'alt-p'
-    call siefe#ripgrepfzf(query,  siefe#get_git_root(), siefe#get_git_basename_or_pwd(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   elseif key == 'ctrl-alt-p'
     let workarea = '$WORKAREA'
     if expand(workarea) != workarea
@@ -198,7 +198,7 @@ function! RipgrepFzfDir(query, dir, prompt, word, case, hidden, no_ignore, fixed
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
     call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings,  a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   else
-    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), s:get_relative_git_or_pwd(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
   endif
 endfunction
 
@@ -355,31 +355,33 @@ function! s:warn(message)
   return 0
 endfunction
 
-function! siefe#get_git_root()
-  let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
-  return v:shell_error ? s:warn('Not in a git repository') : root
+function!  siefe#bufdir()
+  return substitute(split(expand('%:p:h'), '[/\\]\.git\([/\\]\|$\)')[0], '^fugitive://', '', '')
 endfunction
 
 function! siefe#get_git_root()
-  let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
+  let bufdir = siefe#bufdir()
+  let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
   return v:shell_error ? s:warn('Not in a git repository') : root
 endfunction
 
-function! siefe#get_git_basename_or_pwd()
-  let basename = '#'.systemlist('basename `git rev-parse --show-toplevel`')[0]
-  return v:shell_error ? "." : basename
+function! siefe#get_git_basename_or_bufdir()
+  let bufdir = siefe#bufdir()
+  let basename = '#'.systemlist('basename `git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel`')[0]
+  return v:shell_error ? bufdir : basename
 endfunction
 
-function! siefe#get_relative_git_or_pwd(...)
+function! siefe#get_relative_git_or_bufdir(...)
+  let bufdir = siefe#bufdir()
   if a:0 == 0
     let dir = get(a:, 1, "")
-    let rel_dir = trim(system('git rev-parse --show-prefix'))
-    return v:shell_error ? getcwd() : '#'.split(system('basename `git rev-parse --show-toplevel`'), '\n')[0].'/'.rel_dir
+    let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
+    return v:shell_error ? bufdir : '#'.split(system('basename `git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel`'), '\n')[0].'/'.rel_dir
   else
     let dir = get(a:, 1, "")
-    let git_dir = trim(system('git rev-parse --show-toplevel'))
-    let rel_to_dir = v:shell_error ? getcwd() : git_dir
-    let prefix = v:shell_error ? "" : s:get_git_basename_or_pwd()."/"
+    let git_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel'))
+    let rel_to_dir = v:shell_error ? bufdir : git_dir
+    let prefix = v:shell_error ? "" : siefe#get_git_basename_or_bufdir()."/"
     return prefix.trim(system('realpath --relative-to='.rel_to_dir.' '.dir))
   endif
 endfunction
