@@ -64,9 +64,6 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
 endfunction
 
 function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, extraargs, extrapromptarg, extraprompt, lines)
-  " work around for strange nested fzf change directory behaviour
-  " when nested it will not cd back to the original directory
-  exe 'cd' a:orig_dir
 
   " query can contain newlines, we have to reconstruct it
   let tmp = split(a:lines[-1], "\n", 1)[0:-2]
@@ -110,6 +107,19 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
         let filelist += [file]
   endfor
 
+
+  if key == ''
+    execute 'e' file.filename
+    call cursor(file.line, file.column)
+    normal! zvzz
+
+    call s:fill_quickfix(filelist)
+  endif
+
+  " work around for strange nested fzf change directory behaviour
+  " when nested it will not cd back to the original directory
+  exe 'cd' a:orig_dir
+
   if key == 'ctrl-t'
     call FzfTypeSelect('RipgrepFzfType', query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen)
   elseif key == 'ctrl-n'
@@ -145,15 +155,8 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     endif
   elseif key == 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
-  else
-    execute 'e' file.filename
-    call cursor(file.line, file.column)
-    normal! zvzz
-
-    call s:fill_quickfix(filelist)
-
-  endif
   return
+  endif
 endfunction
 
 " Lots of functions to use fzf to also select ie rg types
