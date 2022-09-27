@@ -189,7 +189,7 @@ function! FzfDirSelect(func, fd_hidden, fd_no_ignore, orig_dir, dir, ...)
       \ }, 0))
 endfunction
 
-function! RipgrepFzfDir(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, fd_hidden, fd_no_ignore, orig_dir, fullscreen, extraargs, extrapromptarg, extraprompt, lines)
+function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, fullscreen, extraargs, extrapromptarg, extraprompt, lines)
 
   let fd_query = a:lines[0]
   let key = a:lines[1]
