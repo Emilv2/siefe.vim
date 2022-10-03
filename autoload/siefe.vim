@@ -2,11 +2,10 @@ let s:min_version = '0.33.0'
 let s:is_win = has('win32') || has('win64')
 let s:is_wsl_bash = s:is_win && (exepath('bash') =~? 'Windows[/\\]system32[/\\]bash.exe$')
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
-let s:bin_dir = expand('<sfile>:p:h:h:h').'/bin/'
+let s:bin_dir = expand('<sfile>:p:h:h').'/bin/'
 let s:bin = {
-\ 'preview': s:bin_dir.'preview.sh',
-\ 'gitpreview': s:bin_dir.'gitpreview.sh',
-\ 'tags':    s:bin_dir.'tags.pl' }
+\ 'pickaxe_diff': s:bin_dir.'pickaxe-diff',
+\ }
 let s:TYPE = {'dict': type({}), 'funcref': type(function('call')), 'string': type(''), 'list': type([])}
 if s:is_win
   if has('nvim')
@@ -63,7 +62,7 @@ let s:rg_preview_commands = [
   \ s:rg_fast_preview_command,
 \ ]
 
-let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 1)
+let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 0)
 
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
 let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
@@ -343,7 +342,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && git show -O'.fzf#shellescape(orderfile).' '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
   
-  let preview_pickaxe_hunks_command = 'echo "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=pickaxe-diff show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
+  let preview_pickaxe_hunks_command = 'echo "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
   let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} ' . suffix
