@@ -18,8 +18,8 @@ command! -nargs=* -bang ProjectRgWord call siefe#ripgrepfzf(expand("<cword>"), s
 command! -nargs=* -bang ProjectRgWORD call siefe#ripgrepfzf(expand("<cWORD>"), siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 0, siefe#bufdir(), <bang>0)
 command! -nargs=* -bang ProjectRgLine call siefe#ripgrepfzf(trim(getline('.')), siefe#get_git_root(), siefe#get_git_basename(), 0, 0, 0, 0, 0, siefe#bufdir(), <bang>0)
 
-command! -nargs=* -bang Gp    call siefe#gitlogfzf(<q-args>, [], [], [], 0, 0, siefe#bufdir(), 0, <bang>0)
-command! -nargs=* -bang Gv    call siefe#gitlogfzf(siefe#visual_selection(), [], [], [], 0, 0, <bang>0)
-command! -nargs=* -bang GWord call siefe#gitlogfzf(expand("<cword>"), [], [], [], 0, 0, <bang>0)
-command! -nargs=* -bang GWORD call siefe#gitlogfzf(expand("<cWORD>"), [], [], [], 0, 0, <bang>0)
-command! -nargs=* -bang Gline call siefe#gitlogfzf(expand("<cword>"), [], [], [], 0, 0, <bang>0)
+command! -nargs=* -bang Gp    call siefe#gitlogfzf(<q-args>, [], [], [], 0, 0, [], 0, <bang>0)
+command! -nargs=* -bang Gv    call siefe#gitlogfzf(siefe#visual_selection(), [], [], [], 0, 0, [], 0, <bang>0)
+command! -nargs=* -bang GWord call siefe#gitlogfzf(expand("<cword>"), [], [], [], 0, 0, [], 0, <bang>0)
+command! -nargs=* -bang GWORD call siefe#gitlogfzf(expand("<cWORD>"), [], [], [], 0, 0, [], 0, <bang>0)
+command! -nargs=* -bang Gline call siefe#gitlogfzf(expand("<cword>"), [], [], [], 0, 0, [], 0, <bang>0)

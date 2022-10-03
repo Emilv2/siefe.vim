@@ -45,6 +45,25 @@ endfunction
 let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-markers') . ' ' . get(g:, 'siefe_delta_extra_options', '')
 let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes --theme="Solarized (dark)"') . ' ' . get(g:, 'siefe_bat_extra_options', '')
 
+let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
+let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
+
+let s:rg_preview_keys = [
+  \ g:siefe_rg_preview_key, 
+  \ g:siefe_rg_fast_preview_key,
+\ ]
+
+let s:bat_command = executable('bat') ? 'bat' : executable('batcat') ? 'batcat' : "" 
+let s:files_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
+let s:rg_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
+let s:rg_fast_preview_command = 'cat {1}'
+
+let s:rg_preview_commands = [
+  \ s:rg_preview_command, 
+  \ s:rg_fast_preview_command,
+\ ]
+
+let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 1)
 
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
 let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
@@ -87,15 +106,14 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let empty_command = printf(command_fmt, '', '""')
   let word_command = printf(command_fmt, '-w', '{q}')
   let files_command = 'rg --color=always --files '.extraargs.' '.extrapromptarg
-  let bat_command = executable('bat') ? 'bat' : executable('batcat') ? 'batcat' : "" 
-  let rg_preview_command = bat_command != "" ? bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
-  let files_preview_command = bat_command != "" ? bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
   " https://github.com/junegunn/fzf.vim
   " https://github.com/junegunn/fzf/blob/master/ADVANCED.md#toggling-between-data-sources
   let spec = {
     \ 'options': [
       \ '--history', expand("~/.vim_fzf_history"),
-      \ '--preview', rg_preview_command,
+      \ '--preview', s:rg_preview_commands[g:siefe_rg_default_preview_command],
+      \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
+      \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
       \ '--print-query',
       \ '--ansi',
       \ '--phony',
@@ -110,14 +128,15 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', 'ctrl-/:change-preview-window(hidden|right,90%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
-      \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview('.rg_preview_command.')',
-      \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview('.rg_preview_command.')',
-      \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview('.rg_preview_command.')',
-      \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.extraprompt.extrapromptarg.a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.files_preview_command.')',
+      \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.extraprompt.extrapromptarg.a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.s:files_preview_command.')',
       \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')." rg/fzf ╱ ".s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
       \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special')." !Type / ".s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
       \ .s:magenta('^-W', 'Special')." -w ".word_toggle.' / '.s:magenta('^-U', 'Special')." -u ".no_ignore_toggle.
-      \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle,
+      \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle 
+      \ . ' / ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
       \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> ',
       \ ],
    \ 'dir': a:dir,
@@ -233,6 +252,8 @@ function! FzfDirSelect(func, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, 
     \ '--print-query',
     \ '--ansi',
     \ '--scheme=path',
+    \ '--bind', 'tab:toggle+up',
+    \ '--bind', 'shift-tab:toggle+down',
     \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
     \ '--expect=ctrl-h,ctrl-u,alt-p,ctrl-alt-p',
     \ '--header', s:magenta('^-H', 'Special')." hidden ".fd_hidden_toggle." ╱ ".s:magenta('^-U', 'Special')." ignored ".fd_no_ignore_toggle
@@ -243,8 +264,9 @@ function! FzfDirSelect(func, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, 
   endif
 
   " fd does not print ., but we might want to select that
+         " \ 'source': 'fd --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path | ( realpath --relative-to=$PWD '.a:orig_dir.' && cat)',
   call fzf#run(fzf#wrap({
-          \ 'source': 'fd --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path | ( realpath --relative-to=$PWD '.a:orig_dir.' && cat)',
+          \ 'source': 'fd --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
         \ 'options': options,
         \ 'sink*': function(a:func, [a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir] + a:000)
       \ }, 0))
@@ -288,16 +310,17 @@ function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, f
 endfunction
 
 """ ripgrep function, commands and maps
-function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, path, follow, fullscreen)
+function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen)
 
   call s:check_requirements()
 
   let branches = join(map(a:branches, 'trim(v:val, " *")'), ' ')
   let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'), ' ')
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'), ' ')
+  let paths = join(a:paths, ' ')
   let query_file = tempname()
   let G = a:G ? "-G" : "-S"
-  let follow = a:path == "" ? "" : a:follow ? "--follow" : ""
+  let follow = paths == "" ? "" : a:follow ? "--follow" : ""
   " --pickaxe-regex and -G are incompatible
   let regex = a:G ? "" : a:regex ? "--pickaxe-regex " : ""
   " git log -S/G doesn't work with empty value, so we strip it if the query is
@@ -305,8 +328,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, path,
   let command_fmt = 'git log -z '.follow.' '.branches.' '.notbranches.' '.authors.' '.regex.' `echo '.G.'%s | sed s/^-\[SG\]$//g` '
   let write_query = 'echo {q} > '.query_file.' ;'
   let format = '--format=%C(auto)%h • %d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
-  let initial_command = write_query. printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . a:path
-  let reload_command = write_query. printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . a:path
+  let initial_command = write_query. printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths
+  let reload_command = write_query. printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths
   let current = expand('%')
   let orderfile = tempname()
   call writefile([current], orderfile) 
@@ -319,12 +342,14 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, path,
 
   let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && git show -O'.fzf#shellescape(orderfile).' '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
-  "let preview_command_2 = preview_pickaxe_files_command . ' --patch --stat -- ' . suffix
   
   let preview_pickaxe_hunks_command = 'echo "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=pickaxe-diff show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
   let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} ' . suffix
+
+  let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors, ' ')
+  let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths, ' ')
 
   let spec = {
     \ 'options': [
@@ -350,30 +375,30 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, path,
       \ '--bind', 'ctrl-f:unbind(change,ctrl-f)+change-prompt(pickaxe/fzf> )+enable-search+rebind(ctrl-r,ctrl-l)',
       \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')
         \ ." rg/fzf ╱ ".s:prettify_help("ctrl", "e", "cde") . ' / ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
-        \ ."\n".join(a:authors, ' '),
+        \ . authors_info . paths_info,
       \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' pickaxe> ',
       \ ],
-   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen]),
+   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen]),
    \ 'source': initial_command
   \ }
   call fzf#run(fzf#wrap(spec, 0))
 endfunction
 
-function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, path, follow, fullscreen, lines)
+function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, fullscreen, lines)
   let query = a:lines[0]
   let key = a:lines[1]
 
   if key == 'ctrl-e'
     let G = a:G ? 0 : 1
-    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, G, a:regex, a:path, a:follow, a:fullscreen)
+    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, G, a:regex, a:paths, a:follow, a:fullscreen)
   elseif key == 'ctrl-b'
-    call FzfBranchSelect('GitPickaxeFzfBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
   elseif key == 'ctrl-n'
-    call FzfBranchSelect('GitPickaxeFzfNotBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfNotBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
   elseif key == 'ctrl-a'
-    call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+    call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
   elseif key == 'ctrl-d'
-    call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), "", query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+    call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
   else
     execute s:warn(a:lines)
   endif
@@ -421,23 +446,25 @@ function! FzfAuthorSelect(func, ...)
   call fzf#run(fzf#wrap(spec, 0))
 endfunction
 
-function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, path, follow, fullscreen, ...)
-  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:000[0], a:G, a:regex, a:path, a:follow, a:fullscreen)
+function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
+  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:000[0], a:G, a:regex, a:paths, a:follow, a:fullscreen)
 endfunction
 
-function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, path, follow, fullscreen, ...)
+function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
   "let branches = join(map(a:000, 'trim(v:val.split(':')[0], " *")'), ' ')
   let branches = map(a:000[0], 'trim(split(v:val, ":")[0], " *")')
-  call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+  call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
 endfunction
 
-function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, path, follow, fullscreen, ...)
+function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
   let notbranches = map(a:000[0], 'trim(split(v:val, ":")[0], " *")')
-  call siefe#gitlogfzf(a:query, a:branches, notbranches, a:authors, a:G, a:regex, a:path, a:follow, a:fullscreen)
+  call siefe#gitlogfzf(a:query, a:branches, notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
 endfunction
-
-function! GitPickaxeFzfPath(query, branch, notbranches, authors, G, regex, path, follow, fullscreen, ...)
-  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:000[0], a:G, a:regex, a:path, a:follow, a:fullscreen)
+"a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir
+function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
+  let paths = a:000[0][2:]
+  
+  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:fullscreen)
 endfunction
 
 
