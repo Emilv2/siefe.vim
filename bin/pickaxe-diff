@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# pickaxe-diff : external diff driver for Git.
+#                To be used with the pickaxe options (git [log|show|diff[.*]] [-S|-G])
+#                to only show hunks containing the searched string/regex.
+# https://gist.github.com/phil-blain/2a1cf81a0030001d33158e44a35ceda6
+
+set -Eeuo pipefail
+
+trap 'rc=$?; echo "${0}: ERR trap at line ${LINENO} (return code: $rc)"; exit $rc' ERR
+
+path=$1
+old_file=$2
+old_hex=$3
+old_mode=$4
+new_file=$5
+new_hex=$6
+new_mode=$7
+
+only_match_flag=""
+if { grepdiff -h 2>&1 || : ; } | \grep -q -e '--only-match'; then
+  only_match_flag="--only-match=mod"
+fi
+
+diff_output=$(git diff --no-color --no-ext-diff -p  $old_file $new_file || :)
+
+filtered_diff=$( echo "$diff_output" | \
+                grepdiff "$GREPDIFF_REGEX" --output-matching=hunk ${only_match_flag} | \
+                \grep -v -e '^--- a/' -e '^+++ b/' | \
+                \grep -v -e '^--- /dev/null' -e '^+++ /dev/null' | \
+                \grep -v -e '^diff --git' -e '^index ')
+
+a_path="a/$path"
+b_path="b/$path"
+
+echo "diff --git $a_path $b_path"
+echo "index $old_hex..$new_hex $old_mode"
+echo "--- $a_path"
+echo "+++ $b_path"
+echo "$filtered_diff"
