@@ -64,6 +64,8 @@ let s:rg_preview_commands = [
 
 let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 0)
 
+let s:siefe_gitlog_ignore_case_key = 'alt-i'
+
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
 let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
 let g:siefe_gitlog_preview_3_key = get(g:, 'siefe_gitlog_preview_3_key', 'f3')
@@ -309,7 +311,7 @@ function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, f
 endfunction
 
 """ ripgrep function, commands and maps
-function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen)
+function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen)
 
   call s:check_requirements()
 
@@ -322,9 +324,12 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let follow = paths == "" ? "" : a:follow ? "--follow" : ""
   " --pickaxe-regex and -G are incompatible
   let regex = a:G ? "" : a:regex ? "--pickaxe-regex " : ""
+  let ignore_case = a:ignore_case ? "--regexp-ignore-case " : ""
+  let ignore_case_toggle = a:ignore_case ? "off" : "on"
+  let ignore_case_symbol = a:ignore_case ? "-i " : ""
   " git log -S/G doesn't work with empty value, so we strip it if the query is
   " empty. Not sure why we need to escape [ and ]
-  let command_fmt = 'git log -z '.follow.' '.branches.' '.notbranches.' '.authors.' '.regex.' `echo '.G.'%s | sed s/^-\[SG\]$//g` '
+  let command_fmt = 'git log -z '.follow.' '.branches.' '.notbranches.' '.authors.' '.regex.' ' . ignore_case . '`echo '.G.'%s | sed s/^-\[SG\]$//g` '
   let write_query = 'echo {q} > '.query_file.' ;'
   let format = '--format=%C(auto)%h • %d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
   let initial_command = write_query. printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths
@@ -363,7 +368,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--ansi',
       \ '--phony',
       \ '--read0',
-      \ '--expect=ctrl-r,ctrl-e,ctrl-b,ctrl-n,ctrl-a,ctrl-d',
+      \ '--expect=ctrl-r,ctrl-e,ctrl-b,ctrl-n,ctrl-a,ctrl-d,'
+        \ . s:siefe_gitlog_ignore_case_key,
       \ '--multi',
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
@@ -372,32 +378,35 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', 'ctrl-/:change-preview-window(hidden|right,90%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'ctrl-f:unbind(change,ctrl-f)+change-prompt(pickaxe/fzf> )+enable-search+rebind(ctrl-r,ctrl-l)',
-      \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')
-        \ ." rg/fzf ╱ ".s:prettify_help("ctrl", "e", "cde") . ' / ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
+      \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:prettify_help(s:siefe_gitlog_ignore_case_key, "ignore case")
+        \ ." ╱ ".s:prettify_help("ctrl-e", "cde") . ' / ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . authors_info . paths_info,
-      \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' pickaxe> ',
+      \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' ' . ignore_case_symbol . ' pickaxe> ',
       \ ],
-   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen]),
+   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen]),
    \ 'source': initial_command
   \ }
   call fzf#run(fzf#wrap(spec, 0))
 endfunction
 
-function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, fullscreen, lines)
+function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, lines)
   let query = a:lines[0]
   let key = a:lines[1]
 
   if key == 'ctrl-e'
     let G = a:G ? 0 : 1
-    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, G, a:regex, a:paths, a:follow, a:fullscreen)
+    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+  elseif key == s:siefe_gitlog_ignore_case_key
+    let ignore_case = a:ignore_case ? 0 : 1
+    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, ignore_case, a:fullscreen)
   elseif key == 'ctrl-b'
-    call FzfBranchSelect('GitPickaxeFzfBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
   elseif key == 'ctrl-n'
-    call FzfBranchSelect('GitPickaxeFzfNotBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfNotBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
   elseif key == 'ctrl-a'
-    call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+    call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
   elseif key == 'ctrl-d'
-    call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+    call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
   else
     execute s:warn(a:lines)
   endif
@@ -445,25 +454,25 @@ function! FzfAuthorSelect(func, ...)
   call fzf#run(fzf#wrap(spec, 0))
 endfunction
 
-function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
-  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:000[0], a:G, a:regex, a:paths, a:follow, a:fullscreen)
+function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
+  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:000[0], a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 
-function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
+function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
   "let branches = join(map(a:000, 'trim(v:val.split(':')[0], " *")'), ' ')
   let branches = map(a:000[0], 'trim(split(v:val, ":")[0], " *")')
-  call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+  call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 
-function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
+function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
   let notbranches = map(a:000[0], 'trim(split(v:val, ":")[0], " *")')
-  call siefe#gitlogfzf(a:query, a:branches, notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:fullscreen)
+  call siefe#gitlogfzf(a:query, a:branches, notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 "a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir
-function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, fullscreen, ...)
+function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
   let paths = a:000[0][2:]
   
-  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:fullscreen)
+  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 
 
@@ -561,8 +570,9 @@ function! s:yank_to_register(data)
   silent! let @+ = a:data
 endfunction
 
-function! s:prettify_help(control, char, text)
-  return s:magenta(a:control.'-'.toupper(a:char), 'Special') . " " . a:text[0] . substitute(a:text[1:], a:char, "\e[3m".a:char."\e[m", "")
+function! s:prettify_help(key, text)
+  let char = split(a:key, '-')[-1]
+  return s:magenta(toupper(a:key), 'Special') . " " . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", "")
 endfunction
 
 function! s:preview_help(preview_keys)
