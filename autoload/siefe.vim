@@ -48,17 +48,17 @@ let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
 let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
 
 let s:rg_preview_keys = [
-  \ g:siefe_rg_preview_key, 
+  \ g:siefe_rg_preview_key,
   \ g:siefe_rg_fast_preview_key,
 \ ]
 
-let s:bat_command = executable('bat') ? 'bat' : executable('batcat') ? 'batcat' : "" 
+let s:bat_command = executable('bat') ? 'bat' : executable('batcat') ? 'batcat' : ""
 let s:files_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
 let s:rg_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
 let s:rg_fast_preview_command = 'cat {1}'
 
 let s:rg_preview_commands = [
-  \ s:rg_preview_command, 
+  \ s:rg_preview_command,
   \ s:rg_fast_preview_command,
 \ ]
 
@@ -137,7 +137,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')." rg/fzf ╱ ".s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
       \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special')." !Type / ".s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
       \ .s:magenta('^-W', 'Special')." -w ".word_toggle.' / '.s:magenta('^-U', 'Special')." -u ".no_ignore_toggle.
-      \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle 
+      \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle
       \ . ' / ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
       \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> ',
       \ ],
@@ -339,7 +339,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let reload_command = write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
   let current = expand('%')
   let orderfile = tempname()
-  call writefile([current], orderfile) 
+  call writefile([current], orderfile)
 
   let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
 
@@ -349,7 +349,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
 
   let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && git show -O'.fzf#shellescape(orderfile).' '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
-  
+
   let preview_pickaxe_hunks_command = 'echo "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
@@ -491,7 +491,7 @@ endfunction
 "a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir
 function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
   let paths = a:000[0][2:]
-  
+
   call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 
