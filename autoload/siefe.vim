@@ -65,6 +65,7 @@ let s:rg_preview_commands = [
 let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 0)
 
 let s:siefe_gitlog_ignore_case_key = 'alt-i'
+let g:siefe_gitlog_vdiffsplit_key = get(g:, 'siefe_gitlog_vdiffsplit_key', 'ctrl-t')
 
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
 let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
@@ -330,10 +331,12 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   " git log -S/G doesn't work with empty value, so we strip it if the query is
   " empty. Not sure why we need to escape [ and ]
   let command_fmt = 'git log -z '.follow.' '.branches.' '.notbranches.' '.authors.' '.regex.' ' . ignore_case . '`echo '.G.'%s | sed s/^-\[SG\]$//g` '
-  let write_query = 'echo {q} > '.query_file.' ;'
+  let write_query_initial = 'echo '. shellescape(a:query) .' > '.query_file.' ;'
+  let write_query_reload = 'echo {q} > '.query_file.' ;'
+  let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
   let format = '--format=%C(auto)%h • %d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
-  let initial_command = write_query. printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths
-  let reload_command = write_query. printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths
+  let initial_command = write_query_initial . printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
+  let reload_command = write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
   let current = expand('%')
   let orderfile = tempname()
   call writefile([current], orderfile) 
@@ -369,7 +372,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--phony',
       \ '--read0',
       \ '--expect=ctrl-r,ctrl-e,ctrl-b,ctrl-n,ctrl-a,ctrl-d,'
-        \ . s:siefe_gitlog_ignore_case_key,
+        \ . s:siefe_gitlog_ignore_case_key . ','
+        \ . g:siefe_gitlog_vdiffsplit_key . ',',
       \ '--multi',
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
@@ -392,6 +396,13 @@ endfunction
 function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, lines)
   let query = a:lines[0]
   let key = a:lines[1]
+  " split(v:val, " ")[0]) == commit hash
+  " join(split(v:val, " ")[1:] == full commit message
+  let quickfix_list = map(a:lines[2:], '{'
+    \ . '"bufnr":bufadd(trim(fugitive#Open("", 0, "<mods>", split(v:val, " ")[0]))),'
+    \ . '"text":join(split(v:val, " ")[1:], " ")[:(winwidth(0) - (len(split(v:val, " ")[0]) + 7))] . ( len(join(split(v:val, " ")[1:], " ")) > winwidth(0) ? "..." : ""),'
+    \ . '"module":split(v:val, " ")[0],'
+    \ . '}')
 
   if key == 'ctrl-e'
     let G = a:G ? 0 : 1
@@ -407,8 +418,17 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
     call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
   elseif key == 'ctrl-d'
     call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+  elseif key == g:siefe_gitlog_vdiffsplit_key
+
+    if len(quickfix_list) == 2
+      execute 'Gedit '. quickfix_list[0].module . ':%'
+      execute 'Gvdiffsplit '. quickfix_list[1].module . ':%'
+    elseif len(quickfix_list) == 1
+      execute 'Gedit HEAD:%'
+      execute 'Gvdiffsplit '. quickfix_list[0].module . ':%'
+    endif
   else
-    execute s:warn(a:lines)
+  call s:fill_quickfix(quickfix_list)
   endif
 endfunction
 
