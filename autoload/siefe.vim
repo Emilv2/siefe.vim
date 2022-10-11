@@ -82,12 +82,9 @@ let s:gitlog_preview_keys = [
 \ ]
 
 """ ripgrep function, commands and maps
-function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, ...)
+function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen)
   call s:check_requirements()
 
-  let extraargs = get(a:, 1, "")
-  let extrapromptarg = get(a:, 2, "")
-  let extraprompt = get(a:, 3, "")
   if empty(a:dir)
     return
   endif
@@ -102,12 +99,12 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let no_ignore_toggle = a:no_ignore ? "off" : "on"
   let fixed_strings = a:fixed_strings ? "-F " : ""
   let fixed_strings_toggle = a:fixed_strings ? "off" : "on"
-  let command_fmt = 'rg --column -U --glob "!.git/objects" --line-number --no-heading --color=always --colors "column:fg:green" '.case_sensitive.' --field-match-separator="\x1b[9;31;31m//\x1b[0m" '.word.no_ignore.hidden.fixed_strings.extraargs.' '.extrapromptarg.' %s -- %s'
+  let command_fmt = 'rg --column -U --glob "!.git/objects" --line-number --no-heading --color=always --colors "column:fg:green" '.case_sensitive.' --field-match-separator="\x1b[9;31;31m//\x1b[0m" '.word.no_ignore.hidden.fixed_strings.' '.a:type.' %s -- %s'
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
   let empty_command = printf(command_fmt, '', '""')
   let word_command = printf(command_fmt, '-w', '{q}')
-  let files_command = 'rg --color=always --files '.extraargs.' '.extrapromptarg
+  let files_command = 'rg --color=always --files '.a:type
   " https://github.com/junegunn/fzf.vim
   " https://github.com/junegunn/fzf/blob/master/ADVANCED.md#toggling-between-data-sources
   let spec = {
@@ -130,25 +127,25 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', 'ctrl-/:change-preview-window(hidden|right,90%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
-      \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.extraprompt.extrapromptarg.a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.extraprompt.extrapromptarg.a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.s:files_preview_command.')',
+      \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.a:type . ' ' . a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.s:files_preview_command.')',
       \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')." rg/fzf ╱ ".s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
       \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special')." !Type / ".s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
       \ .s:magenta('^-W', 'Special')." -w ".word_toggle.' / '.s:magenta('^-U', 'Special')." -u ".no_ignore_toggle.
       \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle
       \ . ' / ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
-      \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.extraprompt.extrapromptarg.a:prompt.' rg> ',
+      \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> ',
       \ ],
    \ 'dir': a:dir,
-   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, extraargs, extrapromptarg, extraprompt]),
+   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:type]),
    \ 'source': initial_command
   \ }
   call fzf#run(fzf#wrap(spec, 0))
 endfunction
 
-function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, extraargs, extrapromptarg, extraprompt, lines)
+function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen, lines)
 
   " query can contain newlines, we have to reconstruct it
   let tmp = split(a:lines[-1], "\n", 1)[0:-2]
@@ -211,21 +208,21 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     call FzfTypeSelect('RipgrepFzfTypeNot', query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen)
   elseif key == 'ctrl-w'
     let word = a:word ? 0 : 1
-    call siefe#ripgrepfzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'ctrl-s'
     let case = a:case ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'alt-.'
     let hidden = a:hidden ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'ctrl-u'
     let no_ignore = a:no_ignore ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'alt-f'
     let fixed_strings = a:fixed_strings ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'ctrl-d'
-    call FzfDirSelect('RipgrepFzfDir', 0, 0, "d", 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call FzfDirSelect('RipgrepFzfDir', 0, 0, "d", 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
   elseif key == 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
   return
@@ -237,9 +234,12 @@ function! FzfTypeSelect(func, ...)
   call fzf#run(fzf#wrap({
         \ 'source': 'rg --color=always --type-list',
         \ 'options': [
-          \ '--prompt', 'Choose type> '
+          \ '--prompt', 'Choose type> ',
+          \ '--multi',
+          \ '--bind','tab:toggle+up',
+          \ '--bind','shift-tab:toggle+down',
           \ ],
-        \ 'sink': function(a:func, a:000)
+        \ 'sink*': function(a:func, a:000)
       \ }, 0))
 endfunction
 
@@ -274,46 +274,45 @@ function! FzfDirSelect(func, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, 
       \ }, 0))
 endfunction
 
-function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, fullscreen, extraargs, extrapromptarg, extraprompt, lines)
+function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, fullscreen, lines)
 
   let fd_query = a:lines[0]
   let key = a:lines[1]
   let new_dir = a:lines[2]
   if key == 'ctrl-h'
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', fd_hidden, a:fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings,  a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call FzfDirSelect('RipgrepFzfDir', fd_hidden, a:fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
   elseif key == 'ctrl-u'
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings,  a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
   elseif key == 'alt-p'
-    call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'ctrl-alt-p'
     let workarea = '$WORKAREA'
     if expand(workarea) != workarea
-      call siefe#ripgrepfzf(a:query, expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+      call siefe#ripgrepfzf(a:query, expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
     else
       call s:warn('no '.workarea)
       execute 'sleep' 500 . 'm'
-      call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+      call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
     endif
   else
-    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:extraargs, a:extrapromptarg, a:extraprompt)
+    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   endif
 endfunction
 
 function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
-  let type = split(a:type_string, ":")[0]
-  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-t", type.' ')
+  let type = join(map(a:type_string, '"-t" . split(v:val, ":")[0]'))
+  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
 endfunction
 
 function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
-  let type = split(a:type_string, ":")[0]
-  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, "-T ", type.' ', "!")
+  let type = join(map(a:type_string, '"-T" . split(v:val, ":")[0]'))
+  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
 endfunction
 
 """ ripgrep function, commands and maps
-function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen)
-
+function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen)
   call s:check_requirements()
 
   let branches = join(map(a:branches, 'trim(v:val, " *")'), ' ')
@@ -357,6 +356,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
 
   let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors, ' ')
   let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths, ' ')
+  let type_info = a:type == '' ? '' : "\ntypes: " . a:type
 
   let spec = {
     \ 'options': [
