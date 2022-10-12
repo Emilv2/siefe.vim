@@ -139,10 +139,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> ',
       \ ],
    \ 'dir': a:dir,
-   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen, a:type]),
+   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen]),
    \ 'source': initial_command
   \ }
-  call fzf#run(fzf#wrap(spec, 0))
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
 function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen, lines)
@@ -203,9 +203,9 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   exe 'cd' a:orig_dir
 
   if key == 'ctrl-t'
-    call FzfTypeSelect('RipgrepFzfType', query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen)
+    call FzfTypeSelect('RipgrepFzfType', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir)
   elseif key == 'ctrl-n'
-    call FzfTypeSelect('RipgrepFzfTypeNot', query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:fullscreen)
+    call FzfTypeSelect('RipgrepFzfTypeNot', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir)
   elseif key == 'ctrl-w'
     let word = a:word ? 0 : 1
     call siefe#ripgrepfzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
@@ -222,7 +222,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     let fixed_strings = a:fixed_strings ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:type, a:fullscreen)
   elseif key == 'ctrl-d'
-    call FzfDirSelect('RipgrepFzfDir', 0, 0, "d", 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, "d", 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type)
   elseif key == 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
   return
@@ -230,7 +230,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
 endfunction
 
 " Lots of functions to use fzf to also select ie rg types
-function! FzfTypeSelect(func, ...)
+function! FzfTypeSelect(func, fullscreen, ...)
   call fzf#run(fzf#wrap({
         \ 'source': 'rg --color=always --type-list',
         \ 'options': [
@@ -239,12 +239,12 @@ function! FzfTypeSelect(func, ...)
           \ '--bind','tab:toggle+up',
           \ '--bind','shift-tab:toggle+down',
           \ ],
-        \ 'sink*': function(a:func, a:000)
-      \ }, 0))
+        \ 'sink*': function(a:func, a:000 + [a:fullscreen])
+      \ }, a:fullscreen))
 endfunction
 
 
-function! FzfDirSelect(func, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, dir, ...)
+function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, dir, ...)
   let fd_hidden = a:fd_hidden ? "-H " : ""
   let fd_hidden_toggle = a:fd_hidden ? "off" : "on"
   let fd_no_ignore = a:fd_no_ignore ? "-u " : ""
@@ -270,8 +270,8 @@ function! FzfDirSelect(func, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, 
   call fzf#run(fzf#wrap({
           \ 'source': 'fd --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
         \ 'options': options,
-        \ 'sink*': function(a:func, [a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir] + a:000)
-      \ }, 0))
+        \ 'sink*': function(a:func, [a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir] + a:000 + [a:fullscreen])
+      \ }, a:fullscreen))
 endfunction
 
 function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, fullscreen, lines)
@@ -387,13 +387,13 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . authors_info . paths_info,
       \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' ' . ignore_case_symbol . ' pickaxe> ',
       \ ],
-   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen]),
+   \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen]),
    \ 'source': initial_command
   \ }
-  call fzf#run(fzf#wrap(spec, 0))
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, lines)
+function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, type, lines)
   let query = a:lines[0]
   let key = a:lines[1]
   " split(v:val, " ")[0]) == commit hash
@@ -411,13 +411,13 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
     let ignore_case = a:ignore_case ? 0 : 1
     call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, ignore_case, a:fullscreen)
   elseif key == 'ctrl-b'
-    call FzfBranchSelect('GitPickaxeFzfBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
   elseif key == 'ctrl-n'
-    call FzfBranchSelect('GitPickaxeFzfNotBranch', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+    call FzfBranchSelect('GitPickaxeFzfNotBranch', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
   elseif key == 'ctrl-a'
-    call FzfAuthorSelect('GitPickaxeFzfAuthor', query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+    call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
   elseif key == 'ctrl-d'
-    call FzfDirSelect('GitPickaxeFzfPath', 0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
   elseif key == g:siefe_gitlog_vdiffsplit_key
 
     if len(quickfix_list) == 2
@@ -432,7 +432,7 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   endif
 endfunction
 
-function! FzfBranchSelect(func, ...)
+function! FzfBranchSelect(func, fullscreen, ...)
   let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
@@ -440,7 +440,7 @@ function! FzfBranchSelect(func, ...)
 
   let spec = {
     \ 'source':  "git branch -a --sort='-authordate' --color --format='%(HEAD) %(if:equals=refs/remotes)%(refname:rstrip=-2)%(then)%(color:cyan)%(align:0)%(refname:lstrip=2)%(end)%(else)%(if)%(HEAD)%(then)%(color:reverse yellow)%(align:0)%(refname:lstrip=-1)%(end)%(else)%(color:yellow)%(align:0)%(refname:lstrip=-1)%(end)%(end)%(end)%(color:reset) %(color:red): %(if)%(symref)%(then)%(color:yellow)%(objectname:short)%(color:reset) %(color:red):%(color:reset) %(color:green)-> %(symref:lstrip=-2)%(else)%(color:yellow)%(objectname:short)%(color:reset) %(if)%(upstream)%(then)%(color:red): %(color:reset)%(color:green)[%(upstream:short)%(if)%(upstream:track)%(then):%(color:blue)%(upstream:track,nobracket)%(symref:lstrip=-2)%(color:green)%(end)]%(color:reset) %(end)%(color:red):%(color:reset) %(contents:subject)%(end) • %(color:blue)(%(authordate:short))'",
-    \ 'sink*':   function(a:func, a:000),
+    \ 'sink*':   function(a:func, a:000 + [a:fullscreen]),
     \ 'options':
       \ [
         \ '--ansi',
@@ -456,13 +456,13 @@ function! FzfBranchSelect(func, ...)
       \ ],
     \ 'placeholder': ''
   \ }
-  call fzf#run(fzf#wrap(spec, 0))
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! FzfAuthorSelect(func, ...)
+function! FzfAuthorSelect(func, fullscreen, ...)
   let spec = {
     \ 'source':  "git log --format='%aN <%aE>' | awk '!x[$0]++'",
-    \ 'sink*':   function(a:func, a:000),
+    \ 'sink*':   function(a:func, a:000 + a:fullscreen),
     \ 'options':
       \ [
         \ '--multi',
@@ -471,7 +471,7 @@ function! FzfAuthorSelect(func, ...)
       \ ],
     \ 'placeholder': ''
   \ }
-  call fzf#run(fzf#wrap(spec, 0))
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
 function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
