@@ -315,10 +315,10 @@ endfunction
 function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen)
   call s:check_requirements()
 
-  let branches = join(map(a:branches, 'trim(v:val, " *")'), ' ')
-  let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'), ' ')
-  let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'), ' ')
-  let paths = join(a:paths, ' ')
+  let branches = join(map(a:branches, 'trim(v:val, " *")'))
+  let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'))
+  let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'))
+  let paths = join(a:paths)
   let query_file = tempname()
   let G = a:G ? "-G" : "-S"
   let follow = paths == "" ? "" : a:follow ? "--follow" : ""
@@ -354,8 +354,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
   let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} ' . suffix
 
-  let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors, ' ')
-  let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths, ' ')
+  let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors)
+  let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths)
   let type_info = a:type == '' ? '' : "\ntypes: " . a:type
 
   let spec = {
