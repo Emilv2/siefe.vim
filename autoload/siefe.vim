@@ -82,6 +82,8 @@ let s:gitlog_preview_keys = [
   \ g:siefe_gitlog_preview_5_key,
 \ ]
 
+let g:siefe_type_select_abort_key = get(g:, 'siefe_type_select_abort_key', 'esc')
+
 """ ripgrep function, commands and maps
 function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen)
   call s:check_requirements()
@@ -239,6 +241,8 @@ function! FzfTypeSelect(func, fullscreen, ...)
           \ '--multi',
           \ '--bind','tab:toggle+up',
           \ '--bind','shift-tab:toggle+down',
+          \ '--expect', g:siefe_type_select_abort_key,
+          \ '--header', s:prettify_help(g:siefe_type_select_abort_key, 'abort'),
           \ ],
         \ 'sink*': function(a:func, a:000 + [a:fullscreen])
       \ }, a:fullscreen))
@@ -302,14 +306,22 @@ function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, w
   endif
 endfunction
 
-function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
-  let type = join(map(a:type_string, '"-t" . split(v:val, ":")[0]'))
-  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
+function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines)
+  if a:lines[0] == g:siefe_type_select_abort_key
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, "", a:fullscreen)
+  else
+    let type = join(map(a:lines[1:], '"-t" . split(v:val, ":")[0]'))
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
+  endif
 endfunction
 
-function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, type_string)
-  let type = join(map(a:type_string, '"-T" . split(v:val, ":")[0]'))
-  call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
+function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines)
+  if a:lines[0] == g:siefe_type_select_abort_key
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, "", a:fullscreen)
+  else
+    let type = join(map(a:lines[1:], '"-T" . split(v:val, ":")[0]'))
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
+  endif
 endfunction
 
 """ ripgrep function, commands and maps
