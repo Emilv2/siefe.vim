@@ -164,8 +164,6 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
     let file = {}
 
     " rg/fzf '//' delimited result
-    " if it's bigger than 4 that means there was a // in there result
-    " This doesn't matter because we don't use it (for now).
     if len(tmp2) >= 4
       let file.filename  = tmp2[0]
       let file.line  = tmp2[1]
@@ -174,6 +172,8 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
       if len(tmp2) == 4
         let file.content = tmp2[3]
       else
+        " If it's bigger than 4 that means there was a // in there result,
+        " so we recreate the original content
         let file.content = join(tmp2[3:], '//')."\n"
       endif
 
@@ -490,7 +490,6 @@ function! GitPickaxeFzfAuthor(query, branch, notbranches, authors, G, regex, pat
 endfunction
 
 function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
-  "let branches = join(map(a:000, 'trim(v:val.split(':')[0], " *")'), ' ')
   let branches = map(a:000[0], 'trim(split(v:val, ":")[0], " *")')
   call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
@@ -639,7 +638,6 @@ function! s:detect_dups(lst)
   endfor
   return dups
 endfunction
-
 
 " https://stackoverflow.com/a/47051271
 function! siefe#visual_selection()
