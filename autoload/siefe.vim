@@ -505,6 +505,13 @@ function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branc
   call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:fullscreen)
 endfunction
 
+function! siefe#gitllogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, line_range, fullscreen)
+  " git -L is a bit crippled and ignores --format, so we have to make our own with sed
+  let command = 'git log  -s -z -L' . line_range[0] . ',' . line_range[1] . ':' . a:path . ' --abbrev-commit -- '
+    \ '| sed -E -z "s/commit ([0-9a-f]*)([^\n]*)*.*\n\n/\1\2 •/" '
+    \ '| sed -E -z "s/ {2,}/ /g"'
+    \ '| sed -z -E "s/\r?\n/↵/g"'
+endfunction
 
 """ helper functions
 function! s:warn(message)
@@ -659,4 +666,15 @@ function! siefe#visual_selection()
     let lines[-1] = lines[-1][: column_end - 1]
     let lines[0] = lines[0][column_start - 1:]
     return join(lines, "\n")
+endfunction
+
+function! siefe#visual_line_nu()
+    if mode()=='v'
+        let line_start = getpos('v')[1]
+        let line_end = getpos('.')[1]
+    else
+        let line_start = getpos("'<")[1]
+        let line_end = getpos("'>")[1]
+    end
+    return sort([line_start, line_end], 'n')
 endfunction
