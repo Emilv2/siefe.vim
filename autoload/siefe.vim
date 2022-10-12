@@ -65,7 +65,8 @@ let s:rg_preview_commands = [
 let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 0)
 
 let s:siefe_gitlog_ignore_case_key = 'alt-i'
-let g:siefe_gitlog_vdiffsplit_key = get(g:, 'siefe_gitlog_vdiffsplit_key', 'ctrl-t')
+let g:siefe_gitlog_vdiffsplit_key = get(g:, 'siefe_gitlog_vdiffsplit_key', 'ctrl-v')
+let g:siefe_gitlog_type_key = get(g:, 'siefe_gitlog_type_key', 'ctrl-t')
 
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
 let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
@@ -373,7 +374,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--read0',
       \ '--expect=ctrl-r,ctrl-e,ctrl-b,ctrl-n,ctrl-a,ctrl-d,'
         \ . s:siefe_gitlog_ignore_case_key . ','
-        \ . g:siefe_gitlog_vdiffsplit_key . ',',
+        \ . g:siefe_gitlog_vdiffsplit_key . ','
+        \ . g:siefe_gitlog_type_key . ',',
       \ '--multi',
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
@@ -384,7 +386,10 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', 'ctrl-f:unbind(change,ctrl-f)+change-prompt(pickaxe/fzf> )+enable-search+rebind(ctrl-r,ctrl-l)',
       \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:prettify_help(s:siefe_gitlog_ignore_case_key, "ignore case")
         \ ." ╱ ".s:prettify_help("ctrl-e", "cde") . ' / ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
-        \ . authors_info . paths_info,
+        \ .' ╱  '.s:prettify_help(g:siefe_gitlog_type_key, 'type')
+        \ . authors_info 
+        \ . paths_info
+        \ . type_info,
       \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' ' . ignore_case_symbol . ' pickaxe> ',
       \ ],
    \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen]),
@@ -418,8 +423,9 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
     call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
   elseif key == 'ctrl-d'
     call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case)
+  elseif key == g:siefe_gitlog_type_key
+    call FzfTypeSelect('GitlogFzfType', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_vdiffsplit_key
-
     if len(quickfix_list) == 2
       execute 'Gedit '. quickfix_list[0].module . ':%'
       execute 'Gvdiffsplit '. quickfix_list[1].module . ':%'
@@ -430,6 +436,11 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   else
   call s:fill_quickfix(quickfix_list)
   endif
+endfunction
+
+function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, fullscreen, ...)
+  let type = substitute(join(map(a:000[1], 'split(v:val, ":")[1]'), ' '), ',', '', 'g')
+  call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:fullscreen)
 endfunction
 
 function! FzfBranchSelect(func, fullscreen, ...)
