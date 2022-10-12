@@ -615,7 +615,7 @@ endfunction
 function! s:preview_help(preview_keys)
   let f_keys = filter(copy(a:preview_keys), 'v:val[0] ==? "f"')
   let non_f_keys = filter(copy(a:preview_keys), 'v:val[0] !=? "f"')
-  let f_ints = sort(map(f_keys, 'str2nr(v:val[1:])'))
+  let f_ints = sort(map(f_keys, 'str2nr(v:val[1:])'), 'n')
   let last_val = f_ints[0]
   let result = ""
   let val_start = f_ints[0]
