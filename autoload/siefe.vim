@@ -362,7 +362,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && git show -O'.fzf#shellescape(orderfile).' '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_pickaxe_hunks_command = 'echo "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
+  let preview_pickaxe_hunks_command = 'echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
   let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} ' . suffix
