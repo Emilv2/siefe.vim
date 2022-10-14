@@ -18,6 +18,11 @@ if s:is_win
   endif
 endif
 
+
+let _ = system('rg --help | grep -- "--field-match-separator"')
+let s:delimiter = v:shell_error ? ':' : '//'
+let s:field_match_separator = v:shell_error ? '' : '--field-match-separator="\x1b[9;31;31m//\x1b[0m"'
+
 let s:checked = 0
 
 function! s:check_requirements()
@@ -94,6 +99,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let word = a:word ? "-w " : ""
   let word_toggle = a:word ? "off" : "on"
   let hidden = a:hidden ? "-. " : ""
+  let hidden_option = a:hidden ? "--hidden " : ""
   let hidden_toggle = a:hidden ? "off" : "on"
   let case_sensitive = a:case_sensitive ? "--case-sensitive " : "--smart-case "
   let case_symbol = a:case_sensitive ? "-s " : ""
@@ -102,7 +108,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let no_ignore_toggle = a:no_ignore ? "off" : "on"
   let fixed_strings = a:fixed_strings ? "-F " : ""
   let fixed_strings_toggle = a:fixed_strings ? "off" : "on"
-  let command_fmt = 'rg --column -U --glob "!.git/objects" --line-number --no-heading --color=always --colors "column:fg:green" '.case_sensitive.' --field-match-separator="\x1b[9;31;31m//\x1b[0m" '.word.no_ignore.hidden.fixed_strings.' '.a:type.' %s -- %s'
+  let command_fmt = 'rg --column -U --glob "' . shellescape('!')
+    \ . 'git/objects" --line-number --no-heading --color=always --colors "column:fg:green" '
+    \ . case_sensitive . ' ' . s:field_match_separator . ' ' 
+    \ . word . no_ignore . hidden_option . fixed_strings . ' ' . shellescape(a:type) . ' %s -- %s'
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
   let empty_command = printf(command_fmt, '', '""')
@@ -126,7 +135,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
       \ '--query', a:query,
-      \ '--delimiter', '//',
+      \ '--delimiter', s:delimiter,
       \ '--bind', 'ctrl-/:change-preview-window(hidden|right,90%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
@@ -162,7 +171,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   let filelist = []
 
   for item in tmp[2:]
-    let tmp2 = split(item, '\/\/', 1)
+    let tmp2 = split(item, s:delimiter, 1)
     let file = {}
 
     " rg/fzf '//' delimited result
@@ -176,7 +185,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
       else
         " If it's bigger than 4 that means there was a // in there result,
         " so we recreate the original content
-        let file.content = join(tmp2[3:], '//')."\n"
+        let file.content = join(tmp2[3:], s:delimiter)."\n"
       endif
 
     " files result
