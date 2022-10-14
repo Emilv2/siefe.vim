@@ -108,10 +108,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let no_ignore_toggle = a:no_ignore ? "off" : "on"
   let fixed_strings = a:fixed_strings ? "-F " : ""
   let fixed_strings_toggle = a:fixed_strings ? "off" : "on"
-  let command_fmt = 'rg --column -U --glob "' . shellescape('!')
-    \ . 'git/objects" --line-number --no-heading --color=always --colors "column:fg:green" '
+  let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
+    \ . ' --line-number --no-heading --color=always --colors "column:fg:green" '
     \ . case_sensitive . ' ' . s:field_match_separator . ' ' 
-    \ . word . no_ignore . hidden_option . fixed_strings . ' ' . shellescape(a:type) . ' %s -- %s'
+    \ . word . no_ignore . hidden_option . fixed_strings . ' ' . a:type . ' %s -- %s'
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
   let empty_command = printf(command_fmt, '', '""')
