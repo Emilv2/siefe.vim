@@ -5,6 +5,7 @@ let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
 let s:bin_dir = expand('<sfile>:p:h:h').'/bin/'
 let s:bin = {
 \ 'pickaxe_diff': s:bin_dir.'pickaxe-diff',
+\ 'git_SG': s:bin_dir.'git_SG',
 \ }
 let s:TYPE = {'dict': type({}), 'funcref': type(function('call')), 'string': type(''), 'list': type([])}
 if s:is_win
@@ -351,7 +352,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let ignore_case_symbol = a:ignore_case ? "-i " : ""
   " git log -S/G doesn't work with empty value, so we strip it if the query is
   " empty. Not sure why we need to escape [ and ]
-  let command_fmt = 'git log -z '.follow.' '.branches.' '.notbranches.' '.authors.' '.regex.' ' . ignore_case . '`echo '.G.'%s | sed s/^-\[SG\]$//g` '
+  let command_fmt = s:bin.git_SG . ' log '. G . '%s -z ' . follow . ' ' . branches . ' ' . notbranches . ' ' . authors . ' ' . regex . ' ' . ignore_case
   let write_query_initial = 'echo '. shellescape(a:query) .' > '.query_file.' ;'
   let write_query_reload = 'echo {q} > '.query_file.' ;'
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
@@ -368,13 +369,13 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let preview_command_1 = preview_all_command . ' --patch --stat -- ' . suffix
   let preview_command_2 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && git show -O'.fzf#shellescape(orderfile).' '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` {1} '
+  let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_pickaxe_hunks_command = 'echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex.'`{echo -n '.G.'; cat '.query_file.'} | sed s/^-\[SG\]$//g` '
+  let preview_pickaxe_hunks_command = 'echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
-  let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} ' . suffix
+  let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} -- ' . suffix
 
   let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors)
   let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths)

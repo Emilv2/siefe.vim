@@ -1,0 +1,19 @@
+#!/bin/bash
+# workaround for git erroring on no argument with -S
+# drops the first argument if it's -S|-G, not if it's -S|G'my search'
+# so git log/show doesn't complaint about switch `S' not having a value
+# also supports git -C log/show/.. -S ...
+
+if [[ "$2" == "-S" ]] || [[ "$2" == "-S" ]]; then
+  args1=( "${1}" )
+  args2=( "${@:3}" )
+elif [[ "$1" == "-C" ]] && { [[ "$4" == "-G" ]] || [[ "$4" == "-S" ]]; }; then
+  echo "booo"
+  args1=( "${@:1:3}" )
+  args2=( "${@:5}" )
+else
+  args1=( "${1}" )
+  args2=( "${@:2}" )
+fi
+
+git "${args1[@]}" "${args2[@]}"
