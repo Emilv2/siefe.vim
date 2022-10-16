@@ -159,6 +159,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
 endfunction
 
 function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen, lines)
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
 
   " query can contain newlines, we have to reconstruct it
   let tmp = split(a:lines[-1], "\n", 1)[0:-2]
@@ -421,6 +425,11 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
 endfunction
 
 function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, lines)
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
   let query = a:lines[0]
   let key = a:lines[1]
   " split(v:val, " ")[0]) == commit hash
