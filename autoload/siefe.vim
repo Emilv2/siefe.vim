@@ -58,7 +58,7 @@ let s:rg_preview_keys = [
   \ g:siefe_rg_fast_preview_key,
 \ ]
 
-let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'batcat' : ''
+let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
 let s:fd_command = executable('fdfind') ? 'fdfind' : executable('fd') ? 'fd' : ''
 let s:files_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
 let s:rg_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
