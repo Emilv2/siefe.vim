@@ -4,7 +4,7 @@
 # so git log/show doesn't complaint about switch `S' not having a value
 # also supports git -C log/show/.. -S ...
 
-if [[ "$2" == "-S" ]] || [[ "$2" == "-S" ]]; then
+if [[ "$2" == "-G" ]] || [[ "$2" == "-S" ]]; then
   args1=( "${1}" )
   args2=( "${@:3}" )
 elif [[ "$1" == "-C" ]] && { [[ "$4" == "-G" ]] || [[ "$4" == "-S" ]]; }; then
