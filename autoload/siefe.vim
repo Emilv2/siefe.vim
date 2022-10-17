@@ -48,7 +48,7 @@ endfunction
 
 """ load configuration options
 let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-markers') . ' ' . get(g:, 'siefe_delta_extra_options', '')
-let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes --theme="Solarized (dark)"') . ' ' . get(g:, 'siefe_bat_extra_options', '')
+let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes') . ' ' . get(g:, 'siefe_bat_extra_options', '')
 
 let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
 let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
