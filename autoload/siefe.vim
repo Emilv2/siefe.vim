@@ -684,7 +684,11 @@ endfunction
 
 function! s:prettify_help(key, text)
   let char = split(a:key, '-')[-1]
-  return s:magenta(toupper(a:key), 'Special') . " " . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", "")
+  if char == a:text[0]
+    return s:magenta(toupper(a:key), 'Special') . " " . a:text
+  else
+    return s:magenta(toupper(a:key), 'Special') . " " . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", "")
+  endif
 endfunction
 
 function! s:preview_help(preview_keys)
