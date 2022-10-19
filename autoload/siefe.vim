@@ -338,7 +338,7 @@ function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, w
 endfunction
 
 function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines)
-  if a:lines[0] == g:siefe_type_abort_key
+  if a:lines[0] == g:siefe_abort_key
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, "", a:fullscreen)
   else
     let type = join(map(a:lines[1:], '"-t" . split(v:val, ":")[0]'))
