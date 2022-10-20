@@ -661,11 +661,9 @@ function! s:ansi(str, group, default, ...) abort
   return printf("\x1b[%s%sm%s\x1b[m", color, a:0 ? ';1' : '', a:str)
 endfunction
 
-for s:color_name in keys(s:ansi)
-  execute 'function! s:' . s:color_name . "(str, ...)\n"
-        \ . '  return s:ansi(a:str, get(a:, 1, ""), "' . s:color_name . "')\n"
-        \ . 'endfunction'
-endfor
+function! s:magenta(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'magenta')
+endfunction
 
 function! s:fill_quickfix(list, ...) abort
   if len(a:list) > 1
