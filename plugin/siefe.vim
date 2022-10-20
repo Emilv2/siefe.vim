@@ -2,7 +2,7 @@
 " Description:  Plugin for meticulous searching in your git repository and history
 " Maintainer:   Emil vanherp <emil@vanherp.me>
 
-if exists("g:loaded_siefe")
+if exists('g:loaded_siefe')
     finish
 endif
 let g:loaded_siefe = 1

@@ -1,3 +1,5 @@
+scriptencoding utf-8
+
 let s:min_version = '0.33.0'
 let s:is_win = has('win32') || has('win64')
 let s:is_wsl_bash = s:is_win && (exepath('bash') =~? 'Windows[/\\]system32[/\\]bash.exe$')
@@ -26,19 +28,19 @@ let s:field_match_separator = v:shell_error ? '' : '--field-match-separator="\x1
 
 let s:checked = 0
 
-function! s:check_requirements()
+function! s:check_requirements() abort
   if s:checked
     return
   endif
 
   if !exists('*fzf#run')
-    throw "fzf#run function not found. You also need Vim plugin from the main fzf repository (i.e. junegunn/fzf *and* junegunn/fzf.vim)"
+    throw 'fzf#run function not found. You also need Vim plugin from the main fzf repository (i.e. junegunn/fzf *and* junegunn/fzf.vim)'
   endif
   if !exists('*fzf#exec')
-    throw "fzf#exec function not found. You need to upgrade Vim plugin from the main fzf repository ('junegunn/fzf')"
+    throw 'fzf#exec function not found. You need to upgrade Vim plugin from the main fzf repository ("junegunn/fzf")'
   endif
   let gitlog_dups = s:detect_dups(s:gitlog_preview_keys)
-  if gitlog_dups !=# ""
+  if gitlog_dups !=# '' 
     throw 'duplicates found in `siefe_gitlog_*_key`s :'. gitlog_dups
   endif
 
@@ -60,8 +62,8 @@ let s:rg_preview_keys = [
 
 let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
 let s:fd_command = executable('fdfind') ? 'fdfind' : executable('fd') ? 'fd' : ''
-let s:files_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
-let s:rg_preview_command = s:bat_command != "" ? s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
+let s:files_preview_command = s:bat_command !=# '' ? s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- {}' : 'cat {}'
+let s:rg_preview_command = s:bat_command !=# '' ? s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- {1}' : 'cat {1}'
 let s:rg_fast_preview_command = 'cat {1}'
 
 let s:rg_preview_commands = [
@@ -102,24 +104,24 @@ let s:gitlog_preview_keys = [
 let g:siefe_abort_key = get(g:, 'siefe_abort_key', 'esc')
 
 """ ripgrep function, commands and maps
-function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen)
+function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen) abort
   call s:check_requirements()
 
   if empty(a:dir)
     return
   endif
-  let word = a:word ? "-w " : ""
-  let word_toggle = a:word ? "off" : "on"
-  let hidden = a:hidden ? "-. " : ""
-  let hidden_option = a:hidden ? "--hidden " : ""
-  let hidden_toggle = a:hidden ? "off" : "on"
-  let case_sensitive = a:case_sensitive ? "--case-sensitive " : "--smart-case "
-  let case_symbol = a:case_sensitive ? "-s " : ""
-  let case_toggle = a:case_sensitive ? "off" : "on"
-  let no_ignore = a:no_ignore ? "-u " : ""
-  let no_ignore_toggle = a:no_ignore ? "off" : "on"
-  let fixed_strings = a:fixed_strings ? "-F " : ""
-  let fixed_strings_toggle = a:fixed_strings ? "off" : "on"
+  let word = a:word ? '-w ' : ''
+  let word_toggle = a:word ? 'off' : 'on'
+  let hidden = a:hidden ? '-. ' : ''
+  let hidden_option = a:hidden ? '--hidden ' : ''
+  let hidden_toggle = a:hidden ? 'off' : 'on'
+  let case_sensitive = a:case_sensitive ? '--case-sensitive ' : '--smart-case '
+  let case_symbol = a:case_sensitive ? '-s ' : ''
+  let case_toggle = a:case_sensitive ? 'off' : 'on'
+  let no_ignore = a:no_ignore ? '-u ' : ''
+  let no_ignore_toggle = a:no_ignore ? 'off' : 'on'
+  let fixed_strings = a:fixed_strings ? '-F ' : ''
+  let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
   let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" '
     \ . case_sensitive . ' ' . s:field_match_separator . ' ' 
@@ -133,7 +135,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   " https://github.com/junegunn/fzf/blob/master/ADVANCED.md#toggling-between-data-sources
   let spec = {
     \ 'options': [
-      \ '--history', expand("~/.vim_fzf_history"),
+      \ '--history', expand('~/.vim_fzf_history'),
       \ '--preview', s:rg_preview_commands[g:siefe_rg_default_preview_command],
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
@@ -155,10 +157,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.a:type . ' ' . a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.s:files_preview_command.')',
-      \ '--header', s:magenta('^-R', 'Special')." Rg ╱ ".s:magenta('^-F', 'Special')." fzf ╱ ".s:magenta('M-R', 'Special')." rg/fzf ╱ ".s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
-      \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special')." !Type / ".s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
-      \ .s:magenta('^-W', 'Special')." -w ".word_toggle.' / '.s:magenta('^-U', 'Special')." -u ".no_ignore_toggle.
-      \ " / ".s:magenta('M-.', 'Special')." -. ".hidden_toggle." / ".s:magenta('^-S', 'Special')." / -s ".case_toggle." / ".s:magenta('^-F', 'Special')." / -F ".fixed_strings_toggle
+      \ '--header', s:magenta('^-R', 'Special').' Rg ╱ '.s:magenta('^-F', 'Special').' fzf ╱ '.s:magenta('M-R', 'Special').' rg/fzf ╱ '.s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
+      \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special').' !Type / '.s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
+      \ .s:magenta('^-W', 'Special').' -w '.word_toggle.' / '.s:magenta('^-U', 'Special').' -u '.no_ignore_toggle.
+      \ ' / ' . s:magenta('M-.', 'Special').' -. '.hidden_toggle.' / '.s:magenta('^-S', 'Special').' / -s '.case_toggle.' / '.s:magenta('^-F', 'Special').' / -F '.fixed_strings_toggle
       \ . ' / ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
       \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> ',
       \ ],
@@ -169,7 +171,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen, lines)
+function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen, lines) abort
   " required when using fullscreen and abort, not sure why
   if len(a:lines) == 0
     return
@@ -218,7 +220,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   endfor
 
 
-  if key == ''
+  if key ==# ''
     execute 'e' file.filename
     call cursor(file.line, file.column)
     normal! zvzz
@@ -230,35 +232,35 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   " when nested it will not cd back to the original directory
   exe 'cd' a:orig_dir
 
-  if key == 'ctrl-t'
+  if key ==# 'ctrl-t'
     call FzfTypeSelect('RipgrepFzfType', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir)
-  elseif key == 'ctrl-n'
+  elseif key ==# 'ctrl-n'
     call FzfTypeSelect('RipgrepFzfTypeNot', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir)
-  elseif key == 'ctrl-w'
+  elseif key ==# 'ctrl-w'
     let word = a:word ? 0 : 1
-    call siefe#ripgrepfzf(query, ".", a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'ctrl-s'
+    call siefe#ripgrepfzf(query, '.', a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
+  elseif key ==# 'ctrl-s'
     let case = a:case ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'alt-.'
+  elseif key ==# 'alt-.'
     let hidden = a:hidden ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'ctrl-u'
+  elseif key ==# 'ctrl-u'
     let no_ignore = a:no_ignore ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'alt-f'
+  elseif key ==# 'alt-f'
     let fixed_strings = a:fixed_strings ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'ctrl-d'
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, "d", 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type)
-  elseif key == 'ctrl-y'
+  elseif key ==# 'ctrl-d'
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type)
+  elseif key ==# 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
   return
   endif
 endfunction
 
 " Lots of functions to use fzf to also select ie rg types
-function! FzfTypeSelect(func, fullscreen, ...)
+function! FzfTypeSelect(func, fullscreen, ...) abort
   call fzf#run(fzf#wrap({
         \ 'source': 'rg --color=always --type-list',
         \ 'options': [
@@ -274,12 +276,12 @@ function! FzfTypeSelect(func, fullscreen, ...)
 endfunction
 
 
-function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, dir, ...)
-  let fd_hidden = a:fd_hidden ? "-H " : ""
-  let fd_hidden_toggle = a:fd_hidden ? "off" : "on"
-  let fd_no_ignore = a:fd_no_ignore ? "-u " : ""
-  let fd_no_ignore_toggle = a:fd_no_ignore ? "off" : "on"
-  let fd_type = a:fd_type != "" ? " --type " . a:fd_type : ""
+function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, dir, ...) abort
+  let fd_hidden = a:fd_hidden ? '-H ' : ''
+  let fd_hidden_toggle = a:fd_hidden ? 'off' : 'on'
+  let fd_no_ignore = a:fd_no_ignore ? '-u ' : ''
+  let fd_no_ignore_toggle = a:fd_no_ignore ? 'off' : 'on'
+  let fd_type = a:fd_type !=# '' ? ' --type ' . a:fd_type : ''
   let options = [
     \ '--print-query',
     \ '--ansi',
@@ -289,7 +291,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
     \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
     \ '--expect=ctrl-h,ctrl-u,alt-p,ctrl-alt-p,'
     \ . g:siefe_abort_key,
-    \ '--header', s:magenta('^-H', 'Special')." hidden ".fd_hidden_toggle." ╱ ".s:magenta('^-U', 'Special')." ignored ".fd_no_ignore_toggle
+    \ '--header', s:magenta('^-H', 'Special').' hidden '.fd_hidden_toggle.' ╱ '.s:magenta('^-U', 'Special').' ignored '.fd_no_ignore_toggle
       \ . ' ╱ ' .s:magenta('M-P', 'Special').' √git / '.s:magenta('^-M-P', 'Special').' √work / '
       \ . '  ' . s:prettify_help(g:siefe_abort_key, 'abort')
     \ ]
@@ -306,24 +308,24 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
       \ }, a:fullscreen))
 endfunction
 
-function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, fullscreen, lines)
+function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, fullscreen, lines) abort
 
   let fd_query = a:lines[0]
   let key = a:lines[1]
   let new_dir = a:lines[2]
 
 
-  if key == g:siefe_abort_key
+  if key ==# g:siefe_abort_key
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'ctrl-h'
+  elseif key ==# 'ctrl-h'
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', fd_hidden, a:fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
-  elseif key == 'ctrl-u'
+    call FzfDirSelect('RipgrepFzfDir', fd_hidden, a:fd_no_ignore, 'd', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
+  elseif key ==# 'ctrl-u'
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, "d", a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
-  elseif key == 'alt-p'
+    call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, 'd', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
+  elseif key ==# 'alt-p'
     call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key == 'ctrl-alt-p'
+  elseif key ==# 'ctrl-alt-p'
     let workarea = '$WORKAREA'
     if expand(workarea) != workarea
       call siefe#ripgrepfzf(a:query, expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
@@ -337,18 +339,18 @@ function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, w
   endif
 endfunction
 
-function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines)
-  if a:lines[0] == g:siefe_abort_key
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, "", a:fullscreen)
+function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines) abort
+  if a:lines[0] ==# g:siefe_abort_key
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, '', a:fullscreen)
   else
     let type = join(map(a:lines[1:], '"-t" . split(v:val, ":")[0]'))
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
   endif
 endfunction
 
-function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines)
-  if a:lines[0] == g:siefe_abort_key
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, "", a:fullscreen)
+function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, fullscreen, lines) abort
+  if a:lines[0] ==# g:siefe_abort_key
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, '', a:fullscreen)
   else
     let type = join(map(a:lines[1:], '"-T" . split(v:val, ":")[0]'))
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:fullscreen)
@@ -356,7 +358,7 @@ function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, f
 endfunction
 
 """ ripgrep function, commands and maps
-function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen)
+function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen) abort
   call s:check_requirements()
 
   let branches = join(map(a:branches, 'trim(v:val, " *")'))
@@ -364,13 +366,13 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'))
   let paths = join(a:paths)
   let query_file = tempname()
-  let G = a:G ? "-G" : "-S"
-  let follow = paths == "" ? "" : a:follow ? "--follow" : ""
+  let G = a:G ? '-G' : '-S'
+  let follow = paths ==# '' ? '' : a:follow ? '--follow' : ''
   " --pickaxe-regex and -G are incompatible
-  let regex = a:G ? "" : a:regex ? "--pickaxe-regex " : ""
-  let ignore_case = a:ignore_case ? "--regexp-ignore-case " : ""
-  let ignore_case_toggle = a:ignore_case ? "off" : "on"
-  let ignore_case_symbol = a:ignore_case ? "-i " : ""
+  let regex = a:G ? '' : a:regex ? '--pickaxe-regex ' : ''
+  let ignore_case = a:ignore_case ? '--regexp-ignore-case ' : ''
+  let ignore_case_toggle = a:ignore_case ? 'off' : 'on'
+  let ignore_case_symbol = a:ignore_case ? '-i ' : ''
   " git log -S/G doesn't work with empty value, so we strip it if the query is
   " empty. Not sure why we need to escape [ and ]
   let command_fmt = s:bin.git_SG . ' log '. G . '%s -z ' . follow . ' ' . branches . ' ' . notbranches . ' ' . authors . ' ' . regex . ' ' . ignore_case
@@ -398,13 +400,13 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
   let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} -- ' . suffix
 
-  let authors_info = a:authors == [] ? '' : "\nauthors: ".join(a:authors)
-  let paths_info = a:paths == [] ? '' : "\npaths: ".join(a:paths)
-  let type_info = a:type == '' ? '' : "\ntypes: " . a:type
+  let authors_info = a:authors ==# [] ? '' : "\nauthors: ".join(a:authors)
+  let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
+  let type_info = a:type ==# '' ? '' : "\ntypes: " . a:type
 
   let spec = {
     \ 'options': [
-      \ '--history', expand("~/.vim_fzf_history"),
+      \ '--history', expand('~/.vim_fzf_history'),
       \ '--preview', preview_command_1,
       \ '--bind', g:siefe_gitlog_preview_1_key . ':change-preview:'.preview_command_1,
       \ '--bind', g:siefe_gitlog_preview_2_key . ':change-preview:'.preview_command_2,
@@ -438,7 +440,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_branch_key, 'branches')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_sg_key, 'toggle S/G')
         \ . "\n" . s:prettify_help(g:siefe_gitlog_not_branch_key, '^branches')
-        \ . ' ╱ ' . s:prettify_help(s:siefe_gitlog_ignore_case_key, "ignore case")
+        \ . ' ╱ ' . s:prettify_help(s:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ '. s:prettify_help(g:siefe_gitlog_type_key, 'type')
         \ . ' ╱ '. s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . authors_info 
@@ -452,7 +454,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, lines)
+function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, lines) abort
   " required when using fullscreen and abort, not sure why
   if len(a:lines) == 0
     return
@@ -481,7 +483,7 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   elseif key == g:siefe_gitlog_author_key
     call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_dir_key
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, "", 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, '', 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_type_key
     " git understands rg --type-list globs :)
     call FzfTypeSelect('GitlogFzfType', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
@@ -499,12 +501,12 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   endif
 endfunction
 
-function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, lines)
+function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, lines) abort
   let type = substitute(join(map(a:lines[1:], 'split(v:val, ":")[1]'), ' '), ',', '', 'g')
   call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:fullscreen)
 endfunction
 
-function! FzfBranchSelect(func, fullscreen, ...)
+function! FzfBranchSelect(func, fullscreen, ...) abort
   let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
@@ -532,7 +534,7 @@ function! FzfBranchSelect(func, fullscreen, ...)
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! FzfAuthorSelect(func, fullscreen, ...)
+function! FzfAuthorSelect(func, fullscreen, ...) abort
   let spec = {
     \ 'source':  "git log --format='%aN <%aE>' | awk '!x[$0]++'",
     \ 'sink*':   function(a:func, a:000 + [a:fullscreen]),
@@ -549,7 +551,7 @@ function! FzfAuthorSelect(func, fullscreen, ...)
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! GitPickaxeFzfAuthor(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...)
+function! GitPickaxeFzfAuthor(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
@@ -557,7 +559,7 @@ function! GitPickaxeFzfAuthor(query, branches, notbranches, authors, G, regex, p
   endif
 endfunction
 
-function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...)
+function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
@@ -566,7 +568,7 @@ function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, p
   endif
 endfunction
 
-function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...)
+function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
@@ -575,59 +577,59 @@ function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex
   endif
 endfunction
 
-function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...)
+function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   let paths = a:000[0][2:]
   call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:fullscreen)
 endfunction
 
-function! siefe#gitllogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, line_range, fullscreen)
+function! siefe#gitllogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, line_range, fullscreen) abort
   " git -L is a bit crippled and ignores --format, so we have to make our own with sed
   let command = 'git log  -s -z -L' . line_range[0] . ',' . line_range[1] . ':' . a:path . ' --abbrev-commit -- '
-    \ '| sed -E -z "s/commit ([0-9a-f]*)([^\n]*)*.*\n\n/\1\2 •/" '
-    \ '| sed -E -z "s/ {2,}/ /g"'
-    \ '| sed -z -E "s/\r?\n/↵/g"'
+    \ . '| sed -E -z "s/commit ([0-9a-f]*)([^\n]*)*.*\n\n/\1\2 •/" '
+    \ . '| sed -E -z "s/ {2,}/ /g"'
+    \ . '| sed -z -E "s/\r?\n/↵/g"'
 endfunction
 
 """ helper functions
-function! s:warn(message)
+function! s:warn(message) abort
   echohl WarningMsg
   echom a:message
   echohl None
   return 0
 endfunction
 
-function!  siefe#bufdir()
+function!  siefe#bufdir() abort
   return substitute(split(expand('%:p:h'), '[/\\]\.git\([/\\]\|$\)')[0], '^fugitive://', '', '')
 endfunction
 
-function! siefe#get_git_root()
+function! siefe#get_git_root() abort
   let bufdir = siefe#bufdir()
   let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
   return v:shell_error ? s:warn('Not in a git repository') : root
 endfunction
 
-function! siefe#get_git_basename_or_bufdir()
+function! siefe#get_git_basename_or_bufdir() abort
   let bufdir = siefe#bufdir()
   let basename = '#'.systemlist('basename `git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel`')[0]
   return v:shell_error ? bufdir : basename
 endfunction
 
-function! siefe#get_relative_git_or_bufdir(...)
+function! siefe#get_relative_git_or_bufdir(...) abort
   let bufdir = siefe#bufdir()
   if a:0 == 0
-    let dir = get(a:, 1, "")
+    let dir = get(a:, 1, '')
     let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
     return v:shell_error ? bufdir : '#'.split(system('basename `git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel`'), '\n')[0].'/'.rel_dir
   else
-    let dir = get(a:, 1, "")
+    let dir = get(a:, 1, '')
     let git_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel'))
     let rel_to_dir = v:shell_error ? bufdir : git_dir
-    let prefix = v:shell_error ? "" : siefe#get_git_basename_or_bufdir()."/"
+    let prefix = v:shell_error ? '' : siefe#get_git_basename_or_bufdir().'/'
     return prefix.trim(system('realpath --relative-to='.rel_to_dir.' '.dir))
   endif
 endfunction
 
-function! s:get_color(attr, ...)
+function! s:get_color(attr, ...) abort
   let gui = has('termguicolors') && &termguicolors
   let fam = gui ? 'gui' : 'cterm'
   let pat = gui ? '^#[a-f0-9]\+' : '^[0-9]\+$'
@@ -643,15 +645,15 @@ endfunction
 
 let s:ansi = {'black': 30, 'red': 31, 'green': 32, 'yellow': 33, 'blue': 34, 'magenta': 35, 'cyan': 36}
 
-function! s:csi(color, fg)
+function! s:csi(color, fg) abort
   let prefix = a:fg ? '38;' : '48;'
-  if a:color[0] == '#'
+  if a:color[0] ==# '#'
     return prefix.'2;'.join(map([a:color[1:2], a:color[3:4], a:color[5:6]], 'str2nr(v:val, 16)'), ';')
   endif
   return prefix.'5;'.a:color
 endfunction
 
-function! s:ansi(str, group, default, ...)
+function! s:ansi(str, group, default, ...) abort
   let fg = s:get_color('fg', a:group)
   let bg = s:get_color('bg', a:group)
   let color = (empty(fg) ? s:ansi[a:default] : s:csi(fg, 1)) .
@@ -660,12 +662,12 @@ function! s:ansi(str, group, default, ...)
 endfunction
 
 for s:color_name in keys(s:ansi)
-  execute "function! s:".s:color_name."(str, ...)\n"
-        \ "  return s:ansi(a:str, get(a:, 1, ''), '".s:color_name."')\n"
-        \ "endfunction"
+  execute 'function! s:' . s:color_name . "(str, ...)\n"
+        \ . '  return s:ansi(a:str, get(a:, 1, ""), "' . s:color_name . "')\n"
+        \ . 'endfunction'
 endfor
 
-function! s:fill_quickfix(list, ...)
+function! s:fill_quickfix(list, ...) abort
   if len(a:list) > 1
     call setqflist(a:list)
     copen
@@ -676,27 +678,27 @@ function! s:fill_quickfix(list, ...)
   endif
 endfunction
 
-function! s:yank_to_register(data)
+function! s:yank_to_register(data) abort
   let @" = a:data
   silent! let @* = a:data
   silent! let @+ = a:data
 endfunction
 
-function! s:prettify_help(key, text)
+function! s:prettify_help(key, text) abort
   let char = split(a:key, '-')[-1]
   if char == a:text[0]
-    return s:magenta(toupper(a:key), 'Special') . " " . a:text
+    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text
   else
-    return s:magenta(toupper(a:key), 'Special') . " " . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", "")
+    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", '')
   endif
 endfunction
 
-function! s:preview_help(preview_keys)
+function! s:preview_help(preview_keys) abort
   let f_keys = filter(copy(a:preview_keys), 'v:val[0] ==? "f"')
   let non_f_keys = filter(copy(a:preview_keys), 'v:val[0] !=? "f"')
   let f_ints = sort(map(f_keys, 'str2nr(v:val[1:])'), 'n')
   let last_val = f_ints[0]
-  let result = ""
+  let result = ''
   let val_start = f_ints[0]
   for val in f_ints[1:]
     if val != last_val + 1
@@ -713,9 +715,9 @@ function! s:preview_help(preview_keys)
   return result . join(map(non_f_keys, '", " . v:val'), '')
 endfunction
 
-function! s:detect_dups(lst)
+function! s:detect_dups(lst) abort
   let dict = {}
-  let dups = ""
+  let dups = ''
   for item in a:lst
     if has_key(dict, item)
       let dups .= ' ' . item
@@ -726,10 +728,10 @@ function! s:detect_dups(lst)
 endfunction
 
 " https://stackoverflow.com/a/47051271
-function! siefe#visual_selection()
-    if mode()=="v"
-        let [line_start, column_start] = getpos("v")[1:2]
-        let [line_end, column_end] = getpos(".")[1:2]
+function! siefe#visual_selection() abort
+    if mode() ==# 'v'
+        let [line_start, column_start] = getpos('v')[1:2]
+        let [line_end, column_end] = getpos('.')[1:2]
     else
         let [line_start, column_start] = getpos("'<")[1:2]
         let [line_end, column_end] = getpos("'>")[1:2]
@@ -747,8 +749,8 @@ function! siefe#visual_selection()
     return join(lines, "\n")
 endfunction
 
-function! siefe#visual_line_nu()
-    if mode()=='v'
+function! siefe#visual_line_nu() abort
+    if mode() ==# 'v'
         let line_start = getpos('v')[1]
         let line_end = getpos('.')[1]
     else
