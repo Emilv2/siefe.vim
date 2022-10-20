@@ -40,7 +40,7 @@ function! s:check_requirements() abort
     throw 'fzf#exec function not found. You need to upgrade Vim plugin from the main fzf repository ("junegunn/fzf")'
   endif
   let gitlog_dups = s:detect_dups(s:gitlog_preview_keys)
-  if gitlog_dups !=# '' 
+  if gitlog_dups !=# ''
     throw 'duplicates found in `siefe_gitlog_*_key`s :'. gitlog_dups
   endif
 
@@ -124,7 +124,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
   let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" '
-    \ . case_sensitive . ' ' . s:field_match_separator . ' ' 
+    \ . case_sensitive . ' ' . s:field_match_separator . ' '
     \ . word . no_ignore . hidden_option . fixed_strings . ' ' . a:type . ' %s -- %s'
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
@@ -434,7 +434,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(hidden|right,90%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', g:siefe_gitlog_fzf_key . ':unbind(change,' . g:siefe_gitlog_fzf_key . ')+change-prompt(pickaxe/fzf> )+enable-search',
-      \ '--header', s:prettify_help(s:siefe_gitlog_ignore_case_key, 'ignore case') 
+      \ '--header', s:prettify_help(s:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_fzf_key,  'fzf messages')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_author_key, 'authors')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_branch_key, 'branches')
@@ -443,7 +443,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ╱ ' . s:prettify_help(s:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ '. s:prettify_help(g:siefe_gitlog_type_key, 'type')
         \ . ' ╱ '. s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
-        \ . authors_info 
+        \ . authors_info
         \ . paths_info
         \ . type_info,
       \ '--prompt', regex.branches.' '.notbranches.' '.G.regex.' ' . ignore_case_symbol . ' pickaxe> ',
