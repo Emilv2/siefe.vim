@@ -414,6 +414,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', g:siefe_gitlog_preview_4_key . ':change-preview:'.preview_command_4,
       \ '--bind', g:siefe_gitlog_preview_5_key . ':change-preview:'.preview_command_5,
       \ '--print-query',
+      \ '--layout=reverse-list',
       \ '--ansi',
       \ '--phony',
       \ '--read0',
