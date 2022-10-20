@@ -21,7 +21,7 @@ if s:is_win
   endif
 endif
 
-
+""" ripgrep < 13 does not support setting the match separator
 let _ = system('rg --help | grep -- "--field-match-separator"')
 let s:delimiter = v:shell_error ? ':' : '//'
 let s:field_match_separator = v:shell_error ? '' : '--field-match-separator="\x1b[9;31;31m//\x1b[0m"'
@@ -103,7 +103,6 @@ let s:gitlog_preview_keys = [
 
 let g:siefe_abort_key = get(g:, 'siefe_abort_key', 'esc')
 
-""" ripgrep function, commands and maps
 function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen) abort
   call s:check_requirements()
 
@@ -299,8 +298,6 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
     let options += ['--multi']
   endif
 
-  " fd does not print ., but we might want to select that
-         " \ 'source': 'fd --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path | ( realpath --relative-to=$PWD '.a:orig_dir.' && cat)',
   call fzf#run(fzf#wrap({
           \ 'source': s:fd_command . ' --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
         \ 'options': options,
@@ -357,7 +354,6 @@ function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, f
   endif
 endfunction
 
-""" ripgrep function, commands and maps
 function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen) abort
   call s:check_requirements()
 
