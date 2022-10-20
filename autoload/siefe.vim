@@ -582,9 +582,9 @@ function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branc
   call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:fullscreen)
 endfunction
 
-function! siefe#gitllogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, line_range, fullscreen) abort
+function! siefe#gitllogfzf(query, branches, notbranches, authors, G, regex, path, follow, ignore_case, line_range, fullscreen) abort
   " git -L is a bit crippled and ignores --format, so we have to make our own with sed
-  let command = 'git log  -s -z -L' . line_range[0] . ',' . line_range[1] . ':' . a:path . ' --abbrev-commit -- '
+  let command = 'git log  -s -z -L' . a:line_range[0] . ',' . a:line_range[1] . ':' . a:path . ' --abbrev-commit -- '
     \ . '| sed -E -z "s/commit ([0-9a-f]*)([^\n]*)*.*\n\n/\1\2 •/" '
     \ . '| sed -E -z "s/ {2,}/ /g"'
     \ . '| sed -z -E "s/\r?\n/↵/g"'
