@@ -7,7 +7,12 @@
 
 set -Eeuo pipefail
 
+# shellcheck disable=SC2154
 trap 'rc=$?; echo "${0}: ERR trap at line ${LINENO} (return code: $rc)"; exit $rc' ERR
+
+if [  -n "${PICKAXEDIFF_TRACE+x}" ]; then
+  set -x
+fi
 
 path=$1
 old_file=$2
@@ -22,7 +27,7 @@ if { grepdiff -h 2>&1 || : ; } | \grep -q -e '--only-match'; then
   only_match_flag="--only-match=mod"
 fi
 
-diff_output=$(git diff --no-color --no-ext-diff -p  $old_file $new_file || :)
+diff_output=$(git diff --no-color --no-ext-diff -p  "$old_file" "$new_file" || :)
 
 filtered_diff=$( echo "$diff_output" | \
                 grepdiff "$GREPDIFF_REGEX" --output-matching=hunk ${only_match_flag} | \
@@ -30,11 +35,31 @@ filtered_diff=$( echo "$diff_output" | \
                 \grep -v -e '^--- /dev/null' -e '^+++ /dev/null' | \
                 \grep -v -e '^diff --git' -e '^index ')
 
-a_path="a/$path"
-b_path="b/$path"
+old_path="a/$path"
+old_path="b/$path"
 
-echo "diff --git $a_path $b_path"
-echo "index $old_hex..$new_hex $old_mode"
-echo "--- $a_path"
-echo "+++ $b_path"
+# Detect new or removed files
+NULL='/dev/null'
+ZERO_OID="0000000"
+same_mode="$old_mode"
+if [ "$old_file" == "$NULL" ]; then
+   old_path="$NULL"
+   old_hex="$ZERO_OID"
+   same_mode=''
+   echo "new file mode $new_mode"
+elif [ "$new_file" == "$NULL" ]; then
+   new_path="$NULL"
+   new_hex="$ZERO_OID"
+   same_mode=''
+   echo "deleted file mode $old_mode"
+elif [ "$old_mode" != "$new_mode" ]; then
+  echo "old mode $old_mode"
+  echo "new mode $new_mode"
+  same_mode=''
+fi
+
+echo "diff --git $old_path $old_path"
+echo "index $old_hex..$new_hex $same_mode"
+echo "--- $old_path"
+echo "+++ $new_path"
 echo "$filtered_diff"
