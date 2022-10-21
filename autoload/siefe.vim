@@ -104,18 +104,20 @@ let g:siefe_gitlog_sg_key = get(g:, 'siefe_gitlog_sg_key', 'ctrl-e')
 let g:siefe_gitlog_fzf_key = get(g:, 'siefe_gitlog_fzf_key', 'ctrl-f')
 let g:siefe_gitlog_dir_key = get(g:, 'siefe_gitlog_dir_key', 'ctrl-d')
 
-let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f1')
-let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f2')
-let g:siefe_gitlog_preview_3_key = get(g:, 'siefe_gitlog_preview_3_key', 'f3')
-let g:siefe_gitlog_preview_4_key = get(g:, 'siefe_gitlog_preview_4_key', 'f4')
-let g:siefe_gitlog_preview_5_key = get(g:, 'siefe_gitlog_preview_5_key', 'f5')
+let g:siefe_gitlog_preview_0_key = get(g:, 'siefe_gitlog_preview_0_key', 'f1')
+let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f2')
+let g:siefe_gitlog_preview_2_key = get(g:, 'siefe_gitlog_preview_2_key', 'f3')
+let g:siefe_gitlog_preview_3_key = get(g:, 'siefe_gitlog_preview_3_key', 'f4')
+let g:siefe_gitlog_preview_4_key = get(g:, 'siefe_gitlog_preview_4_key', 'f5')
+
+let g:siefe_gitlog_default_preview_command = get(g:, 'siefe_gitlog_default_preview_command', 0)
 
 let s:gitlog_preview_keys = [
+  \ g:siefe_gitlog_preview_0_key,
   \ g:siefe_gitlog_preview_1_key,
   \ g:siefe_gitlog_preview_2_key,
   \ g:siefe_gitlog_preview_3_key,
   \ g:siefe_gitlog_preview_4_key,
-  \ g:siefe_gitlog_preview_5_key,
 \ ]
 
 let s:gitlog_keys = [
@@ -424,16 +426,24 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
 
   let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show -O'.fzf#shellescape(orderfile).' {1} '
-  let preview_command_1 = preview_all_command . ' --patch --stat -- ' . suffix
-  let preview_command_2 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
+  let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
+  let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_command_3 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
+  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
 
   let preview_pickaxe_hunks_command = 'echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
-  let preview_command_4 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
-  let preview_command_5 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} -- ' . suffix
+  let preview_command_3 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . suffix : no_grepdiff_message
+  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' {1} -- ' . suffix
+
+  let preview_commands = [
+    \ preview_command_0,
+    \ preview_command_1,
+    \ preview_command_2,
+    \ preview_command_3,
+    \ preview_command_4,
+  \ ]
 
   let authors_info = a:authors ==# [] ? '' : "\nauthors: ".join(a:authors)
   let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
@@ -444,12 +454,12 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let spec = {
     \ 'options': [
       \ '--history', expand('~/.vim_fzf_history'),
-      \ '--preview', preview_command_1,
+      \ '--preview', preview_commands[ g:siefe_gitlog_default_preview_command ],
+      \ '--bind', g:siefe_gitlog_preview_0_key . ':change-preview:'.preview_command_0,
       \ '--bind', g:siefe_gitlog_preview_1_key . ':change-preview:'.preview_command_1,
       \ '--bind', g:siefe_gitlog_preview_2_key . ':change-preview:'.preview_command_2,
       \ '--bind', g:siefe_gitlog_preview_3_key . ':change-preview:'.preview_command_3,
       \ '--bind', g:siefe_gitlog_preview_4_key . ':change-preview:'.preview_command_4,
-      \ '--bind', g:siefe_gitlog_preview_5_key . ':change-preview:'.preview_command_5,
       \ '--print-query',
       \ '--layout=reverse-list',
       \ '--ansi',
