@@ -60,6 +60,10 @@ let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 
 let g:siefe_2nd_preview_size = str2nr(get(g:, 'siefe_2nd_preview_size', 80))
 
 
+let g:siefe_rg_fzf_key = get(g:, 'siefe_rg_fzf_key', 'ctrl-f')
+let g:siefe_rg_rg_key = get(g:, 'siefe_rg_rg_key', 'ctrl-r')
+let g:siefe_rg_rgfzf_key = get(g:, 'siefe_rg_rgfzf_key', 'alt-f')
+let g:siefe_rg_files_key = get(g:, 'siefe_rg_files_key', 'ctrl-l')
 let g:siefe_rg_type_key = get(g:, 'siefe_rg_type_key', 'ctrl-t')
 let g:siefe_rg_type_not_key = get(g:, 'siefe_rg_type_not_key', 'ctrl-^')
 let g:siefe_rg_word_key = get(g:, 'siefe_rg_word_key', 'ctrl-w')
@@ -194,10 +198,29 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
-      \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'alt-r:unbind(change,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' rg/fzf> )+enable-search+rebind(ctrl-r,ctrl-f,ctrl-l)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'ctrl-r:unbind(ctrl-r)+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> )+disable-search+reload('.reload_command.')+rebind(change,ctrl-f,ctrl-l,alt-r)+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', 'ctrl-l:unbind(change,ctrl-l)+change-prompt('.no_ignore.hidden.fixed_strings.a:type . ' ' . a:prompt.' Files> )+enable-search+rebind(ctrl-r,ctrl-f,alt-r)+reload('.files_command.')+change-preview('.s:files_preview_command.')',
+      \ '--bind', g:siefe_rg_fzf_key
+        \ . ':unbind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
+        \ . '+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' fzf> )'
+        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_files_key . ')'
+        \ . '+reload('.empty_command.')'
+        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind',  g:siefe_rg_rgfzf_key
+        \ . ':unbind(change,' . g:siefe_rg_rgfzf_key . ')'
+        \ . '+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' rg/fzf> )'
+        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ')'
+        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', g:siefe_rg_rg_key
+        \ . ':unbind(' . g:siefe_rg_rg_key . ')'
+        \ . '+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> )'
+        \ . '+disable-search+reload('.reload_command.')'
+        \ . '+rebind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
+        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
+      \ '--bind', g:siefe_rg_files_key
+        \ . ':unbind(change,' . g:siefe_rg_files_key . ')'
+        \ . '+change-prompt('.no_ignore.hidden.fixed_strings.a:type . ' ' . a:prompt.' Files> )'
+        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
+        \ . '+reload('.files_command.')'
+        \ . '+change-preview('.s:files_preview_command.')',
       \ '--header', s:magenta('^-R', 'Special').' Rg ╱ '.s:magenta('^-F', 'Special').' fzf ╱ '.s:magenta('M-R', 'Special').' rg/fzf ╱ '.s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
       \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special').' !Type / '.s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
       \ .s:magenta('^-W', 'Special').' -w '.word_toggle.' / '.s:magenta('^-U', 'Special').' -u '.no_ignore_toggle.
