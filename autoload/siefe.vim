@@ -55,6 +55,9 @@ let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes'
 let g:siefe_abort_key = get(g:, 'siefe_abort_key', 'esc')
 let g:siefe_history_next_key = get(g:, 'siefe_history_next_key', 'ctrl-n')
 let g:siefe_history_prev_key = get(g:, 'siefe_history_prev_key', 'ctrl-p')
+let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
+let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 50))
+let g:siefe_2nd_preview_size = str2nr(get(g:, 'siefe_2nd_preview_size', 80))
 
 
 let g:siefe_rg_type_key = get(g:, 'siefe_rg_type_key', 'ctrl-t')
@@ -154,6 +157,9 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let empty_command = printf(command_fmt, '', '""')
   let word_command = printf(command_fmt, '-w', '{q}')
   let files_command = 'rg --color=always --files '.a:type
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   " https://github.com/junegunn/fzf.vim
   " https://github.com/junegunn/fzf/blob/master/ADVANCED.md#toggling-between-data-sources
   let spec = {
@@ -176,13 +182,13 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . g:siefe_rg_fixed_strings_key . ','
         \ . g:siefe_rg_dir_key . ','
         \ . g:siefe_rg_yank_key . ',',
-      \ '--preview-window', '+{2}-/2',
+      \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
       \ '--query', a:query,
       \ '--delimiter', s:delimiter,
-      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(hidden|right,90%|)',
+      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
       \ '--bind', 'ctrl-f:unbind(change,ctrl-f,alt-r)+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' fzf> )+enable-search+rebind(ctrl-r,ctrl-l)+reload('.empty_command.')+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
@@ -433,6 +439,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
   let type_info = a:type ==# '' ? '' : "\ntypes: " . a:type
 
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   let spec = {
     \ 'options': [
       \ '--history', expand('~/.vim_fzf_history'),
@@ -461,7 +469,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind','shift-tab:toggle+down',
       \ '--query', a:query,
       \ '--delimiter', '•',
-      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(hidden|right,90%|)',
+      \ '--preview-window', default_preview_size,
+      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', g:siefe_gitlog_fzf_key . ':unbind(change,' . g:siefe_gitlog_fzf_key . ')+change-prompt(pickaxe/fzf> )+enable-search',
       \ '--header', s:prettify_help(g:siefe_gitlog_ignore_case_key, 'ignore case')
