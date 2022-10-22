@@ -221,11 +221,18 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
-      \ '--header', s:magenta('^-R', 'Special').' Rg ╱ '.s:magenta('^-F', 'Special').' fzf ╱ '.s:magenta('M-R', 'Special').' rg/fzf ╱ '.s:magenta('^-F', 'Special')." Fi\e[3ml\e[0mes / "
-      \ .s:magenta('^-T', 'Special').' Type / '.s:magenta('^-N', 'Special').' !Type / '.s:magenta('^-D', 'Special')." c\e[3md\e[0m / ".s:magenta('^-Y', 'Special')." yank\n"
-      \ .s:magenta('^-W', 'Special').' -w '.word_toggle.' / '.s:magenta('^-U', 'Special').' -u '.no_ignore_toggle.
-      \ ' / ' . s:magenta('M-.', 'Special').' -. '.hidden_toggle.' / '.s:magenta('^-S', 'Special').' / -s '.case_toggle.' / '.s:magenta('^-F', 'Special').' / -F '.fixed_strings_toggle
-      \ . ' / ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
+      \ '--header', s:prettify_help(g:siefe_rg_rg_key, 'Rg')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fzf_key,  'fzf')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_rgfzf_key, 'rg/fzf')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_files_key, 'Files')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_key, 'Type')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_not_key, '!Type')
+        \ . "\n" . s:prettify_help(g:siefe_rg_dir_key, 'cd')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_word_key, 'word:' . word_toggle)
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_no_ignore_key, 'no ignore:' . no_ignore_toggle)
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
       \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> ',
       \ ],
    \ 'dir': a:dir,
