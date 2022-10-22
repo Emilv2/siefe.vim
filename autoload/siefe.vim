@@ -137,6 +137,13 @@ let s:gitlog_keys = [
 \ ] + s:gitlog_preview_keys
 
 
+let g:siefe_fd_hidden_key = get(g:, 'siefe_fd_hidden_key', 'ctrl-h')
+let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-i')
+let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
+let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-p')
+
+let g:siefe_fd_project_root_env = get(g:, 'siefe_fd_git_root_env', '')
+
 function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen) abort
   call s:check_requirements()
 
@@ -353,6 +360,10 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
   let fd_no_ignore = a:fd_no_ignore ? '-u ' : ''
   let fd_no_ignore_toggle = a:fd_no_ignore ? 'off' : 'on'
   let fd_type = a:fd_type !=# '' ? ' --type ' . a:fd_type : ''
+
+  let siefe_fd_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_project_root_key . ','
+  let siefe_fd_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_project_root_key, '√work')
+
   let options = [
     \ '--print-query',
     \ '--ansi',
@@ -360,11 +371,17 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
     \ '--bind', 'tab:toggle+up',
     \ '--bind', 'shift-tab:toggle+down',
     \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
-    \ '--expect=ctrl-h,ctrl-u,alt-p,ctrl-alt-p,'
+    \ '--expect='
+    \ . g:siefe_fd_hidden_key . ','
+    \ . g:siefe_fd_no_ignore_key . ','
+    \ . g:siefe_fd_git_root_key . ','
+    \ . siefe_fd_project_root_key
     \ . g:siefe_abort_key,
-    \ '--header', s:magenta('^-H', 'Special').' hidden '.fd_hidden_toggle.' ╱ '.s:magenta('^-U', 'Special').' ignored '.fd_no_ignore_toggle
-      \ . ' ╱ ' .s:magenta('M-P', 'Special').' √git / '.s:magenta('^-M-P', 'Special').' √work / '
-      \ . '  ' . s:prettify_help(g:siefe_abort_key, 'abort')
+    \ '--header', s:prettify_help(g:siefe_fd_hidden_key, 'hidden:' . fd_hidden_toggle)
+      \ . ' ╱ ' . s:prettify_help(g:siefe_fd_no_ignore_key, 'no ignore:' . fd_no_ignore_toggle)
+      \ . ' ╱ ' . s:prettify_help(g:siefe_fd_git_root_key, '√git')
+      \ . siefe_fd_project_root_help
+      \ . ' ╱ ' . s:prettify_help(g:siefe_abort_key, 'abort')
     \ ]
   if a:multi
     let options += ['--multi']
@@ -378,31 +395,27 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
 endfunction
 
 function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, fullscreen, lines) abort
-
   let fd_query = a:lines[0]
   let key = a:lines[1]
-  let new_dir = a:lines[2]
 
+  if len(a:lines) == 3
+    let new_dir = a:lines[2]
+  else
+    let new_dir = a:dir
+  endif
 
   if key ==# g:siefe_abort_key
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key ==# 'ctrl-h'
+  elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', fd_hidden, a:fd_no_ignore, 'd', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
-  elseif key ==# 'ctrl-u'
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type)
+  elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fd_hidden, fd_no_ignore, 'd', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:fullscreen)
-  elseif key ==# 'alt-p'
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type)
+  elseif key ==# g:siefe_fd_git_root_key
     call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-  elseif key ==# 'ctrl-alt-p'
-    let workarea = '$WORKAREA'
-    if expand(workarea) != workarea
-      call siefe#ripgrepfzf(a:query, expand(workarea), workarea, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-    else
-      call s:warn('no '.workarea)
-      execute 'sleep' 500 . 'm'
-      call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
-    endif
+  elseif key ==# g:siefe_fd_project_root_key
+    call siefe#ripgrepfzf(a:query, expand(g:siefe_fd_project_root_env), g:siefe_fd_project_root_env, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   else
     call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:fullscreen)
   endif
