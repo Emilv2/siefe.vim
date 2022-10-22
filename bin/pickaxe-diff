@@ -36,7 +36,7 @@ filtered_diff=$( echo "$diff_output" | \
                 \grep -v -e '^diff --git' -e '^index ')
 
 old_path="a/$path"
-old_path="b/$path"
+new_path="b/$path"
 
 # Detect new or removed files
 NULL='/dev/null'
