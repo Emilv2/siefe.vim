@@ -144,6 +144,8 @@ let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-p')
 
 let g:siefe_fd_project_root_env = get(g:, 'siefe_fd_git_root_env', '')
 
+let g:siefe_branches_all_key = get(g:, 'siefe_branches_all_key', 'ctrl-a')
+
 function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, fullscreen) abort
   call s:check_requirements()
 
@@ -442,8 +444,13 @@ endfunction
 function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen) abort
   call s:check_requirements()
 
-  let branches = join(map(a:branches, 'trim(v:val, " *")'))
-  let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'))
+  if len(a:branches) == 1 && a:branches[0] ==# '--all'
+    let branches = '--all'
+    let notbranches = ''
+  else
+    let branches = join(map(a:branches, 'trim(v:val, " *")'))
+    let notbranches = join(map(a:notbranches, '"^".trim(v:val, " *")'))
+  endif
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'))
   let paths = join(a:paths)
   let query_file = tempname()
@@ -571,9 +578,9 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
     let ignore_case = a:ignore_case ? 0 : 1
     call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, ignore_case, a:type, a:fullscreen)
   elseif key == g:siefe_gitlog_branch_key
-    call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
+    call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, 0, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_not_branch_key
-    call FzfBranchSelect('GitPickaxeFzfNotBranch', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
+    call FzfBranchSelect('GitPickaxeFzfNotBranch', a:fullscreen, 1, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_author_key
     call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_dir_key
@@ -600,11 +607,15 @@ function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, 
   call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:fullscreen)
 endfunction
 
-function! FzfBranchSelect(func, fullscreen, ...) abort
+function! FzfBranchSelect(func, fullscreen, not, ...) abort
   let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_4 = 'echo git log {1}... \(what we both have, common ancester not\); echo {2}... -- | xargs git log --format="%m%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+
+  let not = a:not ? '!' : ''
+  let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
+  let siefe_branches_all_help = a:not ? '' : ' ╱ ' . s:prettify_help(g:siefe_branches_all_key, '--all')
 
   let spec = {
     \ 'source':  "git branch -a --sort='-authordate' --color --format='%(HEAD) %(if:equals=refs/remotes)%(refname:rstrip=-2)%(then)%(color:cyan)%(align:0)%(refname:lstrip=2)%(end)%(else)%(if)%(HEAD)%(then)%(color:reverse yellow)%(align:0)%(refname:lstrip=-1)%(end)%(else)%(color:yellow)%(align:0)%(refname:lstrip=-1)%(end)%(end)%(end)%(color:reset) %(color:red): %(if)%(symref)%(then)%(color:yellow)%(objectname:short)%(color:reset) %(color:red):%(color:reset) %(color:green)-> %(symref:lstrip=-2)%(else)%(color:yellow)%(objectname:short)%(color:reset) %(if)%(upstream)%(then)%(color:red): %(color:reset)%(color:green)[%(upstream:short)%(if)%(upstream:track)%(then):%(color:blue)%(upstream:track,nobracket)%(symref:lstrip=-2)%(color:green)%(end)]%(color:reset) %(end)%(color:red):%(color:reset) %(contents:subject)%(end) • %(color:blue)(%(authordate:short))'",
@@ -619,9 +630,15 @@ function! FzfBranchSelect(func, fullscreen, ...) abort
         \ '--bind', 'f3:change-preview:'.preview_command_3,
         \ '--bind', 'f4:change-preview:'.preview_command_4,
         \ '--bind','tab:toggle+up',
-        \ '--expect', g:siefe_abort_key,
+        \ '--expect='
+          \ . g:siefe_abort_key . ','
+          \ . siefe_branches_all_key,
         \ '--bind','shift-tab:toggle+down',
         \ '--preview', 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"' ,
+        \ '--prompt', not . 'branches> ',
+        \ '--header='
+          \ . s:prettify_help(g:siefe_abort_key, 'abort')
+          \ . siefe_branches_all_help
       \ ],
     \ 'placeholder': ''
   \ }
@@ -655,7 +672,9 @@ endfunction
 
 function! GitPickaxeFzfBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
-    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
+    call siefe#gitlogfzf(a:query, [], a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
+  elseif a:000[0][0] == g:siefe_branches_all_key
+    call siefe#gitlogfzf(a:query, ['--all'], a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
     let branches = map(a:000[0][1:], 'trim(split(v:val, ":")[0], " *")')
     call siefe#gitlogfzf(a:query, branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
@@ -664,7 +683,7 @@ endfunction
 
 function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
-    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
+    call siefe#gitlogfzf(a:query, a:branches, [], a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
     let notbranches = map(a:000[0][1:], 'trim(split(v:val, ":")[0], " *")')
     call siefe#gitlogfzf(a:query, a:branches, notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
