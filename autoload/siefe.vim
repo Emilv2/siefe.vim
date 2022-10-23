@@ -534,9 +534,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_branch_key, 'branches')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_sg_key, 'toggle S/G')
         \ . "\n" . s:prettify_help(g:siefe_gitlog_not_branch_key, '^branches')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_type_key, 'type')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'epickaxe')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . authors_info
         \ . paths_info
