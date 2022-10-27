@@ -240,9 +240,9 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . '+rebind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', g:siefe_rg_files_key
-        \ . ':unbind(change,' . g:siefe_rg_files_key . ')'
+        \ . ':unbind(change,' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+change-prompt('.no_ignore.hidden.fixed_strings.max_1.a:type . ' ' . a:prompt.' Files> )'
-        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
+        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ')'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
       \ '--header', s:prettify_help(g:siefe_rg_rg_key, 'Rg')
