@@ -1,0 +1,2 @@
+# python virtual env directory used for pre-commit
+.venv
