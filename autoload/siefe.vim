@@ -71,6 +71,7 @@ let g:siefe_rg_case_key = get(g:, 'siefe_rg_case_key', 'ctrl-s')
 let g:siefe_rg_hidden_key = get(g:, 'siefe_rg_hidden_key', 'alt-.')
 let g:siefe_rg_no_ignore_key = get(g:, 'siefe_rg_no_ignore_key', 'ctrl-u')
 let g:siefe_rg_fixed_strings_key = get(g:, 'siefe_rg_fixed_strings_key', 'ctrl-x')
+let g:siefe_rg_max_1_key = get(g:, 'siefe_rg_max_1_key', 'ctrl-a')
 let g:siefe_rg_dir_key = get(g:, 'siefe_rg_dir_key', 'ctrl-d')
 let g:siefe_rg_yank_key = get(g:, 'siefe_rg_yank_key', 'ctrl-y')
 
@@ -146,7 +147,7 @@ let g:siefe_fd_project_root_env = get(g:, 'siefe_fd_git_root_env', '')
 
 let g:siefe_branches_all_key = get(g:, 'siefe_branches_all_key', 'ctrl-a')
 
-function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, orig_dir, type, paths, fullscreen) abort
+function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_ignore, fixed_strings, max_1, orig_dir, type, paths, fullscreen) abort
   call s:check_requirements()
 
   if empty(a:dir)
@@ -167,6 +168,8 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let no_ignore_toggle = a:no_ignore ? 'off' : 'on'
   let fixed_strings = a:fixed_strings ? '-F ' : ''
   let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
+  let max_1 = a:max_1 ? '-m 1 ' : ''
+  let max_1_toggle = a:max_1 ? 'off' : 'on'
   let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
     \ . case_sensitive
@@ -175,6 +178,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     \ . no_ignore
     \ . hidden_option
     \ . fixed_strings
+    \ . max_1
     \ . a:type
     \ . ' %s -- %s '
     \ . paths
@@ -206,6 +210,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . g:siefe_rg_hidden_key . ','
         \ . g:siefe_rg_no_ignore_key . ','
         \ . g:siefe_rg_fixed_strings_key . ','
+        \ . g:siefe_rg_max_1_key . ','
         \ . g:siefe_rg_dir_key . ','
         \ . g:siefe_rg_yank_key . ',',
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
@@ -230,13 +235,13 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', g:siefe_rg_rg_key
         \ . ':unbind(' . g:siefe_rg_rg_key . ')'
-        \ . '+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> )'
+        \ . '+change-prompt('.word.no_ignore.hidden.case_symbol.fixed_strings.max_1.a:type . ' ' . a:prompt.' rg> )'
         \ . '+disable-search+reload('.reload_command.')'
         \ . '+rebind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', g:siefe_rg_files_key
         \ . ':unbind(change,' . g:siefe_rg_files_key . ')'
-        \ . '+change-prompt('.no_ignore.hidden.fixed_strings.a:type . ' ' . a:prompt.' Files> )'
+        \ . '+change-prompt('.no_ignore.hidden.fixed_strings.max_1.a:type . ' ' . a:prompt.' Files> )'
         \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
@@ -251,17 +256,18 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_word_key, 'word:' . word_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_no_ignore_key, 'no ignore:' . no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_max_1_key, 'max count 1:' . max_1_toggle)
         \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
-      \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.a:type . ' ' . a:prompt.' rg> ',
+      \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.max_1.a:type . ' ' . a:prompt.' rg> ',
       \ ],
    \ 'dir': a:dir,
-   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen]),
+   \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen]),
    \ 'source': initial_command
   \ }
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, type, paths, fullscreen, lines) abort
+function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strings, max_1, orig_dir, type, paths, fullscreen, lines) abort
   " required when using fullscreen and abort, not sure why
   if len(a:lines) == 0
     return
@@ -323,26 +329,29 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   exe 'cd' a:orig_dir
 
   if key ==# g:siefe_rg_type_key
-    call FzfTypeSelect('RipgrepFzfType', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:paths)
+    call FzfTypeSelect('RipgrepFzfType', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:paths)
   elseif key ==# g:siefe_rg_type_not_key
-    call FzfTypeSelect('RipgrepFzfTypeNot', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:paths)
+    call FzfTypeSelect('RipgrepFzfTypeNot', a:fullscreen, query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:paths)
   elseif key ==# g:siefe_rg_word_key
     let word = a:word ? 0 : 1
-    call siefe#ripgrepfzf(query, '.', a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(query, '.', a:prompt, word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_rg_case_key
     let case = a:case ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_rg_hidden_key
     let hidden = a:hidden ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_rg_no_ignore_key
     let no_ignore = a:no_ignore ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_rg_fixed_strings_key
     let fixed_strings = a:fixed_strings ? 0 : 1
-    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
+  elseif key ==# g:siefe_rg_max_1_key
+    let max_1 = a:max_1 ? 0 : 1
+    call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_rg_dir_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:paths)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:type, a:paths)
   elseif key ==# 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
   return
@@ -406,7 +415,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
       \ }, a:fullscreen))
 endfunction
 
-function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, type, paths, fullscreen, lines) abort
+function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, word, case, hidden, no_ignore, fixed_strings, max_1, type, paths, fullscreen, lines) abort
   let fd_query = a:lines[0]
   let key = a:lines[1]
 
@@ -417,37 +426,37 @@ function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, w
   endif
 
   if key ==# g:siefe_abort_key
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:paths)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:type, a:paths)
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:type, a:paths)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:type, a:paths)
   elseif key ==# g:siefe_fd_git_root_key
-    call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   elseif key ==# g:siefe_fd_project_root_key
-    call siefe#ripgrepfzf(a:query, expand(g:siefe_fd_project_root_env), g:siefe_fd_project_root_env, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, expand(g:siefe_fd_project_root_env), g:siefe_fd_project_root_env, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   else
-    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, a:type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen)
   endif
 endfunction
 
-function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, paths, fullscreen, lines) abort
+function! RipgrepFzfType(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, max_1, orig_dir, paths, fullscreen, lines) abort
   if a:lines[0] ==# g:siefe_abort_key
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, '', a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, '', a:paths, a:fullscreen)
   else
     let type = join(map(a:lines[1:], '"-t" . split(v:val, ":")[0]'))
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, type, a:paths, a:fullscreen)
   endif
 endfunction
 
-function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, orig_dir, paths, fullscreen, lines) abort
+function! RipgrepFzfTypeNot(query, dir, prompt, word, case, hidden, no_ignore, fixed_strings, max_1, orig_dir, paths, fullscreen, lines) abort
   if a:lines[0] ==# g:siefe_abort_key
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, '', a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, '', a:paths, a:fullscreen)
   else
     let type = join(map(a:lines[1:], '"-T" . split(v:val, ":")[0]'))
-    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:orig_dir, type, a:paths, a:fullscreen)
+    call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, type, a:paths, a:fullscreen)
   endif
 endfunction
 
