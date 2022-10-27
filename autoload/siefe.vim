@@ -168,7 +168,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let no_ignore_toggle = a:no_ignore ? 'off' : 'on'
   let fixed_strings = a:fixed_strings ? '-F ' : ''
   let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
-  let max_1 = a:max_1 ? '-m 1 ' : ''
+  let max_1 = a:max_1 ? '-m1 ' : ''
   let max_1_toggle = a:max_1 ? 'off' : 'on'
   let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
@@ -258,7 +258,15 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_max_1_key, 'max count 1:' . max_1_toggle)
         \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
-      \ '--prompt', word.no_ignore.hidden.case_symbol.fixed_strings.max_1.a:type . ' ' . a:prompt.' rg> ',
+      \ '--prompt', word
+        \ . no_ignore
+        \ . hidden
+        \ . case_symbol
+        \ . fixed_strings
+        \ . max_1
+        \ . a:type . ' '
+        \ . a:prompt
+        \ . ' rg> ',
       \ ],
    \ 'dir': a:dir,
    \ 'sink*': function('s:ripgrep_sink', [a:dir, a:prompt, a:word, a:case_sensitive, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, a:paths, a:fullscreen]),
