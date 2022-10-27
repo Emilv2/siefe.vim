@@ -317,6 +317,10 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
 
 
   if key ==# ''
+    " no match
+    if len(tmp[2:]) == 0
+      return
+    endif
     execute 'e' file.filename
     call cursor(file.line, file.column)
     normal! zvzz
