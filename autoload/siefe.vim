@@ -169,8 +169,15 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
   let command_fmt = 'rg --column -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
-    \ . case_sensitive . ' ' . s:field_match_separator . ' '
-    \ . word . no_ignore . hidden_option . fixed_strings . ' ' . a:type . ' %s -- %s ' . paths
+    \ . case_sensitive
+    \ . s:field_match_separator . ' '
+    \ . word
+    \ . no_ignore
+    \ . hidden_option
+    \ . fixed_strings
+    \ . a:type
+    \ . ' %s -- %s '
+    \ . paths
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
   let empty_command = printf(command_fmt, '', '""')
