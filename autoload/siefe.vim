@@ -199,7 +199,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
       \ '--print-query',
       \ '--ansi',
-      \ '--phony',
+      \ '--disabled',
       \ '--print0',
       \ '--expect='
         \ . g:siefe_rg_type_key . ','
@@ -544,7 +544,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--print-query',
       \ '--layout=reverse-list',
       \ '--ansi',
-      \ '--phony',
+      \ '--disabled',
       \ '--read0',
       \ '--expect='
         \ . g:siefe_gitlog_author_key . ','
