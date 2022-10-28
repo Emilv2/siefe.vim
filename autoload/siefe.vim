@@ -185,7 +185,6 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let initial_command = printf(command_fmt, '', shellescape(a:query))
   let reload_command = printf(command_fmt, '', '{q}')
   let empty_command = printf(command_fmt, '', '""')
-  let word_command = printf(command_fmt, '-w', '{q}')
   let files_command = 'rg --color=always --files '.a:type
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
