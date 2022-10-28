@@ -196,19 +196,20 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let empty_command = printf(command_fmt, '', '""')
   let files_command = 'echo 1 > ' . tmp_cfg . '; rg --color=always --files '.a:type
 
+  let type_prompt = a:type ==# '' ? '' : a:type . ' '
   let rg_prompt = word
     \ . no_ignore
     \ . hidden
     \ . case_symbol
     \ . fixed_strings
     \ . max_1
-    \ . a:type . ' '
+    \ . type_prompt
     \ . a:prompt
     \ . ' rg> '
 
   let files_prompt = no_ignore
     \ . hidden
-    \ . a:type . ' '
+    \ . type_prompt
     \ . a:prompt
     \ . ' Files> '
 
@@ -255,7 +256,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', 'change:+first',
       \ '--bind', g:siefe_rg_fzf_key
         \ . ':unbind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
-        \ . '+change-prompt('.no_ignore.hidden.a:type . ' ' . a:prompt.' fzf> )'
+        \ . '+change-prompt(' . no_ignore . hidden . type_prompt . a:prompt . ' fzf> )'
         \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_files_key . ')'
         \ . '+reload('.empty_command.')'
         \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
