@@ -108,6 +108,7 @@ let g:siefe_gitlog_not_branch_key = get(g:, 'siefe_gitlog_not_branch_key', 'ctrl
 let g:siefe_gitlog_sg_key = get(g:, 'siefe_gitlog_sg_key', 'ctrl-e')
 let g:siefe_gitlog_fzf_key = get(g:, 'siefe_gitlog_fzf_key', 'ctrl-f')
 let g:siefe_gitlog_s_key = get(g:, 'siefe_gitlog_s_key', 'ctrl-s')
+let g:siefe_gitlog_pickaxe_regex_key = get(g:, 'siefe_gitlog_pickaxe_regex_key', 'ctrl-x')
 let g:siefe_gitlog_dir_key = get(g:, 'siefe_gitlog_dir_key', 'ctrl-d')
 
 let g:siefe_gitlog_preview_0_key = get(g:, 'siefe_gitlog_preview_0_key', 'f1')
@@ -585,6 +586,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . g:siefe_gitlog_ignore_case_key . ','
         \ . g:siefe_gitlog_vdiffsplit_key . ','
         \ . g:siefe_gitlog_type_key . ','
+        \ . g:siefe_gitlog_pickaxe_regex_key . ','
         \ . g:siefe_gitlog_dir_key . ',',
       \ '--multi',
       \ '--bind','tab:toggle+up',
@@ -604,6 +606,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . "\n" . s:prettify_help(g:siefe_gitlog_not_branch_key, '^branches')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_type_key, 'type')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_pickaxe_regex_key, 'regex')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . authors_info
         \ . paths_info
@@ -638,6 +641,9 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   elseif key == g:siefe_gitlog_ignore_case_key
     let ignore_case = a:ignore_case ? 0 : 1
     call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, ignore_case, a:type, a:fullscreen)
+  elseif key == g:siefe_gitlog_pickaxe_regex_key
+    let regex = a:regex ? 0 : 1
+    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   elseif key == g:siefe_gitlog_branch_key
     call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, 0, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_not_branch_key
