@@ -589,8 +589,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . g:siefe_gitlog_pickaxe_regex_key . ','
         \ . g:siefe_gitlog_dir_key . ',',
       \ '--multi',
-      \ '--bind','tab:toggle+up',
-      \ '--bind','shift-tab:toggle+down',
+      \ '--bind','tab:toggle+down',
+      \ '--bind','shift-tab:toggle+up',
       \ '--query', a:query,
       \ '--delimiter', '•',
       \ '--preview-window', default_preview_size,
