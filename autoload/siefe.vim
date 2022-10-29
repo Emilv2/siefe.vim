@@ -514,7 +514,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'))
   let paths = join(a:paths)
   let query_file = tempname()
-  let G = a:G ? '-G ' : '-S '
+  let G = a:G ? '-G' : '-S'
+  let G_prompt = a:G ? '-G ' : '-S '
   let follow = paths ==# '' ? '' : a:follow ? '--follow' : ''
   " --pickaxe-regex and -G are incompatible
   let regex = a:G ? '' : a:regex ? '--pickaxe-regex ' : ''
@@ -594,7 +595,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', g:siefe_gitlog_fzf_key . ':unbind(change,' . g:siefe_gitlog_fzf_key . ')+change-prompt(pickaxe/fzf> )+enable-search+rebind(' . g:siefe_gitlog_s_key . ')',
-      \ '--bind', g:siefe_gitlog_s_key . ':unbind(change,' . g:siefe_gitlog_s_key . ')+change-prompt(' . branches . notbranches . G . regex . ignore_case_symbol . 'pickaxe> '. ')+disable-search+reload(' . reload_command . '"+rebind(change,' . g:siefe_gitlog_fzf_key . ')',
+      \ '--bind', g:siefe_gitlog_s_key . ':unbind(change,' . g:siefe_gitlog_s_key . ')+change-prompt(' . branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> '. ')+disable-search+reload(' . reload_command . '"+rebind(change,' . g:siefe_gitlog_fzf_key . ')',
       \ '--header', s:prettify_help(g:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_fzf_key,  'fzf messages')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_author_key, 'authors')
@@ -607,7 +608,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . authors_info
         \ . paths_info
         \ . type_info,
-      \ '--prompt', branches . notbranches . G . regex . ignore_case_symbol . 'pickaxe> ',
+      \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> ',
       \ ],
    \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen]),
    \ 'source': initial_command
