@@ -725,7 +725,7 @@ endfunction
 
 function! GitPickaxeFzfAuthor(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, fullscreen, ...) abort
   if a:000[0][0] == g:siefe_abort_key
-    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
+    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, [], a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   else
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:000[0][1:], a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
   endif
