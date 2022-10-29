@@ -110,6 +110,7 @@ let g:siefe_gitlog_fzf_key = get(g:, 'siefe_gitlog_fzf_key', 'ctrl-f')
 let g:siefe_gitlog_s_key = get(g:, 'siefe_gitlog_s_key', 'ctrl-s')
 let g:siefe_gitlog_pickaxe_regex_key = get(g:, 'siefe_gitlog_pickaxe_regex_key', 'ctrl-x')
 let g:siefe_gitlog_dir_key = get(g:, 'siefe_gitlog_dir_key', 'ctrl-d')
+let g:siefe_gitlog_follow_key = get(g:, 'siefe_gitlog_follow_key', 'ctrl-o')
 
 let g:siefe_gitlog_preview_0_key = get(g:, 'siefe_gitlog_preview_0_key', 'f1')
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f2')
@@ -513,11 +514,19 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
     let notbranches = a:notbranches ==# '' ? '' : a:notbranches . ' '
   endif
   let authors = join(map(copy(a:authors), '"--author=".shellescape(v:val)'))
-  let paths = join(a:paths)
+  if len(a:paths)  == 1 && filereadable(a:paths[0])
+    let siefe_gitlog_follow_key = g:siefe_gitlog_follow_key . ','
+    let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_help( g:siefe_gitlog_follow_key, 'follow')
+    let follow = a:follow ? '--follow' : ''
+  else
+    let siefe_gitlog_follow_key = ''
+    let siefe_gitlog_follow_help = ''
+    let follow = ''
+  endif
+  let paths = join(map(a:paths, 'shellescape(v:val)'), ' ')
   let query_file = tempname()
   let G = a:G ? '-G' : '-S'
   let G_prompt = a:G ? '-G ' : '-S '
-  let follow = paths ==# '' ? '' : a:follow ? '--follow' : ''
   " --pickaxe-regex and -G are incompatible
   let regex = a:G ? '' : a:regex ? '--pickaxe-regex ' : ''
   let ignore_case = a:ignore_case ? '--regexp-ignore-case ' : ''
@@ -587,6 +596,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . g:siefe_gitlog_vdiffsplit_key . ','
         \ . g:siefe_gitlog_type_key . ','
         \ . g:siefe_gitlog_pickaxe_regex_key . ','
+        \ . g:siefe_gitlog_dir_key . ','
+        \ . siefe_gitlog_follow_key
         \ . g:siefe_gitlog_dir_key . ',',
       \ '--multi',
       \ '--bind','tab:toggle+down',
@@ -607,6 +618,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_type_key, 'type')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_pickaxe_regex_key, 'regex')
+        \ . siefe_gitlog_follow_help
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . authors_info
         \ . paths_info
@@ -644,6 +656,9 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   elseif key == g:siefe_gitlog_pickaxe_regex_key
     let regex = a:regex ? 0 : 1
     call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, regex, a:paths, a:follow, a:ignore_case, a:type, a:fullscreen)
+  elseif key == g:siefe_gitlog_follow_key
+    let follow = a:follow ? 0 : 1
+    call siefe#gitlogfzf(query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, follow, a:ignore_case, a:type, a:fullscreen)
   elseif key == g:siefe_gitlog_branch_key
     call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, 0, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type)
   elseif key == g:siefe_gitlog_not_branch_key
