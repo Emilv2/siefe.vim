@@ -452,7 +452,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
   endif
 
   call fzf#run(fzf#wrap({
-          \ 'source': s:fd_command . ' --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
+          \ 'source': s:fd_command . ' --exclude ".git/" --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
         \ 'options': options,
         \ 'sink*': function(a:func, [a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir] + a:000 + [a:fullscreen])
       \ }, a:fullscreen))
