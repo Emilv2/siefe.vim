@@ -140,7 +140,7 @@ let s:gitlog_keys = [
 
 
 let g:siefe_fd_hidden_key = get(g:, 'siefe_fd_hidden_key', 'ctrl-h')
-let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-i')
+let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-u')
 let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
 let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-p')
 
