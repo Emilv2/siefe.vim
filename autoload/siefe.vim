@@ -167,7 +167,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     let files = readfile(tmp_cfg)[0]
   endif
 
-  let paths = join(map(a:paths, 'shellescape(v:val)'), ' ')
+  let paths = join(map(copy(a:paths), 'shellescape(v:val)'), ' ')
 
   let word = a:word ? '-w ' : ''
   let word_toggle = a:word ? 'off' : 'on'
@@ -193,11 +193,11 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     \ . fixed_strings
     \ . max_1
     \ . a:type
-    \ . ' %s -- %s '
+    \ . ' -- %s '
     \ . paths
-  let rg_command = printf(command_fmt, '', shellescape(a:query))
-  let reload_command = printf(command_fmt, '', '{q}')
-  let empty_command = printf(command_fmt, '', '""')
+  let rg_command = printf(command_fmt, shellescape(a:query))
+  let reload_command = printf(command_fmt, '{q}')
+  let empty_command = printf(command_fmt, '""')
   let files_command = 'echo 1 > ' . tmp_cfg . '; rg --color=always --files '.a:type
 
   let type_prompt = a:type ==# '' ? '' : a:type . ' '
