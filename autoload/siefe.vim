@@ -183,7 +183,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let fixed_strings_toggle = a:fixed_strings ? 'off' : 'on'
   let max_1 = a:max_1 ? '-m1 ' : ''
   let max_1_toggle = a:max_1 ? 'off' : 'on'
-  let command_fmt = 'echo 0 > ' . tmp_cfg . '; rg --column -U --glob ' . shellescape('!git/objects')
+  let command_fmt = 'echo 0 > ' . tmp_cfg . '; rg --column --engine auto -U --glob ' . shellescape('!git/objects')
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
     \ . case_sensitive
     \ . s:field_match_separator . ' '
