@@ -1,0 +1,44 @@
+#!/bin/bash
+
+FILE=$(file --uncompress --no-sandbox --brief --mime -- "$1")
+IFS=';' read -ra ADDR <<<"$FILE"
+TYPE="${ADDR[0]%%/*}"
+if [[ ${ADDR[1]} == *compressed-encoding* ]]; then
+	COMPRESSION="${ADDR[1]##*compressed-encoding*/}"
+fi
+
+if [[ $TYPE != "text" ]]; then
+	# brotli isn't detectable by file
+	if [ "${1##*.}" = "br" ]; then
+		brotli --decompress --stdout "$1"
+	else
+		echo \""$FILE"\" is not text
+	fi
+else
+	case "$COMPRESSION" in
+	zstd)
+		zstdcat "$1"
+		;;
+	zip | gzip)
+		zcat "$1"
+		;;
+	x-bzip2)
+		bzcat "$1"
+		;;
+	x-xz)
+		xzcat "$1"
+		;;
+	x-lz4)
+		lz4cat "$1"
+		;;
+	x-lzma)
+		lzcat "$1"
+		;;
+	"")
+		"${@:2}" "$1"
+		;;
+	*)
+		echo "$COMPRESSION" "not (yet) supported"
+		;;
+	esac
+fi
