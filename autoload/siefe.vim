@@ -73,6 +73,7 @@ let g:siefe_rg_no_ignore_key = get(g:, 'siefe_rg_no_ignore_key', 'ctrl-u')
 let g:siefe_rg_fixed_strings_key = get(g:, 'siefe_rg_fixed_strings_key', 'ctrl-x')
 let g:siefe_rg_max_1_key = get(g:, 'siefe_rg_max_1_key', 'ctrl-a')
 let g:siefe_rg_dir_key = get(g:, 'siefe_rg_dir_key', 'ctrl-d')
+let g:siefe_rg_buffers_key = get(g:, 'siefe_rg_buffers_key', 'ctrl-b')
 let g:siefe_rg_yank_key = get(g:, 'siefe_rg_yank_key', 'ctrl-y')
 
 let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
@@ -225,6 +226,8 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     let initial_prompt = rg_prompt
   endif
 
+  let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
+
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   " https://github.com/junegunn/fzf.vim
@@ -248,6 +251,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . g:siefe_rg_fixed_strings_key . ','
         \ . g:siefe_rg_max_1_key . ','
         \ . g:siefe_rg_dir_key . ','
+        \ . g:siefe_rg_buffers_key . ','
         \ . g:siefe_rg_yank_key . ',',
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
@@ -287,13 +291,15 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_files_key, 'Files')
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_key, 'Type')
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_not_key, '!Type')
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_buffers_key, 'Buffers')
         \ . "\n" . s:prettify_help(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_yank_key, 'yank')
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_word_key, 'word:' . word_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_no_ignore_key, 'no ignore:' . no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_max_1_key, 'max count 1:' . max_1_toggle)
-        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview',
+        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
+        \ . paths_info,
       \ '--prompt', initial_prompt,
       \ ],
    \ 'dir': a:dir,
@@ -395,6 +401,12 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
   elseif key ==# g:siefe_rg_max_1_key
     let max_1 = a:max_1 ? 0 : 1
     call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, max_1, a:orig_dir, a:type, a:paths, a:tmp_cfg, a:fullscreen)
+  elseif key ==# g:siefe_rg_buffers_key
+    if a:paths == []
+      call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, map(filter(copy(getbufinfo()), 'v:val.listed'), 'fnamemodify(v:val.name, ":p:~:.")'), a:tmp_cfg, a:fullscreen)
+    else
+      call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:orig_dir, a:type, [], a:tmp_cfg, a:fullscreen)
+    endif
   elseif key ==# g:siefe_rg_dir_key
     call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:type, a:paths, a:tmp_cfg)
   elseif key ==# 'ctrl-y'
