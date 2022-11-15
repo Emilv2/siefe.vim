@@ -7,21 +7,213 @@ if exists('g:loaded_siefe')
 endif
 let g:loaded_siefe = 1
 
-command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(<q-args>,  siefe#bufdir(), siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeRgVisual call siefe#ripgrepfzf(siefe#visual_selection(),  siefe#bufdir(), siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), "", [], '', <bang>0)
-command! -nargs=* -bang SiefeRgWord call siefe#ripgrepfzf(expand('<cword>'), '.', siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeRgWORD call siefe#ripgrepfzf(expand('<cWORD>'), '.', siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(trim(getline('.')), '.', siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeRgFiles call siefe#ripgrepfzf(<q-args>, '.', siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), '', [], '//', <bang>0)
+let g:siefe_rg_default_word = get(g:, 'siefe_rg_default_word', 0)
+let g:siefe_rg_default_case_sensitive = get(g:, 'siefe_rg_default_case_sensitive', 0)
+let g:siefe_rg_default_hidden = get(g:, 'siefe_rg_default_hidden', 0)
+let g:siefe_rg_default_no_ignore = get(g:, 'siefe_rg_default_no_ignore', 0)
+let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings', 0)
+let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
+let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 
-command! -nargs=* -bang SiefeProjectRg call siefe#ripgrepfzf(<q-args>, siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeProjectRgVisual call siefe#ripgrepfzf(siefe#visual_selection(), siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeProjectRgWord call siefe#ripgrepfzf(expand('<cword>'), siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeProjectRgWORD call siefe#ripgrepfzf(expand('<cWORD>'), siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeProjectRgLine call siefe#ripgrepfzf(trim(getline('.')), siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), '', [], '', <bang>0)
-command! -nargs=* -bang SiefeProjectRgFiles call siefe#ripgrepfzf(<q-args>, siefe#get_git_root(), siefe#get_relative_git_or_bufdir(), 0, 0, 0, 0, 1, 0, 0, siefe#bufdir(), '', [], '//', <bang>0)
+command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(
+            \ <q-args>,
+            \ siefe#bufdir(),
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0 )
+command! -nargs=* -bang SiefeRgVisual call siefe#ripgrepfzf(
+            \ siefe#visual_selection(),
+            \  siefe#bufdir(),
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ 1,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeRgWord call siefe#ripgrepfzf(expand('<cword>'),
+            \ '.',
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeRgWORD call siefe#ripgrepfzf(expand('<cWORD>'),
+            \ '.',
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(trim(getline('.')),
+            \ '.',
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ 1,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeRgFiles call siefe#ripgrepfzf(<q-args>,
+            \ '.',
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '//',
+            \ <bang>0)
 
-command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(<q-args>, '.', siefe#get_git_basename_or_bufdir(), 0, 0, 0, 0, 0, 0, 0, siefe#bufdir(), '', map(filter(copy(getbufinfo()), 'v:val.listed'), 'fnamemodify(v:val.name, ":p:~:.")'), '', <bang>0)
+command! -nargs=* -bang SiefeProjectRg call siefe#ripgrepfzf(<q-args>,
+            \ siefe#get_git_root(),
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeProjectRgVisual call siefe#ripgrepfzf(siefe#visual_selection(),
+            \ siefe#get_git_root(),
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ 1,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeProjectRgWord call siefe#ripgrepfzf(expand('<cword>'),
+            \ siefe#get_git_root(),
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeProjectRgWORD call siefe#ripgrepfzf(expand('<cWORD>'),
+            \ siefe#get_git_root(),
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeProjectRgLine call siefe#ripgrepfzf(trim(getline('.')),
+            \ siefe#get_git_root(),
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ 1,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '',
+            \ <bang>0)
+command! -nargs=* -bang SiefeProjectRgFiles call siefe#ripgrepfzf(<q-args>,
+            \ siefe#get_git_root(),
+            \ siefe#get_relative_git_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ [],
+            \ '//',
+            \ <bang>0)
+
+command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(<q-args>,
+            \ '.',
+            \ siefe#get_git_basename_or_bufdir(),
+            \ g:siefe_rg_default_word,
+            \ g:siefe_rg_default_case_sensitive,
+            \ g:siefe_rg_default_hidden,
+            \ g:siefe_rg_default_no_ignore,
+            \ g:siefe_rg_default_fixed_strings,
+            \ g:siefe_rg_default_max_1,
+            \ g:siefe_rg_default_search_zip,
+            \ siefe#bufdir(),
+            \ '',
+            \ map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+            \ '',
+            \ <bang>0)
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<q-args>, '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(expand("<cword>"), '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
