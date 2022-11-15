@@ -165,6 +165,11 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     let tmp_cfg = tempname()
     let files = 0
     call writefile([files], tmp_cfg)
+  # // is never a valid filename, so we use this to indicate enable files
+  elseif a:tmp_cfg ==# '//'
+    let tmp_cfg = tempname()
+    let files = 1
+    call writefile([files], tmp_cfg)
   else
     let tmp_cfg = a:tmp_cfg
     let files = readfile(tmp_cfg)[0]
@@ -227,9 +232,11 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   if files
     let initial_command = files_command
     let initial_prompt = files_prompt
+    let preview = s:files_preview_command
   else
     let initial_command = rg_command
     let initial_prompt = rg_prompt
+    let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
   endif
 
   let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
@@ -241,7 +248,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let spec = {
     \ 'options': [
       \ '--history', expand('~/.vim_fzf_history'),
-      \ '--preview', s:rg_preview_commands[g:siefe_rg_default_preview_command],
+      \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
       \ '--print-query',
