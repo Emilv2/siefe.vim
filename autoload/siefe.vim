@@ -165,7 +165,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
     let tmp_cfg = tempname()
     let files = 0
     call writefile([files], tmp_cfg)
-  # // is never a valid filename, so we use this to indicate enable files
+  """ // is never a valid filename, so we use this to indicate enable files
   elseif a:tmp_cfg ==# '//'
     let tmp_cfg = tempname()
     let files = 1
