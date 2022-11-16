@@ -59,8 +59,19 @@ let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-ma
 let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes') . ' ' . get(g:, 'siefe_bat_extra_options', '')
 
 let g:siefe_abort_key = get(g:, 'siefe_abort_key', 'esc')
-let g:siefe_history_next_key = get(g:, 'siefe_history_next_key', 'ctrl-n')
-let g:siefe_history_prev_key = get(g:, 'siefe_history_prev_key', 'ctrl-p')
+let g:siefe_next_history_key = get(g:, 'siefe_next_history_key', 'ctrl-n')
+let g:siefe_previous_history_key = get(g:, 'siefe_previous_history_key', 'ctrl-p')
+let g:siefe_up_key = get(g:, 'siefe_up_key', 'ctrl-k')
+let g:siefe_down_key = get(g:, 'siefe_down_key', 'ctrl-j')
+
+let s:common_keys = [
+  \ g:siefe_abort_key,
+  \ g:siefe_next_history_key,
+  \ g:siefe_previous_history_key,
+  \ g:siefe_up_key,
+  \ g:siefe_down_key,
+\ ]
+
 let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
 let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 50))
 let g:siefe_2nd_preview_size = str2nr(get(g:, 'siefe_2nd_preview_size', 80))
@@ -146,6 +157,7 @@ let s:gitlog_keys = [
   \ g:siefe_gitlog_sg_key,
   \ g:siefe_gitlog_dir_key,
 \ ] + s:gitlog_preview_keys
+  \ + s:common_keys
 
 
 let g:siefe_fd_hidden_key = get(g:, 'siefe_fd_hidden_key', 'ctrl-h')
@@ -256,6 +268,10 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
+      \ '--bind', g:siefe_down_key . ':down',
+      \ '--bind', g:siefe_up_key . ':up',
+      \ '--bind', g:siefe_next_history_key . ':next-history',
+      \ '--bind', g:siefe_previous_history_key . ':previous-history',
       \ '--print-query',
       \ '--ansi',
       \ '--print0',
@@ -475,6 +491,10 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
     \ '--scheme=path',
     \ '--bind', 'tab:toggle+up',
     \ '--bind', 'shift-tab:toggle+down',
+    \ '--bind', g:siefe_down_key . ':down',
+    \ '--bind', g:siefe_up_key . ':up',
+    \ '--bind', g:siefe_next_history_key . ':next-history',
+    \ '--bind', g:siefe_previous_history_key . ':previous-history',
     \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
     \ '--expect='
     \ . g:siefe_fd_hidden_key . ','
@@ -665,6 +685,10 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', g:siefe_gitlog_preview_2_key . ':change-preview:'.preview_command_2,
       \ '--bind', g:siefe_gitlog_preview_3_key . ':change-preview:'.preview_command_3,
       \ '--bind', g:siefe_gitlog_preview_4_key . ':change-preview:'.preview_command_4,
+      \ '--bind', g:siefe_down_key . ':down',
+      \ '--bind', g:siefe_up_key . ':up',
+      \ '--bind', g:siefe_next_history_key . ':next-history',
+      \ '--bind', g:siefe_previous_history_key . ':previous-history',
       \ '--print-query',
       \ '--layout=reverse-list',
       \ '--ansi',
@@ -793,6 +817,10 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
         \ '--bind', 'f3:change-preview:'.preview_command_3,
         \ '--bind', 'f4:change-preview:'.preview_command_4,
         \ '--bind','tab:toggle+up',
+        \ '--bind', g:siefe_down_key . ':down',
+        \ '--bind', g:siefe_up_key . ':up',
+        \ '--bind', g:siefe_next_history_key . ':next-history',
+        \ '--bind', g:siefe_previous_history_key . ':previous-history',
         \ '--expect='
           \ . g:siefe_abort_key . ','
           \ . siefe_branches_all_key,
@@ -820,7 +848,11 @@ function! FzfAuthorSelect(func, fullscreen, ...) abort
         \ '--expect', g:siefe_abort_key,
         \ '--header', s:prettify_help(g:siefe_abort_key, 'abort'),
         \ '--bind','shift-tab:toggle+down',
-      \ ],
+        \ '--bind', g:siefe_down_key . ':down',
+        \ '--bind', g:siefe_up_key . ':up',
+        \ '--bind', g:siefe_next_history_key . ':next-history',
+        \ '--bind', g:siefe_previous_history_key . ':previous-history',
+        \ ],
     \ 'placeholder': ''
   \ }
   call fzf#run(fzf#wrap(spec, a:fullscreen))
