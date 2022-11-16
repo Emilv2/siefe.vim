@@ -49,6 +49,11 @@ function! s:check_requirements() abort
   let s:checked = !empty(fzf#exec(s:min_version))
 endfunction
 
+let s:data_path = expand($XDG_DATA_HOME) != '' ?  expand($XDG_DATA_HOME) . '/siefe.vim' : expand($HOME) . '/.local/share/siefe.vim'
+if !isdirectory(s:data_path)
+  call mkdir(s:data_path, 'p')
+endif
+
 """ load configuration options
 let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-markers') . ' ' . get(g:, 'siefe_delta_extra_options', '')
 let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes') . ' ' . get(g:, 'siefe_bat_extra_options', '')
@@ -247,7 +252,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   " https://github.com/junegunn/fzf/blob/master/ADVANCED.md#toggling-between-data-sources
   let spec = {
     \ 'options': [
-      \ '--history', expand('~/.vim_fzf_history'),
+      \ '--history', s:data_path . '/rg_fzf_history',
       \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
@@ -464,6 +469,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
   let siefe_fd_search_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_search_project_root_key, 'search √work')
 
   let options = [
+    \ '--history', s:data_path . '/git_dir_history',
     \ '--print-query',
     \ '--ansi',
     \ '--scheme=path',
@@ -652,7 +658,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   let spec = {
     \ 'options': [
-      \ '--history', expand('~/.vim_fzf_history'),
+      \ '--history', s:data_path . '/git_fzf_history',
       \ '--preview', preview_commands[ g:siefe_gitlog_default_preview_command ],
       \ '--bind', g:siefe_gitlog_preview_0_key . ':change-preview:'.preview_command_0,
       \ '--bind', g:siefe_gitlog_preview_1_key . ':change-preview:'.preview_command_1,
@@ -778,6 +784,7 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
     \ 'sink*':   function(a:func, a:000 + [a:fullscreen]),
     \ 'options':
       \ [
+        \ '--history', s:data_path . '/rg_branch_history',
         \ '--ansi',
         \ '--multi',
         \ '--delimiter', ':',
@@ -807,6 +814,7 @@ function! FzfAuthorSelect(func, fullscreen, ...) abort
     \ 'sink*':   function(a:func, a:000 + [a:fullscreen]),
     \ 'options':
       \ [
+        \ '--history', s:data_path . '/rg_author_history',
         \ '--multi',
         \ '--bind','tab:toggle+up',
         \ '--expect', g:siefe_abort_key,
