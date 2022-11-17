@@ -44,6 +44,10 @@ function! s:check_requirements() abort
   if gitlog_dups !=# ''
     throw 'duplicates found in `siefe_gitlog_*_key`s :'. gitlog_dups
   endif
+  let rg_dups = s:detect_dups(s:rg_keys)
+  if rg_dups !=# ''
+    throw 'duplicates found in `siefe_rg_*_key`s :'. rg_dups
+  endif
 
 
   let s:checked = !empty(fzf#exec(s:min_version))
@@ -115,6 +119,25 @@ let s:rg_preview_commands = [
   \ s:rg_fast_preview_command,
 \ ]
 
+let s:rg_keys = [
+  \ g:siefe_rg_fzf_key,
+  \ g:siefe_rg_rg_key,
+  \ g:siefe_rg_rgfzf_key,
+  \ g:siefe_rg_files_key,
+  \ g:siefe_rg_type_key,
+  \ g:siefe_rg_type_not_key,
+  \ g:siefe_rg_word_key,
+  \ g:siefe_rg_case_key,
+  \ g:siefe_rg_hidden_key,
+  \ g:siefe_rg_no_ignore_key,
+  \ g:siefe_rg_fixed_strings_key,
+  \ g:siefe_rg_max_1_key,
+  \ g:siefe_rg_search_zip_key,
+  \ g:siefe_rg_dir_key,
+  \ g:siefe_rg_buffers_key,
+  \ g:siefe_rg_yank_key,
+\ ] + s:rg_preview_commands
+  \ + s:common_keys
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
