@@ -63,6 +63,7 @@ let g:siefe_next_history_key = get(g:, 'siefe_next_history_key', 'ctrl-n')
 let g:siefe_previous_history_key = get(g:, 'siefe_previous_history_key', 'ctrl-p')
 let g:siefe_up_key = get(g:, 'siefe_up_key', 'ctrl-k')
 let g:siefe_down_key = get(g:, 'siefe_down_key', 'ctrl-j')
+let g:siefe_accept_key = get(g:, 'siefe_accept_key', 'ctrl-m')
 
 let s:common_keys = [
   \ g:siefe_abort_key,
@@ -70,6 +71,7 @@ let s:common_keys = [
   \ g:siefe_previous_history_key,
   \ g:siefe_up_key,
   \ g:siefe_down_key,
+  \ g:siefe_accept_key,
 \ ]
 
 let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
@@ -272,6 +274,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
       \ '--bind', g:siefe_up_key . ':up',
       \ '--bind', g:siefe_next_history_key . ':next-history',
       \ '--bind', g:siefe_previous_history_key . ':previous-history',
+      \ '--bind', g:siefe_accept_key . ':accept',
       \ '--print-query',
       \ '--ansi',
       \ '--print0',
@@ -462,6 +465,12 @@ function! FzfTypeSelect(func, fullscreen, ...) abort
         \ 'options': [
           \ '--prompt', 'Choose type> ',
           \ '--multi',
+          \ '--history', s:data_path . '/type_fzf_history',
+          \ '--bind', g:siefe_down_key . ':down',
+          \ '--bind', g:siefe_up_key . ':up',
+          \ '--bind', g:siefe_next_history_key . ':next-history',
+          \ '--bind', g:siefe_previous_history_key . ':previous-history',
+          \ '--bind', g:siefe_accept_key . ':accept',
           \ '--bind','tab:toggle+up',
           \ '--bind','shift-tab:toggle+down',
           \ '--expect', g:siefe_abort_key,
@@ -495,6 +504,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
     \ '--bind', g:siefe_up_key . ':up',
     \ '--bind', g:siefe_next_history_key . ':next-history',
     \ '--bind', g:siefe_previous_history_key . ':previous-history',
+    \ '--bind', g:siefe_accept_key . ':accept',
     \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
     \ '--expect='
     \ . g:siefe_fd_hidden_key . ','
@@ -689,6 +699,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
       \ '--bind', g:siefe_up_key . ':up',
       \ '--bind', g:siefe_next_history_key . ':next-history',
       \ '--bind', g:siefe_previous_history_key . ':previous-history',
+      \ '--bind', g:siefe_accept_key . ':accept',
       \ '--print-query',
       \ '--layout=reverse-list',
       \ '--ansi',
@@ -821,6 +832,7 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
         \ '--bind', g:siefe_previous_history_key . ':previous-history',
+        \ '--bind', g:siefe_accept_key . ':accept',
         \ '--expect='
           \ . g:siefe_abort_key . ','
           \ . siefe_branches_all_key,
@@ -852,6 +864,7 @@ function! FzfAuthorSelect(func, fullscreen, ...) abort
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
         \ '--bind', g:siefe_previous_history_key . ':previous-history',
+        \ '--bind', g:siefe_accept_key . ':accept',
         \ ],
     \ 'placeholder': ''
   \ }
