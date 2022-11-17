@@ -157,7 +157,11 @@ let s:gitlog_keys = [
   \ g:siefe_gitlog_branch_key,
   \ g:siefe_gitlog_not_branch_key,
   \ g:siefe_gitlog_sg_key,
+  \ g:siefe_gitlog_fzf_key,
+  \ g:siefe_gitlog_s_key,
+  \ g:siefe_gitlog_pickaxe_regex_key,
   \ g:siefe_gitlog_dir_key,
+  \ g:siefe_gitlog_follow_key,
 \ ] + s:gitlog_preview_keys
   \ + s:common_keys
 
