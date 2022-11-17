@@ -48,6 +48,10 @@ function! s:check_requirements() abort
   if rg_dups !=# ''
     throw 'duplicates found in `siefe_rg_*_key`s :'. rg_dups
   endif
+  let fd_dups = s:detect_dups(s:fd_keys)
+  if fd_dups !=# ''
+    throw 'duplicates found in `siefe_fd_*_key`s :'. fd_dups
+  endif
 
 
   let s:checked = !empty(fzf#exec(s:min_version))
@@ -194,7 +198,18 @@ let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-u')
 let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
 let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_project_root_key', 'ctrl-o')
 let g:siefe_fd_search_git_root_key = get(g:, 'siefe_fd_search_git_root_key', 'ctrl-s')
-let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_git_root_key', 'ctrl-e')
+let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_project_root_key', 'ctrl-e')
+
+let s:fd_keys = [
+  \ g:siefe_fd_hidden_key,
+  \ g:siefe_fd_no_ignore_key,
+  \ g:siefe_fd_git_root_key,
+  \ g:siefe_fd_project_root_key,
+  \ g:siefe_fd_search_git_root_key,
+  \ g:siefe_fd_search_project_root_key,
+\ ]
+  \ + s:common_keys
+
 
 let g:siefe_fd_project_root_env = get(g:, 'siefe_fd_git_root_env', '')
 
