@@ -743,7 +743,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
   \ ]
 
   let authors_info = a:authors ==# [] ? '' : "\nauthors: ".join(a:authors)
-  let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
+  let paths_info = paths ==# '' ? '' : "\npaths: ". paths
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
