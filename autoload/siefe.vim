@@ -647,7 +647,27 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
     let siefe_gitlog_follow_help = ''
     let follow = ''
   endif
-  let paths = join(map(copy(a:paths), 'shellescape(v:val)'), ' ')
+  if len(a:type) > 0 && len(a:paths) > 0
+    let paths = []
+    for path in a:paths
+      call s:warn(path[len(path)-1])
+      if path[len(path)-1] ==# '/'
+        for ftype in a:type
+          let paths += [path . ftype]
+        endfor
+      else
+        let paths += [path]
+      endif
+    endfor
+    let paths = join(map(paths, 'shellescape(v:val)'))
+
+  elseif len(a:type) > 0 && len(a:paths) == 0
+    let paths = join(map(copy(a:type), 'shellescape(v:val)'))
+
+  else
+    let paths = join(map(copy(a:paths), 'shellescape(v:val)'))
+  endif
+
   let G = a:G ? '-G' : '-S'
   let G_prompt = a:G ? '-G ' : '-S '
   " --pickaxe-regex and -G are incompatible
@@ -724,7 +744,6 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
 
   let authors_info = a:authors ==# [] ? '' : "\nauthors: ".join(a:authors)
   let paths_info = a:paths ==# [] ? '' : "\npaths: ".join(a:paths)
-  let type_info = a:type ==# '' ? '' : "\ntypes: " . a:type
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
@@ -768,8 +787,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . SG_help
         \ . siefe_gitlog_follow_help
         \ . authors_info
-        \ . paths_info
-        \ . type_info,
+        \ . paths_info,
       \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> ',
       \ ],
    \ 'sink*': function('s:gitpickaxe_sink', [a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen]),
@@ -842,8 +860,13 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
 endfunction
 
 function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, line_range, fullscreen, lines) abort
-  let type = substitute(join(map(a:lines[1:], 'split(v:val, ":")[1]'), ' '), ',', '', 'g')
-  call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:line_range, a:fullscreen)
+  if a:lines[0] == g:siefe_abort_key
+    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, '', a:line_range, a:fullscreen)
+  else
+    let type = reduce(map(a:lines[1:], 'split(substitute(split(v:val, ":")[1], ",", "", "g"))'), { acc, val -> type(val) == 3 ? extend(acc, val) : add(acc, val)})
+    call s:warn(type)
+    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:line_range, a:fullscreen)
+  endif
 endfunction
 
 function! FzfBranchSelect(func, fullscreen, not, ...) abort
@@ -942,8 +965,12 @@ function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex
 endfunction
 
 function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, type, line_range, fullscreen, ...) abort
-  let paths = a:000[0][2:]
-  call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+  if a:000[0][1] == g:siefe_abort_key
+    call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, [], a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+  else
+    let paths = a:000[0][2:]
+    call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+  endif
 endfunction
 
 
