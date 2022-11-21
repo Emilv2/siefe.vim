@@ -253,7 +253,7 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
   let max_1_toggle = a:max_1 ? 'off' : 'on'
   let search_zip = a:search_zip ? '-z ' : ''
   let search_zip_toggle = a:search_zip ? 'off' : 'on'
-  let command_fmt = 'echo 0 > ' . tmp_cfg . '; rg --column --auto-hybrid-regex -U --glob ' . shellescape('!git/objects')
+  let command_fmt = 'echo 0 > ' . tmp_cfg . '; rg --column --auto-hybrid-regex -U --glob \!.git/objects '
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
     \ . case_sensitive
     \ . s:field_match_separator . ' '
