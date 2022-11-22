@@ -537,6 +537,8 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
   let siefe_fd_search_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_search_project_root_key . ','
   let siefe_fd_search_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_search_project_root_key, 'search √work')
 
+  " TODO disable git/project root for git log
+
   let options = [
     \ '--history', s:data_path . '/git_dir_history',
     \ '--print-query',
@@ -966,12 +968,26 @@ function! GitPickaxeFzfNotBranch(query, branches, notbranches, authors, G, regex
   endif
 endfunction
 
-function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branch, notbranches, authors, G, regex, paths, follow, ignore_case, type, line_range, fullscreen, ...) abort
-  if a:000[0][1] == g:siefe_abort_key
-    call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, [], a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+function! GitPickaxeFzfPath(fd_hidden, fd_no_ignore, orig_dir, dir, query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, line_range, fullscreen, ...) abort
+  let key = a:000[0][1]
+
+  if key ==# g:siefe_abort_key
+    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, [], a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+
+  elseif key ==# g:siefe_fd_hidden_key
+    let fd_hidden = a:fd_hidden ? 0 : 1
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), siefe#bufdir(), a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
+
+  elseif key ==# g:siefe_fd_no_ignore_key
+    let fd_no_ignore = a:fd_no_ignore ? 0 : 1
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,a:fd_hidden, fd_no_ignore, '', 1, siefe#bufdir(), siefe#bufdir(), a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
+
+  elseif key ==# g:siefe_fd_search_git_root_key
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,a:fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), siefe#get_git_root(), a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
+
   else
     let paths = a:000[0][2:]
-    call siefe#gitlogfzf(a:query, a:branch, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
+    call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, paths, a:follow, a:ignore_case, a:type, a:line_range, a:fullscreen)
   endif
 endfunction
 
