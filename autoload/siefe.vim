@@ -865,7 +865,7 @@ function! GitlogFzfType(query, branches, notbranches, authors, G, regex, paths, 
   if a:lines[0] == g:siefe_abort_key
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, '', a:line_range, a:fullscreen)
   else
-    let type = reduce(map(a:lines[1:], 'split(substitute(split(v:val, ":")[1], ",", "", "g"))'), { acc, val -> type(val) == 3 ? extend(acc, val) : add(acc, val)})
+    let type = s:reduce(map(a:lines[1:], 'split(substitute(split(v:val, ":")[1], ",", "", "g"))'), { acc, val -> type(val) == 3 ? extend(acc, val) : add(acc, val)})
     call s:warn(type)
     call siefe#gitlogfzf(a:query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, type, a:line_range, a:fullscreen)
   endif
@@ -1109,6 +1109,19 @@ function! s:detect_dups(lst) abort
     let dict[item] = '0'
   endfor
   return dups
+endfunction
+
+function! s:reduce(list, f) abort
+  if v:version < 900
+    let [acc; tail] = a:list
+    while !empty(tail)
+      let [head; tail] = tail
+      let acc = a:f(acc, head)
+    endwhile
+    return acc
+  else
+    return reduce(a:list, a:f)
+  endif
 endfunction
 
 " https://stackoverflow.com/a/47051271
