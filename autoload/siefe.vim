@@ -1,6 +1,6 @@
 scriptencoding utf-8
 
-let s:min_version = '0.33.0'
+let s:min_version = '0.35.0'
 let s:is_win = has('win32') || has('win64')
 let s:is_wsl_bash = s:is_win && (exepath('bash') =~? 'Windows[/\\]system32[/\\]bash.exe$')
 let s:layout_keys = ['window', 'up', 'down', 'left', 'right']
@@ -391,6 +391,8 @@ function! siefe#ripgrepfzf(query, dir, prompt, word, case_sensitive, hidden, no_
 
   if files == 0
     let spec.options += ['--disabled']
+  else
+    let spec.options += ['--bind', 'start:unbind(change)']
   endif
 
   call fzf#run(fzf#wrap(spec, a:fullscreen))
