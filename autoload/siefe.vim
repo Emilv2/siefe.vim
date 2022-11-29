@@ -495,7 +495,7 @@ function! s:ripgrep_sink(dir, prompt, word, case, hidden, no_ignore, fixed_strin
       call siefe#ripgrepfzf(query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:orig_dir, a:type, [], a:tmp_cfg, a:fullscreen)
     endif
   elseif key ==# g:siefe_rg_dir_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, 0, 0, 'd', 0, '', a:orig_dir, a:dir, query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
   elseif key ==# 'ctrl-y'
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
   return
@@ -525,12 +525,13 @@ function! FzfTypeSelect(func, fullscreen, ...) abort
 endfunction
 
 
-function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi, orig_dir, dir, ...) abort
+function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi, base_dir, orig_dir, dir, ...) abort
   let fd_hidden = a:fd_hidden ? '-H ' : ''
   let fd_hidden_toggle = a:fd_hidden ? 'off' : 'on'
   let fd_no_ignore = a:fd_no_ignore ? '-u ' : ''
   let fd_no_ignore_toggle = a:fd_no_ignore ? 'off' : 'on'
   let fd_type = a:fd_type !=# '' ? ' --type ' . a:fd_type : ''
+  let base_dir = a:base_dir !=# '' ? ' --strip-cwd-prefix --base-directory ' . a:base_dir : ' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path '
 
   let siefe_fd_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_project_root_key . ','
   let siefe_fd_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_project_root_key, '√work')
@@ -573,7 +574,7 @@ function! FzfDirSelect(func, fullscreen, fd_hidden, fd_no_ignore, fd_type, multi
   endif
 
   call fzf#run(fzf#wrap({
-          \ 'source': s:fd_command . ' --exclude ".git/" --color=always '.fd_hidden.fd_no_ignore.fd_type.' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path ',
+          \ 'source': s:fd_command . ' --exclude ".git/" --color=always ' . fd_hidden.fd_no_ignore.fd_type.base_dir,
         \ 'options': options,
         \ 'sink*': function(a:func, [a:fd_hidden, a:fd_no_ignore, a:orig_dir, a:dir] + a:000 + [a:fullscreen])
       \ }, a:fullscreen))
@@ -593,18 +594,18 @@ function! RipgrepFzfDir(fd_hidden, fd_no_ignore, orig_dir, dir, query, prompt, w
     call siefe#ripgrepfzf(a:query, a:dir, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:orig_dir, a:type, a:paths, a:tmp_cfg, a:fullscreen)
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, fd_hidden, a:fd_no_ignore, 'd', 0, '', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, fd_no_ignore, 'd', 0, a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, fd_no_ignore, 'd', 0, '', a:orig_dir, a:dir, a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
   elseif key ==# g:siefe_fd_git_root_key
     call siefe#ripgrepfzf(a:query,  siefe#get_git_root(), siefe#get_git_basename_or_bufdir(), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:orig_dir, a:type, a:paths, a:tmp_cfg, a:fullscreen)
   elseif key ==# g:siefe_fd_project_root_key
     call siefe#ripgrepfzf(a:query, expand(g:siefe_fd_project_root_env), g:siefe_fd_project_root_env, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:orig_dir, a:type, a:paths, a:tmp_cfg, a:fullscreen)
   elseif key ==# g:siefe_fd_search_git_root_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, siefe#get_git_root(), a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:orig_dir, siefe#get_git_root(), a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
   elseif key ==# g:siefe_fd_search_project_root_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, a:fd_no_ignore, 'd', 0, a:orig_dir, expand(g:siefe_fd_project_root_env), a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
+    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:orig_dir, expand(g:siefe_fd_project_root_env), a:query, a:prompt, a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:type, a:paths, a:tmp_cfg)
   else
     call siefe#ripgrepfzf(a:query, trim(system('realpath '.new_dir)), siefe#get_relative_git_or_bufdir(new_dir), a:word, a:case, a:hidden, a:no_ignore, a:fixed_strings, a:max_1, a:search_zip, a:orig_dir, a:type, a:paths, a:tmp_cfg, a:fullscreen)
   endif
@@ -709,7 +710,17 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
     let write_query_initial = 'echo '. shellescape(a:query) .' > '.query_file.' ;'
     let write_query_reload = 'echo {q} > '.query_file.' ;'
     let format = '--format=%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
-    let command_fmt = s:bin.git_SG . ' log '. G . '%s -z ' . follow . ' ' . branches . ' ' . notbranches . ' ' . authors . ' ' . regex . ' ' . ignore_case
+    let command_fmt = s:bin.git_SG 
+        \ . ' -C `git rev-parse --show-toplevel` '
+        \ . ' log '
+        \ . G 
+        \ . '%s -z '
+        \ . follow 
+        \ . ' ' . branches
+        \ . ' ' . notbranches 
+        \ . ' ' . authors 
+        \ . ' ' . regex 
+        \ . ' ' . ignore_case
     let initial_command = write_query_initial . printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
     let reload_command = write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
     let SG_help = " \n " . s:prettify_help(g:siefe_gitlog_sg_key, 'toggle S/G')
@@ -718,6 +729,7 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_pickaxe_regex_key, 'regex')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_dir_key, 'pathspec')
+        \ . "\n". initial_command
   endif
 
   let current = expand('%')
@@ -845,7 +857,7 @@ function! s:gitpickaxe_sink(branches, notbranches, authors, G, regex, paths, fol
   elseif key == g:siefe_gitlog_author_key
     call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
   elseif key == g:siefe_gitlog_dir_key
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, '', 1, siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen ,0, 0, '', 1, siefe#get_git_root(), siefe#bufdir(), siefe#bufdir(), query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
   elseif key == g:siefe_gitlog_type_key
     " git understands rg --type-list globs :)
     call FzfTypeSelect('GitlogFzfType', a:fullscreen, query, a:branches, a:notbranches, a:authors, a:G, a:regex, a:paths, a:follow, a:ignore_case, a:type, a:line_range)
