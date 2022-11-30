@@ -1,6 +1,13 @@
 #!/bin/bash
 
-FILE=$(file --uncompress --no-sandbox --brief --mime -- "$1")
+# older versions of file do not have this flag
+if { file --help 2>&1 || :; } | \grep -q -e '--no-sandbox'; then
+	no_sandbox_flag="--no-sandbox"
+else
+	no_sandbox_flag=""
+fi
+
+FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$1")
 IFS=';' read -ra ADDR <<<"$FILE"
 TYPE="${ADDR[0]%%/*}"
 if [[ ${ADDR[1]} == *compressed-encoding* ]]; then
