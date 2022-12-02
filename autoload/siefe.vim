@@ -513,7 +513,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_fixed_strings_key
     let a:kwargs.fixed_strings = a:kwargs.fixed_strings ? 0 : 1
-    call siefe#ripgrepfzf(a:fullscreen, a:kwargs)
+    call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_max_1_key
     let a:kwargs.max_1 = a:kwargs.max_1 ? 0 : 1
