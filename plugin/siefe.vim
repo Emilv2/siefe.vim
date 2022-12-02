@@ -117,6 +117,24 @@ command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(
             \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
             \ })
 
+command! -nargs=* -bang SiefeBuffersRgWord call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : expand('<cword>'),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+            \ })
+
+command! -nargs=* -bang SiefeBuffersRgWORD call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : expand('<cWORD>'),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+            \ })
+
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
