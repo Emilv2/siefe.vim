@@ -63,7 +63,7 @@ if !isdirectory(s:data_path)
   call mkdir(s:data_path, 'p')
 endif
 
-let s:logger = ' 2> >( ' . s:bin.logger . ' >> '. s:data_path . '/errors)'
+let s:logger = s:bin.logger . ' '. s:data_path . '/error_log '
 
 """ load configuration options
 let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-markers') . ' ' . get(g:, 'siefe_delta_extra_options', '')
@@ -278,7 +278,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let max_1_toggle = a:kwargs.max_1 ? 'off' : 'on'
   let search_zip = a:kwargs.search_zip ? '-z ' : ''
   let search_zip_toggle = a:kwargs.search_zip ? 'off' : 'on'
-  let command_fmt = 'echo 0 > ' . a:kwargs.files . '; rg --column --auto-hybrid-regex -U --glob \!.git/objects '
+  let command_fmt = 'echo 0 > ' . a:kwargs.files . '; ' . s:logger . ' rg --column --auto-hybrid-regex -U --glob \!.git/objects '
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
     \ . case_sensitive
     \ . s:field_match_separator . ' '
@@ -291,10 +291,10 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . a:kwargs.type
     \ . ' -- %s '
     \ . paths
-  let rg_command = printf(command_fmt, shellescape(a:kwargs.query)) . s:logger
-  let reload_command = printf(command_fmt, '{q}') . s:logger
-  let empty_command = printf(command_fmt, '""') . s:logger
-  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg ' . search_zip . no_ignore . hidden_option . ' --color=always --files '.a:kwargs.type . s:logger
+  let rg_command = printf(command_fmt, shellescape(a:kwargs.query))
+  let reload_command = printf(command_fmt, '{q}')
+  let empty_command = printf(command_fmt, '""')
+  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg ' . search_zip  . no_ignore . hidden_option .  ' --color=always --files '.a:kwargs.type
 
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
   let rg_prompt = word
@@ -544,7 +544,7 @@ endfunction
 " Lots of functions to use fzf to also select ie rg types
 function! FzfTypeSelect(func, fullscreen, ...) abort
   call fzf#run(fzf#wrap({
-        \ 'source': 'rg --color=always --type-list ' . s:logger,
+        \ 'source': s:logger . 'rg --color=always --type-list ',
         \ 'options': [
           \ '--prompt', 'Choose type> ',
           \ '--multi',
@@ -613,7 +613,7 @@ function! FzfDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, 
   endif
 
   call fzf#run(fzf#wrap({
-        \ 'source': s:fd_command . ' --exclude ".git/" --color=always ' . fd_hidden . fd_no_ignore . fd_type . base_dir . s:logger,
+        \ 'source': s:logger . s:fd_command . ' --exclude ".git/" --color=always ' . fd_hidden . fd_no_ignore . fd_type . base_dir,
         \ 'options': options,
         \ 'sink*': function(a:func, [a:fullscreen, a:dir, a:fd_hidden, a:fd_no_ignore] + a:000)
       \ }, a:fullscreen))
@@ -771,8 +771,8 @@ function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths
         \ . ' ' . authors
         \ . ' ' . regex
         \ . ' ' . ignore_case
-    let initial_command = write_query_initial . printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths . remove_newlines . s:logger
-    let reload_command = write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines . s:logger
+    let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
+    let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
     let SG_help = " \n " . s:prettify_help(g:siefe_gitlog_sg_key, 'toggle S/G')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_ignore_case_key, 'ignore case')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_fzf_key,  'fzf messages')

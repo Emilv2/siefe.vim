@@ -1,5 +1,13 @@
 #!/bin/bash
 
-while read -r line; do
-	echo "[$(date +%Y-%m-%d\ %H:%M:%S)] $line"
-done
+echoed_command=0
+
+"${@:2}" 2> >(
+	while read -r line; do
+		if [[ $echoed_command -eq 0 ]]; then
+			echo "[$(date +%Y-%m-%d\ %H:%M:%S)] error running:" "${@:2}" >>"${1}"
+			echoed_command=1
+		fi
+		echo "[$(date +%Y-%m-%d\ %H:%M:%S)] $line" >>"${1}"
+	done >&2
+)
