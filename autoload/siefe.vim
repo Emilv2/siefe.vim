@@ -433,9 +433,9 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
   " query can contain newlines, we have to reconstruct it
   let tmp = split(a:lines[-1], "\n", 1)[0:-2]
   if len(a:lines) == 1
-    let query = tmp[0]
+    let a:kwargs.query = tmp[0]
   else
-    let query = join(a:lines[0:-2], "\n")."\n".tmp[0]
+    let a:kwargs.query = join(a:lines[0:-2], "\n")."\n".tmp[0]
   endif
 
   let key = tmp[1]
