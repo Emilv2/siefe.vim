@@ -714,7 +714,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   if len(a:kwargs.paths)  == 1 && filereadable(a:kwargs.paths[0]) && a:kwargs.line_range == []
     let siefe_gitlog_follow_key = g:siefe_gitlog_follow_key . ','
     let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_help( g:siefe_gitlog_follow_key, 'follow')
-    let follow = a:kwargs.follow ? '--follow' : ''
+    let follow = a:kwargs.follow ? '--follow ' : ''
   else
     let siefe_gitlog_follow_key = ''
     let siefe_gitlog_follow_help = ''
@@ -772,7 +772,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_type_key . ','
         \ . g:siefe_gitlog_pickaxe_regex_key . ','
         \ . g:siefe_gitlog_dir_key . ','
-        \ . g:siefe_gitlog_follow_key . ','
+        \ . siefe_gitlog_follow_key . ','
         \ . g:siefe_gitlog_dir_key
     let query_file = tempname()
     let write_query_initial = 'echo '. shellescape(a:kwargs.query) .' > '.query_file.' ;'
@@ -871,7 +871,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . siefe_gitlog_follow_help
         \ . authors_info
         \ . paths_info,
-      \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> ',
+      \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . follow . 'pickaxe> ',
       \ ],
    \ 'sink*': function('s:gitpickaxe_sink', [a:fullscreen, a:kwargs]),
    \ 'source': initial_command
