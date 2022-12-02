@@ -797,7 +797,6 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_pickaxe_regex_key, 'regex')
         \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_dir_key, 'pathspec')
-        \ . "\n". initial_command
   endif
 
   let current = expand('%')
