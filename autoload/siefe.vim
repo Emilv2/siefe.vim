@@ -294,7 +294,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let rg_command = printf(command_fmt, shellescape(a:kwargs.query)) . s:logger
   let reload_command = printf(command_fmt, '{q}') . s:logger
   let empty_command = printf(command_fmt, '""') . s:logger
-  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg ' . search_zip  . ' --color=always --files '.a:kwargs.type . s:logger
+  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg ' . search_zip . no_ignore . hidden_option . ' --color=always --files '.a:kwargs.type . s:logger
 
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
   let rg_prompt = word
