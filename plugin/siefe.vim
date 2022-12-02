@@ -117,8 +117,7 @@ command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(
             \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
             \ })
 
-command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<q-args>, '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
-command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(expand("<cword>"), '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
-command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(expand("<cWORD>"), '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
-command! -nargs=* -bang SiefeGitLogLine call siefe#gitlogfzf(trim(getline('.')), '', '', [], 0, 0, [], 0, 0, '', [], <bang>0)
-command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<q-args>, '', '', [], 0, 0, [expand('%')], 0, 0, '', siefe#visual_line_nu(), <bang>0)
+command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
+command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
+command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
+command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [expand('%')], 'line_range' : siefe#visual_line_nu()})
