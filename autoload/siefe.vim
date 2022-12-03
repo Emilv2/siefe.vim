@@ -75,6 +75,7 @@ let g:siefe_previous_history_key = get(g:, 'siefe_previous_history_key', 'ctrl-p
 let g:siefe_up_key = get(g:, 'siefe_up_key', 'ctrl-k')
 let g:siefe_down_key = get(g:, 'siefe_down_key', 'ctrl-j')
 let g:siefe_accept_key = get(g:, 'siefe_accept_key', 'ctrl-m')
+let g:siefe_help_key = get(g:, 'siefe_help_key', 'f9')
 
 let s:common_keys = [
   \ g:siefe_abort_key,
@@ -83,6 +84,7 @@ let s:common_keys = [
   \ g:siefe_up_key,
   \ g:siefe_down_key,
   \ g:siefe_accept_key,
+  \ g:siefe_help_key,
 \ ]
 
 let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
@@ -357,7 +359,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
-      \ '--bind', 'f9:change-preview:echo -e "'.s:prettify_help(g:siefe_rg_rg_key, '').'search with ripgrep"',
+      \ '--bind', g:siefe_help_key . ':change-preview:echo -e "'.s:prettify_help(g:siefe_rg_rg_key, '').'search with ripgrep"',
       \ '--bind', g:siefe_down_key . ':down',
       \ '--bind', g:siefe_up_key . ':up',
       \ '--bind', g:siefe_next_history_key . ':next-history',
