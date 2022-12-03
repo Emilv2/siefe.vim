@@ -893,6 +893,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . paths_info,
       \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . follow . 'pickaxe> ',
       \ ],
+   \ 'dir': siefe#get_git_root(),
    \ 'sink*': function('s:gitpickaxe_sink', [a:fullscreen, a:kwargs]),
    \ 'source': initial_command
   \ }
