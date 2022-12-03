@@ -10,18 +10,15 @@ fi
 FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$1")
 IFS=';' read -ra ADDR <<<"$FILE"
 TYPE="${ADDR[0]%%/*}"
+if [[ $TYPE == "application" ]]; then
+	TYPE="${ADDR[0]##*/x-}"
+fi
+
 if [[ ${ADDR[1]} == *compressed-encoding* ]]; then
 	COMPRESSION="${ADDR[1]##*compressed-encoding*/}"
 fi
 
-if [[ $TYPE != "text" ]]; then
-	# brotli isn't detectable by file
-	if [ "${1##*.}" = "br" ]; then
-		brotli --decompress --stdout "$1"
-	else
-		echo \""$FILE"\" is not text
-	fi
-else
+if [[ $TYPE == "text" ]]; then
 	case "$COMPRESSION" in
 	zstd)
 		zstdcat "$1"
@@ -48,4 +45,18 @@ else
 		echo "$COMPRESSION" "not (yet) supported"
 		;;
 	esac
+
+elif [[ $TYPE == "tar" ]]; then
+	# tar does auto-decompression
+	tar --to-stdout --extract --file="$1"
+
+else
+	# brotli isn't detectable by file
+	if [ "${1##*.}" = "br" ]; then
+		brotli --decompress --stdout "$1"
+	else
+		echo type: "$TYPE"
+		echo compression: "$COMPRESSION"
+		echo \""$FILE"\" is not text
+	fi
 fi
