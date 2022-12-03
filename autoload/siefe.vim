@@ -103,6 +103,7 @@ let g:siefe_rg_no_ignore_key = get(g:, 'siefe_rg_no_ignore_key', 'ctrl-u')
 let g:siefe_rg_fixed_strings_key = get(g:, 'siefe_rg_fixed_strings_key', 'ctrl-x')
 let g:siefe_rg_max_1_key = get(g:, 'siefe_rg_max_1_key', 'ctrl-a')
 let g:siefe_rg_search_zip_key = get(g:, 'siefe_rg_search_zip_key', 'alt-z')
+let g:siefe_rg_text_key = get(g:, 'siefe_rg_text_key', 'alt-t')
 let g:siefe_rg_dir_key = get(g:, 'siefe_rg_dir_key', 'ctrl-d')
 let g:siefe_rg_buffers_key = get(g:, 'siefe_rg_buffers_key', 'ctrl-b')
 let g:siefe_rg_yank_key = get(g:, 'siefe_rg_yank_key', 'ctrl-y')
@@ -140,6 +141,7 @@ let s:rg_keys = [
   \ g:siefe_rg_fixed_strings_key,
   \ g:siefe_rg_max_1_key,
   \ g:siefe_rg_search_zip_key,
+  \ g:siefe_rg_text_key,
   \ g:siefe_rg_dir_key,
   \ g:siefe_rg_buffers_key,
   \ g:siefe_rg_yank_key,
@@ -230,6 +232,7 @@ let g:siefe_rg_default_no_ignore = get(g:, 'siefe_rg_default_no_ignore', 0)
 let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings', 0)
 let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
 let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
+let g:siefe_rg_default_text = get(g:, 'siefe_rg_default_text', 0)
 
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
@@ -248,6 +251,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.fixed_strings = get(a:kwargs, 'fixed_strings', g:siefe_rg_default_fixed_strings)
   let a:kwargs.max_1 = get(a:kwargs, 'max_1', g:siefe_rg_default_max_1)
   let a:kwargs.search_zip = get(a:kwargs, 'search_zip', g:siefe_rg_default_search_zip)
+  let a:kwargs.text = get(a:kwargs, 'text', g:siefe_rg_default_text)
   let a:kwargs.orig_dir = get(a:kwargs, 'orig_dir', a:dir)
   let a:kwargs.paths = get(a:kwargs, 'paths', [])
   let a:kwargs.type = get(a:kwargs, 'type', '')
@@ -283,6 +287,9 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let max_1_toggle = a:kwargs.max_1 ? 'off' : 'on'
   let search_zip = a:kwargs.search_zip ? '-z ' : ''
   let search_zip_toggle = a:kwargs.search_zip ? 'off' : 'on'
+  let text = a:kwargs.text ? '--text ' : ''
+  let text_symbol = a:kwargs.text ? '-a ' : ''
+  let text_toggle = a:kwargs.text ? 'off' : 'on'
   let command_fmt = 'echo 0 > ' . a:kwargs.files . '; ' . s:logger . ' rg --column --auto-hybrid-regex -U --glob \!.git/objects '
     \ . ' --line-number --no-heading --color=always --colors "column:fg:green" --with-filename '
     \ . case_sensitive
@@ -293,13 +300,19 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . fixed_strings
     \ . max_1
     \ . search_zip
+    \ . text
     \ . a:kwargs.type
     \ . ' -- %s '
     \ . paths
   let rg_command = printf(command_fmt, shellescape(a:kwargs.query))
   let reload_command = printf(command_fmt, '{q}')
   let empty_command = printf(command_fmt, '""')
-  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg ' . search_zip  . no_ignore . hidden_option .  ' --color=always --files '.a:kwargs.type
+  let files_command = 'echo 1 > ' . a:kwargs.files . '; rg '
+    \ . search_zip
+    \ . text
+    \ . no_ignore
+    \ . hidden_option
+    \ .  ' --color=always --files '.a:kwargs.type
 
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
   let rg_prompt = word
@@ -309,6 +322,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . fixed_strings
     \ . max_1
     \ . search_zip
+    \ . text_symbol
     \ . type_prompt
     \ . a:kwargs.prompt
     \ . ' rg> '
@@ -316,6 +330,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let files_prompt = no_ignore
     \ . hidden
     \ . search_zip
+    \ . text_symbol
     \ . type_prompt
     \ . a:kwargs.prompt
     \ . ' Files> '
@@ -361,6 +376,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . g:siefe_rg_fixed_strings_key . ','
         \ . g:siefe_rg_max_1_key . ','
         \ . g:siefe_rg_search_zip_key . ','
+        \ . g:siefe_rg_text_key . ','
         \ . g:siefe_rg_dir_key . ','
         \ . g:siefe_rg_buffers_key . ','
         \ . g:siefe_rg_yank_key . ',',
@@ -411,6 +427,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_max_1_key, 'max count 1:' . max_1_toggle)
         \ . ' ╱ ' . s:prettify_help(g:siefe_rg_search_zip_key, 'search zip:' . search_zip_toggle)
+        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_text_key, 'search binary:' . text_toggle)
         \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
         \ . paths_info,
       \ '--prompt', initial_prompt,
@@ -526,6 +543,10 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_search_zip_key
     let a:kwargs.search_zip = a:kwargs.search_zip ? 0 : 1
+    call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
+
+  elseif key ==# g:siefe_rg_text_key
+    let a:kwargs.text = a:kwargs.text ? 0 : 1
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_buffers_key
@@ -684,7 +705,6 @@ function! RipgrepFzfTypeNot(fullscreen, dir, kwargs, lines) abort
   call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 endfunction
 
-"function! siefe#gitlogfzf(query, branches, notbranches, authors, G, regex, paths, follow, ignore_case, type, line_range, fullscreen) abort
 function! siefe#gitlogfzf(fullscreen, kwargs) abort
   call s:check_requirements()
 
