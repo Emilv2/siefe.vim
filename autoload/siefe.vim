@@ -556,7 +556,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_case_key
-    let a:kwargs.case = a:kwargs.case ? 0 : 1
+    let a:kwargs.case_sensitive = a:kwargs.case_sensitive  ? 0 : 1
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_hidden_key
