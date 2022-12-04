@@ -359,7 +359,35 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
-      \ '--bind', g:siefe_help_key . ':change-preview:echo -e "'.s:prettify_help(g:siefe_rg_rg_key, '').'search with ripgrep"',
+      \ '--bind', g:siefe_help_key . ':change-preview:echo -e "'
+        \ . s:prettify_help(g:siefe_help_key) . "\t" . 'show this help file'
+        \ . "\n" . s:prettify_help(g:siefe_rg_rg_key) . "\t". 'search with ripgrep'
+        \ . "\n" . s:prettify_help(g:siefe_rg_rgfzf_key) . "\t" . 'search with fzf in current ripgrep result'
+        \ . "\n" . s:prettify_help(g:siefe_rg_files_key) . "\t" . 'search files with fzf'
+        \ . "\n" . s:prettify_help(g:siefe_rg_type_key) . "\t" . 'select file type to search, rg \`-t, --type\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_type_not_key) . "\t" . 'select file type to exclude, rg \`-t, --type-not\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_buffers_key) . "\t" . 'toggle limit search to currently open buffers'
+        \ . "\n" . s:prettify_help(g:siefe_rg_no_ignore_key) . "\t" . 'toggle search ignored files ' . no_ignore_toggle
+        \ . "\n" . s:prettify_help(g:siefe_rg_hidden_key) . "\t" . 'toggle search hidden files ' . hidden_toggle
+        \ . "\n" . s:prettify_help(g:siefe_rg_case_key) . "\t" . 'toggle case sensitive ' . hidden_toggle
+          \ . ".\n\t" . 'Toggles between smart case and case sensitive. rg \`-S, --smart-case\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_dir_key) . "\t" . 'change path to search'
+        \ . "\n" . s:prettify_help(g:siefe_rg_yank_key) . "\t" . 'yank selected matches line'
+        \ . "\n" . s:prettify_help(g:siefe_rg_word_key) . "\t" . 'toggle only show matches surrounded by word boundaries ' . word_toggle
+          \ . ".\n\t" . 'rg \`-w, --word-regexp\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_fixed_strings_key) . "\t"
+          \ . 'toggle treat the pattern as a literal string ' . fixed_strings_toggle
+          \ . ".\n\t" . 'rg \`-F, --fixed-strings\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_max_1_key) . "\t" . 'toggle limit the number of matching lines per file searched to 1' . max_1_toggle
+          \ . ".\n\t" . 'rg \`-m, --max-count 1\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_search_zip_key) . "\t" . 'toggle search in compressed files ' . search_zip_toggle
+          \ . ".\n\t" . '(gzip, bzip2, xz, LZ4, LZMA, Brotli and Zstd). rg \`-z, --search-zip\`'
+        \ . "\n" . s:prettify_help(g:siefe_rg_text_key) . "\t" . 'toggle search binary files ' . text_toggle
+          \ . '. We can search in tar this way.'
+          \ . "\n\t" . '  rg \`-a, --text\`. combined with \`-z\` we can also search tar.gz'
+          \ . "\n" . s:prettify_help(g:siefe_rg_fast_preview_key) . "\t" . 'fast preview with \`cat\`, no colors but fast'
+          \ . "\n" . s:prettify_help(g:siefe_rg_preview_key) . "\t" . 'preview with \`bat\`, colors and git info but slower than \`cat\`'
+        \ . '"',
       \ '--bind', g:siefe_down_key . ':down',
       \ '--bind', g:siefe_up_key . ':up',
       \ '--bind', g:siefe_next_history_key . ':next-history',
@@ -414,22 +442,26 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ')'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
-      \ '--header', s:prettify_help(g:siefe_rg_rg_key, 'Rg')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fzf_key,  'fzf')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_rgfzf_key, 'rg/fzf')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_files_key, 'Files')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_key, 'Type')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_type_not_key, '!Type')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_buffers_key, 'Buffers')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_no_ignore_key, 'no ignore:' . no_ignore_toggle)
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_hidden_key, 'hidden:' . hidden_toggle)
-        \ . "\n" . s:prettify_help(g:siefe_rg_dir_key, 'cd')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_yank_key, 'yank')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_word_key, 'word:' . word_toggle)
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_fixed_strings_key, 'fixed strings:' . fixed_strings_toggle)
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_max_1_key, 'max count 1:' . max_1_toggle)
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_search_zip_key, 'search zip:' . search_zip_toggle)
-        \ . ' ╱ ' . s:prettify_help(g:siefe_rg_text_key, 'search binary:' . text_toggle)
+      \ '--header', s:prettify_header(g:siefe_rg_rg_key, 'Rg')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fzf_key,  'fzf')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_rgfzf_key, 'rg/fzf')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_key, '-t')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_not_key, '-T')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, '-u:' . no_ignore_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
+        \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_max_1_key, '-m1:' . max_1_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_search_zip_key, '-z:' . search_zip_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_text_key, '--text:' . text_toggle)
         \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
         \ . paths_info,
       \ '--prompt', initial_prompt,
@@ -585,7 +617,7 @@ function! FzfTypeSelect(func, fullscreen, ...) abort
           \ '--bind','tab:toggle+up',
           \ '--bind','shift-tab:toggle+down',
           \ '--expect', g:siefe_abort_key,
-          \ '--header', s:prettify_help(g:siefe_abort_key, 'abort'),
+          \ '--header', s:prettify_header(g:siefe_abort_key, 'abort'),
           \ ],
         \ 'sink*': function(a:func, [a:fullscreen] + a:000)
       \ }, a:fullscreen))
@@ -601,9 +633,9 @@ function! FzfDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, 
   let base_dir = a:base_dir !=# '' ? ' --strip-cwd-prefix --base-directory ' . a:base_dir : ' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path '
 
   let siefe_fd_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_project_root_key . ','
-  let siefe_fd_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_project_root_key, '√work')
+  let siefe_fd_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_header(g:siefe_fd_project_root_key, '√work')
   let siefe_fd_search_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_search_project_root_key . ','
-  let siefe_fd_search_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_help(g:siefe_fd_search_project_root_key, 'search √work')
+  let siefe_fd_search_project_root_help = g:siefe_fd_project_root_env ==# '' ? '' : ' ╱ ' . s:prettify_header(g:siefe_fd_search_project_root_key, 'search √work')
 
   " TODO disable git/project root for git log
 
@@ -628,12 +660,12 @@ function! FzfDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, 
     \ . siefe_fd_project_root_key
     \ . siefe_fd_search_project_root_key
     \ . g:siefe_abort_key,
-    \ '--header', s:prettify_help(g:siefe_fd_hidden_key, 'hidden:' . fd_hidden_toggle)
-      \ . ' ╱ ' . s:prettify_help(g:siefe_fd_no_ignore_key, 'no ignore:' . fd_no_ignore_toggle)
-      \ . ' ╱ ' . s:prettify_help(g:siefe_fd_git_root_key, '√git')
+    \ '--header', s:prettify_header(g:siefe_fd_hidden_key, 'hidden:' . fd_hidden_toggle)
+      \ . ' ╱ ' . s:prettify_header(g:siefe_fd_no_ignore_key, 'no ignore:' . fd_no_ignore_toggle)
+      \ . ' ╱ ' . s:prettify_header(g:siefe_fd_git_root_key, '√git')
       \ . siefe_fd_project_root_help
-      \ . ' ╱ ' . s:prettify_help(g:siefe_abort_key, 'abort')
-      \ . "\n" . s:prettify_help(g:siefe_fd_search_git_root_key, 'search √git')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort')
+      \ . "\n" . s:prettify_header(g:siefe_fd_search_git_root_key, 'search √git')
       \ . siefe_fd_search_project_root_help
     \ ]
   if a:multi
@@ -735,7 +767,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
 
   if len(a:kwargs.paths)  == 1 && filereadable(a:kwargs.paths[0]) && a:kwargs.line_range == []
     let siefe_gitlog_follow_key = g:siefe_gitlog_follow_key . ','
-    let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_help( g:siefe_gitlog_follow_key, 'follow')
+    let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_header( g:siefe_gitlog_follow_key, 'follow')
     let follow = a:kwargs.follow ? '--follow ' : ''
   else
     let siefe_gitlog_follow_key = ''
@@ -813,12 +845,12 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' ' . ignore_case
     let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
     let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
-    let SG_help = " \n " . s:prettify_help(g:siefe_gitlog_sg_key, 'toggle S/G')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_ignore_case_key, 'ignore case')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_fzf_key,  'fzf messages')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_s_key, 'pickaxe')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_pickaxe_regex_key, 'regex')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_dir_key, 'pathspec')
+    let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_s_key, 'pickaxe')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_dir_key, 'pathspec')
   endif
 
   let current = expand('%')
@@ -884,11 +916,11 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
       \ '--preview-window', default_preview_size,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--header',
-        \ s:prettify_help(g:siefe_gitlog_author_key, 'authors')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_branch_key, 'branches')
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_type_key, 'type')
+        \ s:prettify_header(g:siefe_gitlog_author_key, 'authors')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_branch_key, 'branches')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_type_key, 'type')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
-        \ . ' ╱ ' . s:prettify_help(g:siefe_gitlog_not_branch_key, '^branches')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_not_branch_key, '^branches')
         \ . SG_help
         \ . siefe_gitlog_follow_help
         \ . authors_info
@@ -993,7 +1025,7 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
 
   let not = a:not ? '^' : ''
   let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
-  let siefe_branches_all_help = a:not ? '' : ' ╱ ' . s:prettify_help(g:siefe_branches_all_key, '--all')
+  let siefe_branches_all_help = a:not ? '' : ' ╱ ' . s:prettify_header(g:siefe_branches_all_key, '--all')
 
   let spec = {
     \ 'source':  "git branch -a --sort='-authordate' --color --format='%(HEAD) %(if:equals=refs/remotes)%(refname:rstrip=-2)%(then)%(color:cyan)%(align:0)%(refname:lstrip=2)%(end)%(else)%(if)%(HEAD)%(then)%(color:reverse yellow)%(align:0)%(refname:lstrip=-1)%(end)%(else)%(color:yellow)%(align:0)%(refname:lstrip=-1)%(end)%(end)%(end)%(color:reset) %(color:red): %(if)%(symref)%(then)%(color:yellow)%(objectname:short)%(color:reset) %(color:red):%(color:reset) %(color:green)-> %(symref:lstrip=-2)%(else)%(color:yellow)%(objectname:short)%(color:reset) %(if)%(upstream)%(then)%(color:red): %(color:reset)%(color:green)[%(upstream:short)%(if)%(upstream:track)%(then):%(color:blue)%(upstream:track,nobracket)%(symref:lstrip=-2)%(color:green)%(end)]%(color:reset) %(end)%(color:red):%(color:reset) %(contents:subject)%(end) • %(color:blue)(%(authordate:short))'",
@@ -1021,7 +1053,7 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
         \ '--preview', 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"' ,
         \ '--prompt', not . 'branches> ',
         \ '--header='
-          \ . s:prettify_help(g:siefe_abort_key, 'abort')
+          \ . s:prettify_header(g:siefe_abort_key, 'abort')
           \ . siefe_branches_all_help
       \ ],
     \ 'placeholder': ''
@@ -1039,7 +1071,7 @@ function! FzfAuthorSelect(func, fullscreen, ...) abort
         \ '--multi',
         \ '--bind','tab:toggle+up',
         \ '--expect', g:siefe_abort_key,
-        \ '--header', s:prettify_help(g:siefe_abort_key, 'abort'),
+        \ '--header', s:prettify_header(g:siefe_abort_key, 'abort'),
         \ '--bind','shift-tab:toggle+down',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
@@ -1203,7 +1235,11 @@ function! s:yank_to_register(data) abort
   silent! let @+ = a:data
 endfunction
 
-function! s:prettify_help(key, text) abort
+function! s:prettify_help(key) abort
+    return s:magenta(toupper(a:key), 'Special')
+endfunction
+
+function! s:prettify_header(key, text) abort
   let char = split(a:key, '-')[-1]
   if char == a:text[0]
     return s:magenta(toupper(a:key), 'Special') . ' ' . a:text
