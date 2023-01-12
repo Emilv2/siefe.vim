@@ -52,14 +52,6 @@ command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(
             \  'query' : trim(getline('.')),
             \ })
 
-command! -nargs=* -bang SiefeRgFiles call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : <q-args>,
-            \  'files' : '//',
-            \ })
-
 command! -nargs=* -bang SiefeProjectRg call siefe#ripgrepfzf(
             \ <bang>0,
             \ siefe#get_git_root(),
@@ -100,15 +92,6 @@ command! -nargs=* -bang SiefeProjectRgLine call siefe#ripgrepfzf(
             \  'prompt' : siefe#get_git_basename_or_bufdir(),
             \ })
 
-command! -nargs=* -bang SiefeProjectRgFiles call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
-
 command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(
             \ <bang>0,
             \ siefe#get_git_root(),
@@ -134,6 +117,93 @@ command! -nargs=* -bang SiefeBuffersRgWORD call siefe#ripgrepfzf(
             \  'query' : expand('<cWORD>'),
             \  'prompt' : siefe#get_git_basename_or_bufdir(),
             \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+            \ })
+
+command! -nargs=* -bang SiefeFiles call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : <q-args>,
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeFilesVisual call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : siefe#visual_selection(),
+            \  'fixed_strings' : 1,
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeFilesWord call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : expand('<cword>'),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeFilesWORD call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : expand('<cWORD>'),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeFilesLine call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : trim(getline('.')),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeProjectFiles call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : <q-args>,
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeProjectFilesVisual call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : siefe#visual_selection(),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeProjectFilesWord call siefe#ripgrepfzf(expand(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : expand('<cword>'),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeProjectFilesWORD call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : expand('<cWORD>'),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+command! -nargs=* -bang SiefeProjectFilesLine call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : trim(getline('.')),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
             \ })
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
