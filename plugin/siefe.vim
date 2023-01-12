@@ -20,6 +20,7 @@ command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(
             \ siefe#bufdir(),
             \ {
             \  'query' : <q-args>,
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
             \ })
 
 command! -nargs=* -bang SiefeRgVisual call siefe#ripgrepfzf(
