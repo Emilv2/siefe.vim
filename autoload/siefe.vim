@@ -1340,4 +1340,5 @@ function! siefe#visual_line_nu() abort
         let line_end = getpos("'>")[1]
     end
     return sort([line_start, line_end], 'n')
+
 endfunction
