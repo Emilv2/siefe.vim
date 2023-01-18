@@ -68,7 +68,7 @@ command! -nargs=* -bang SiefeProjectRgVisual call siefe#ripgrepfzf(
             \  'prompt' : siefe#get_git_basename_or_bufdir(),
             \ })
 
-command! -nargs=* -bang SiefeProjectRgWord call siefe#ripgrepfzf(expand(
+command! -nargs=* -bang SiefeProjectRgWord call siefe#ripgrepfzf(
             \ <bang>0,
             \ siefe#get_git_root(),
             \ {
