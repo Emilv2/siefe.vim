@@ -1158,12 +1158,26 @@ endfunction
 function! siefe#get_git_root() abort
   let bufdir = siefe#bufdir()
   let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
-  return v:shell_error ? s:warn('Not in a git repository') : root
+  if !v:shell_error
+    return root
+  elseif v:shell_error && systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --is-bare-repository')[0] ==# 'true'
+    return readfile(bufdir . '/gitdir')[0][0:-5]
+  else
+    return s:warn('Not in a git repository')
+  endif
 endfunction
 
 function! siefe#get_git_basename_or_bufdir() abort
   let bufdir = siefe#bufdir()
-  let basename = '#'.systemlist('basename `git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel`')[0]
+  let basename = '#'.systemlist('basename `git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel`')[0]
+  if !v:shell_error
+    return basename
+  elseif v:shell_error && systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --is-bare-repository')[0] ==# 'true'
+    return '#' . split(readfile(bufdir . '/gitdir')[0][0:-5], '/')[-1]
+  else
+    return bufdir
+  endif
+
   return v:shell_error ? bufdir : basename
 endfunction
 
