@@ -702,7 +702,7 @@ function! RipgrepFzfDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines)
     call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:dir, a:fd_hidden, fd_no_ignore, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_git_root_key
-    let a:kwargs.prompt = siefe#get_relative_git_or_bufdir()
+    let a:kwargs.prompt = siefe#get_git_basename_or_bufdir()
     call siefe#ripgrepfzf(a:fullscreen, siefe#get_git_root(), a:kwargs)
 
   elseif key ==# g:siefe_fd_project_root_key
