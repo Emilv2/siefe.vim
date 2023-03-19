@@ -1,0 +1,95 @@
+#!/usr/bin/perl
+
+use utf8;
+use strict;
+use autodie;
+use warnings;
+use warnings    qw< FATAL  utf8     >;
+use open        qw< :std  :utf8     >;
+use charnames   qw< :full >;
+use feature     qw< unicode_strings >;
+
+my $old_start;
+my $new_start;
+my $old_length;
+my $new_length;
+my $start = 0;
+my $diff_start = 0;
+my @diff_info = ();
+
+my $pattern = ".*";
+my @lines = ();
+my @matches = ();
+my @matching_lines = ();
+
+my $line;
+my $stripped_line;
+while (<>) {
+    if (($old_start, $old_length, $new_start, $new_length) = $_ =~ /^@@ -(\d+),?(\d+)? \+(\d+),?(\d+)? @@.*/) {
+        if ($start) {
+            print ">>>>>>>>>>>>>>>>>>>>>\n";
+            print "@lines\n";
+            print "<<<<<<<<<<<<<<<<<<<<<\n";
+            while (my ($index, $line) = each @lines) {
+                # we only want to search in added or removed lines, not in context
+                if ($line =~ /^[+-]/ ) {
+                    $stripped_line = substr($line, 1);
+                    print $stripped_line;
+
+                    if ($stripped_line =~ /$pattern/) {
+                        push(@matches, $index);
+                        push(@matching_lines, $line);
+                    }
+                }
+            }
+            # TODO process these
+            print "=======================\n";
+            print "@matches\n";
+            print "@matching_lines\n";
+            print "=======================\n";
+        }
+        # length is not printed if it is 1
+        $old_length //= 1;
+        $new_length //= 1;
+        $line = 1;
+        $start = 1;
+        print "start\n";
+        @matches = ();
+        @lines = ();
+    }
+    elsif ($_ =~ /^diff .*/) {
+        $start = 0;
+        $diff_start = 1;
+        push(@diff_info, $_)
+        print $_;
+    }
+    elsif ($start == 0) {
+        # pass through anything that comes before the diff
+        print $_;
+    }
+    else {
+        push(@lines, $_);
+        $line++;
+    }
+}
+if ($start) {
+    print ">>>>>>>>>>>>>>>>>>>>>\n";
+    print "@lines\n";
+    print "<<<<<<<<<<<<<<<<<<<<<\n";
+    while (my ($index, $line) = each @lines) {
+        # we only want to search in added or removed lines, not in context
+        if ($line =~ /^[+-]/ ) {
+            $stripped_line = substr($line, 1);
+            print $stripped_line;
+
+            if ($stripped_line =~ /$pattern/) {
+                push(@matches, $index);
+                push(@matching_lines, $line);
+            }
+        }
+    }
+    print "=======================\n";
+    print "@matches\n";
+    print "@matching_lines\n";
+    print "=======================\n";
+}
