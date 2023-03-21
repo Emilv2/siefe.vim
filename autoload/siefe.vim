@@ -1063,7 +1063,7 @@ endfunction
 
 function! FzfAuthorSelect(func, fullscreen, ...) abort
   let spec = {
-    \ 'source':  "git log --format='%aN <%aE>' | awk '!x[$0]++'",
+    \ 'source':  "git log --format='%aN <%aE>' | awk '" . fzf#shellescape('!') . "x[$0]++'",
     \ 'sink*':   function(a:func, [a:fullscreen] + a:000),
     \ 'options':
       \ [
