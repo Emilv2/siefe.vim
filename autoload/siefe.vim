@@ -58,7 +58,7 @@ function! s:check_requirements() abort
   let s:checked = !empty(fzf#exec(s:min_version))
 endfunction
 
-let s:data_path = expand($XDG_DATA_HOME) != '' ?  expand($XDG_DATA_HOME) . '/siefe.vim' : expand($HOME) . '/.local/share/siefe.vim'
+let s:data_path = expand($XDG_DATA_HOME) !=# '' ?  expand($XDG_DATA_HOME) . '/siefe.vim' : expand($HOME) . '/.local/share/siefe.vim'
 if !isdirectory(s:data_path)
   call mkdir(s:data_path, 'p')
 endif
