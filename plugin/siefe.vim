@@ -214,6 +214,10 @@ command! -nargs=* -bang SiefeProjectFilesLine call siefe#ripgrepfzf(
             \  'files' : '//',
             \ })
 
+command! -nargs=* -bang SiefeProjectHistory call siefe#projecthistory(
+            \ <bang>0,
+            \ )
+
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})

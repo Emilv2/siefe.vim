@@ -1142,6 +1142,13 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
   endif
 endfunction
 
+function! siefe#projecthistory(fullscreen) abort
+  call fzf#run(fzf#wrap({
+        \ 'source' : siefe#recent_git_files(),
+        \ 'options' : ['-m', '--header-lines', !empty(expand('%')), '--prompt', 'Hist> '],
+        \ 'dir' : siefe#get_git_root(),
+   \ }, a:fullscreen))
+endfunction
 
 """ helper functions
 function! s:warn(message) abort
@@ -1194,6 +1201,28 @@ function! siefe#get_relative_git_or_bufdir(...) abort
     let prefix = v:shell_error ? '' : siefe#get_git_basename_or_bufdir().'/'
     return prefix.trim(system('realpath --relative-to='.rel_to_dir.' '.dir))
   endif
+endfunction
+
+function! siefe#get_relative_git_or_buf(...) abort
+  let bufdir = siefe#bufdir()
+  if a:0 == 0
+    let dir = get(a:, 1, '')
+    let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
+    return v:shell_error ? bufdir : rel_dir . expand('%:t')
+  else
+    let dir = get(a:, 1, '')
+    let git_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel'))
+    let rel_to_dir = v:shell_error ? bufdir : git_dir
+    return trim(system('realpath --relative-to='.rel_to_dir . ' ' . dir))
+  endif
+endfunction
+
+function! siefe#recent_git_files() abort
+  return fzf#vim#_uniq(map(
+        \ filter([expand('%')], 'len(v:val)')
+        \ + filter(map(fzf#vim#_buflisted_sorted(), 'bufname(v:val)'), 'len(v:val) && v:val =~# "^' . siefe#get_git_root() . '"')
+        \ + filter(map(copy(v:oldfiles), 'expand(v:val)'), "filereadable(fnamemodify(v:val, ':p')) && v:val =~# '^" . siefe#get_git_root() . "'"),
+        \ 'siefe#get_relative_git_or_buf(v:val)'))
 endfunction
 
 function! s:get_color(attr, ...) abort
