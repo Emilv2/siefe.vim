@@ -1225,6 +1225,19 @@ function! siefe#recent_git_files() abort
         \ 'siefe#get_relative_git_or_buf(v:val)'))
 endfunction
 
+function! siefe#toggle_git_status() abort
+  " get all buffers called index with filetype fugitive, normally there's only one
+  let buffers = map(filter(
+     \ copy(range(1, bufnr('$'))),
+     \ 'buflisted(v:val) && bufname(v:val) =~# "index" && getbufvar(v:val, "&filetype") ==# "fugitive"'),
+     \ '" " . fnamemodify(bufname(v:val), ":p")')
+  if len(buffers) > 0
+    execute 'bdelete ' . buffers[0]
+  else
+    Git
+  endif
+endfunction
+
 function! s:get_color(attr, ...) abort
   let gui = has('termguicolors') && &termguicolors
   let fam = gui ? 'gui' : 'cterm'

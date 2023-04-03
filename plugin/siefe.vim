@@ -223,3 +223,5 @@ command! -nargs=* -bang SiefeGitBufferLog call siefe#gitlogfzf(<bang>0, {'query'
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
 command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [expand('%')], 'line_range' : siefe#visual_line_nu()})
+
+command! SiefeToggleGitStatus           call siefe#toggle_git_status()
