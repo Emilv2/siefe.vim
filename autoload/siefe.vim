@@ -1143,9 +1143,30 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
 endfunction
 
 function! siefe#projecthistory(fullscreen) abort
+  let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   call fzf#run(fzf#wrap({
         \ 'source' : siefe#recent_git_files(),
-        \ 'options' : ['-m', '--header-lines', !empty(expand('%')), '--prompt', 'Hist> '],
+        \ 'options' : [
+          \ '-m',
+          \ '--preview', s:files_preview_command,
+          \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+          \ '--preview-window', '+{2}-/2,' . default_preview_size,
+          \ '--bind', g:siefe_down_key . ':down',
+          \ '--bind', g:siefe_up_key . ':up',
+          \ '--bind', g:siefe_next_history_key . ':next-history',
+          \ '--bind', g:siefe_previous_history_key . ':previous-history',
+          \ '--bind', g:siefe_accept_key . ':accept',
+          \ '--bind','tab:toggle+up',
+          \ '--bind','shift-tab:toggle+down',
+          \ '--delimiter', s:delimiter,
+          \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
+          \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
+          \ '--header-lines',
+          \ !empty(expand('%')),
+          \ '--prompt', 'Project Hist> ',
+          \ ],
         \ 'dir' : siefe#get_git_root(),
    \ }, a:fullscreen))
 endfunction
