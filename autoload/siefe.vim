@@ -1027,6 +1027,9 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
   let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
   let siefe_branches_all_help = a:not ? '' : ' ╱ ' . s:prettify_header(g:siefe_branches_all_key, '--all')
 
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+
   let spec = {
     \ 'source':  "git branch -a --sort='-authordate' --color --format='%(HEAD) %(if:equals=refs/remotes)%(refname:rstrip=-2)%(then)%(color:cyan)%(align:0)%(refname:lstrip=2)%(end)%(else)%(if)%(HEAD)%(then)%(color:reverse yellow)%(align:0)%(refname:lstrip=-1)%(end)%(else)%(color:yellow)%(align:0)%(refname:lstrip=-1)%(end)%(end)%(end)%(color:reset) %(color:red): %(if)%(symref)%(then)%(color:yellow)%(objectname:short)%(color:reset) %(color:red):%(color:reset) %(color:green)-> %(symref:lstrip=-2)%(else)%(color:yellow)%(objectname:short)%(color:reset) %(if)%(upstream)%(then)%(color:red): %(color:reset)%(color:green)[%(upstream:short)%(if)%(upstream:track)%(then):%(color:blue)%(upstream:track,nobracket)%(symref:lstrip=-2)%(color:green)%(end)]%(color:reset) %(end)%(color:red):%(color:reset) %(contents:subject)%(end) • %(color:blue)(%(authordate:short))'",
     \ 'sink*':   function(a:func, [a:fullscreen] + a:000),
@@ -1051,6 +1054,8 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
           \ . siefe_branches_all_key,
         \ '--bind','shift-tab:toggle+down',
         \ '--preview', 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"' ,
+        \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+        \ '--preview-window', '+{2}-/2,' . default_preview_size,
         \ '--prompt', not . 'branches> ',
         \ '--header='
           \ . s:prettify_header(g:siefe_abort_key, 'abort')
