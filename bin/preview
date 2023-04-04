@@ -18,6 +18,14 @@ if [[ ${ADDR[1]} == *compressed-encoding* ]]; then
 	COMPRESSION="${ADDR[1]##*compressed-encoding*/}"
 fi
 
+if [[ ${ADDR[1]} == *ascii* ]]; then
+	TYPE="text"
+fi
+
+if [[ ${ADDR[1]} == *utf* ]]; then
+	TYPE="text"
+fi
+
 if [[ $TYPE == "text" ]]; then
 	case "$COMPRESSION" in
 	zstd)
