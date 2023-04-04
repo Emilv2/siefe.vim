@@ -1131,10 +1131,10 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
 
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), a:fd_hidden, fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, siefe#get_git_root(), a:kwargs)
+    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, siefe#get_git_root(), a:kwargs)
 
   else
     let a:kwargs.paths = a:000[0][2:]
