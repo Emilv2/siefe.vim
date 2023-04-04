@@ -214,9 +214,18 @@ command! -nargs=* -bang SiefeProjectFilesLine call siefe#ripgrepfzf(
             \  'files' : '//',
             \ })
 
+command! -nargs=* -bang SiefeHistory call siefe#projecthistory(
+            \ <bang>0,
+            \ {
+            \  'query' : <q-args>,
+            \ })
+
 command! -nargs=* -bang SiefeProjectHistory call siefe#projecthistory(
             \ <bang>0,
-            \ )
+            \ {
+            \  'query' : <q-args>,
+            \  'project' : 1,
+            \ })
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
 command! -nargs=* -bang SiefeGitBufferLog call siefe#gitlogfzf(<bang>0, {'query': <q-args>, 'paths' : [siefe#get_relative_git_or_buf()] })

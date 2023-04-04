@@ -1147,12 +1147,26 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
   endif
 endfunction
 
-function! siefe#projecthistory(fullscreen) abort
+function! siefe#projecthistory(fullscreen, kwargs) abort
+  call s:check_requirements()
+
+  " default values
+  let a:kwargs.query = get(a:kwargs, 'query', '')
+  let a:kwargs.project = get(a:kwargs, 'project', 0)
+
+  if a:kwargs.project
+    let source = siefe#recent_git_files()
+    let project = 'Project '
+  else
+    let source = fzf#vim#_recent_files()
+    let project = ''
+  endif
+
   let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   call fzf#run(fzf#wrap({
-        \ 'source' : siefe#recent_git_files(),
+        \ 'source' : source,
         \ 'options' : [
           \ '-m',
           \ '--preview', s:files_preview_command,
@@ -1170,7 +1184,7 @@ function! siefe#projecthistory(fullscreen) abort
           \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
           \ '--header-lines',
           \ !empty(expand('%')),
-          \ '--prompt', 'Project Hist> ',
+          \ '--prompt', project . 'Hist> ',
           \ ],
         \ 'dir' : siefe#get_git_root(),
    \ }, a:fullscreen))
