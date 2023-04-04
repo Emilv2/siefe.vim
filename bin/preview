@@ -8,21 +8,21 @@ else
 fi
 
 FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$1")
-IFS=';' read -ra ADDR <<<"$FILE"
-TYPE="${ADDR[0]%%/*}"
+IFS=';' read -ra FILE_MIME <<<"$FILE"
+TYPE="${FILE_MIME[0]%%/*}"
 if [[ $TYPE == "application" ]]; then
-	TYPE="${ADDR[0]##*/x-}"
+	TYPE="${FILE_MIME[0]##*/x-}"
 fi
 
-if [[ ${ADDR[1]} == *compressed-encoding* ]]; then
-	COMPRESSION="${ADDR[1]##*compressed-encoding*/}"
+if [[ ${FILE_MIME[1]} == *compressed-encoding* ]]; then
+	COMPRESSION="${FILE_MIME[1]##*compressed-encoding*/}"
 fi
 
-if [[ ${ADDR[1]} == *ascii* ]]; then
+if [[ ${FILE_MIME[1]} == *ascii* ]]; then
 	TYPE="text"
 fi
 
-if [[ ${ADDR[1]} == *utf* ]]; then
+if [[ ${FILE_MIME[1]} == *utf* ]]; then
 	TYPE="text"
 fi
 
