@@ -1164,7 +1164,7 @@ function! siefe#projecthistory(fullscreen, kwargs) abort
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
-  call fzf#run(fzf#wrap({
+  let spec = {
         \ 'source' : source,
         \ 'options' : [
           \ '-m',
@@ -1185,8 +1185,13 @@ function! siefe#projecthistory(fullscreen, kwargs) abort
           \ !empty(expand('%')),
           \ '--prompt', project . 'Hist> ',
           \ ],
-        \ 'dir' : siefe#get_git_root(),
-   \ }, a:fullscreen))
+   \ }
+
+  if a:kwargs.project
+    let spec.dir = siefe#get_git_root()
+  endif
+
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
 """ helper functions
