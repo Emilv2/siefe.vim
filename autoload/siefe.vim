@@ -236,6 +236,9 @@ let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
 let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 let g:siefe_rg_default_text = get(g:, 'siefe_rg_default_text', 0)
 
+let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-r')
+let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -1147,20 +1150,33 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
   endif
 endfunction
 
-function! siefe#projecthistory(fullscreen, kwargs) abort
+function! siefe#history(fullscreen, kwargs) abort
   call s:check_requirements()
 
   " default values
   let a:kwargs.query = get(a:kwargs, 'query', '')
   let a:kwargs.project = get(a:kwargs, 'project', 0)
 
-  if a:kwargs.project
+  let bufdir = siefe#bufdir()
+  let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
+  if !v:shell_error
+    let git = 1
+    let git_expect = g:siefe_history_git_key . ','
+    let git_help =  ' ╱ ' . s:prettify_header(g:siefe_history_git_key, 'project history')
+  else
+    let git = 0
+    let git_expect = ''
+    let git_help =  ''
+  endif
+
+  if a:kwargs.project && git
     let source = siefe#recent_git_files()
-    let project = 'Project '
+    let project = siefe#get_git_basename_or_bufdir() . ' '
   else
     let source = fzf#vim#_recent_files()
     let project = ''
   endif
+
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
@@ -1181,10 +1197,19 @@ function! siefe#projecthistory(fullscreen, kwargs) abort
           \ '--delimiter', s:delimiter,
           \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
           \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
+          \ '--expect='
+            \  . g:siefe_history_files_key . ','
+            \  . git_expect,
           \ '--header-lines',
           \ !empty(expand('%')),
+          \ '--print-query',
+          \ '--query', a:kwargs.query,
           \ '--prompt', project . 'Hist> ',
+          \ '--header',
+            \ s:prettify_header(g:siefe_history_files_key, 'rg files')
+            \ . git_help
           \ ],
+        \ 'sink*': function('s:history_sink', [a:fullscreen, a:kwargs]),
    \ }
 
   if a:kwargs.project
@@ -1192,6 +1217,32 @@ function! siefe#projecthistory(fullscreen, kwargs) abort
   endif
 
   call fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! s:history_sink(fullscreen, kwargs, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let a:kwargs.query = a:lines[0]
+  let key = a:lines[1]
+
+  if key ==# g:siefe_history_git_key
+    let a:kwargs.project = a:kwargs.project ? 0 : 1
+    call siefe#history(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_history_files_key
+    call siefe#ripgrepfzf(
+            \ a:fullscreen,
+            \ siefe#bufdir(),
+            \ {
+            \  'query' : a:kwargs.query,
+            \  'prompt' : siefe#get_relative_git_or_bufdir(),
+            \  'files' : '//',
+            \ })
+  endif
+
 endfunction
 
 """ helper functions
