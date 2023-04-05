@@ -7,7 +7,8 @@ else
 	no_sandbox_flag=""
 fi
 
-FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$1")
+path=${1/#\~/$HOME}
+FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$path")
 IFS=';' read -ra FILE_MIME <<<"$FILE"
 TYPE="${FILE_MIME[0]%%/*}"
 if [[ $TYPE == "application" ]]; then
@@ -29,25 +30,25 @@ fi
 if [[ $TYPE == "text" ]]; then
 	case "$COMPRESSION" in
 	zstd)
-		zstdcat "$1"
+		zstdcat "$path"
 		;;
 	zip | gzip)
-		zcat "$1"
+		zcat "$path"
 		;;
 	x-bzip2)
-		bzcat "$1"
+		bzcat "$path"
 		;;
 	x-xz)
-		xzcat "$1"
+		xzcat "$path"
 		;;
 	x-lz4)
-		lz4cat "$1"
+		lz4cat "$path"
 		;;
 	x-lzma)
-		lzcat "$1"
+		lzcat "$path"
 		;;
 	"")
-		"${@:2}" "$1"
+		"${@:2}" "$path"
 		;;
 	*)
 		echo "$COMPRESSION" "not (yet) supported"
@@ -56,12 +57,12 @@ if [[ $TYPE == "text" ]]; then
 
 elif [[ $TYPE == "tar" ]]; then
 	# tar does auto-decompression
-	tar --to-stdout --extract --file="$1"
+	tar --to-stdout --extract --file="$path"
 
 else
 	# brotli isn't detectable by file
 	if [ "${1##*.}" = "br" ]; then
-		brotli --decompress --stdout "$1"
+		brotli --decompress --stdout "$path"
 	else
 		echo type: "$TYPE"
 		echo compression: "$COMPRESSION"
