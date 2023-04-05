@@ -1162,7 +1162,6 @@ function! siefe#projecthistory(fullscreen, kwargs) abort
     let project = ''
   endif
 
-  let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   call fzf#run(fzf#wrap({
