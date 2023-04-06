@@ -1310,10 +1310,10 @@ function! siefe#get_relative_git_or_buf(...) abort
     let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
     return v:shell_error ? bufdir : rel_dir . expand('%:t')
   else
-    let dir = get(a:, 1, '')
+    let file = fzf#shellescape(get(a:, 1, ''))
     let git_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel'))
     let rel_to_dir = v:shell_error ? bufdir : git_dir
-    return trim(system('realpath --relative-to='.rel_to_dir . ' ' . dir))
+    return trim(system('realpath --relative-to='.rel_to_dir . ' ' . file))
   endif
 endfunction
 
