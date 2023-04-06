@@ -1166,7 +1166,8 @@ function! siefe#history(fullscreen, kwargs) abort
   if !v:shell_error
     let git = 1
     let git_expect = g:siefe_history_git_key . ','
-    let git_help =  ' ╱ ' . s:prettify_header(g:siefe_history_git_key, 'project history')
+    let project_toggle = a:kwargs.project ? 'off' : 'on'
+    let git_help =  ' ╱ ' . s:prettify_header(g:siefe_history_git_key, 'project history:' . project_toggle)
   else
     let git = 0
     let git_expect = ''
