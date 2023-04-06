@@ -551,10 +551,10 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
   exe 'cd' a:kwargs.orig_dir
 
   if key ==# g:siefe_rg_type_key
-    call FzfTypeSelect('RipgrepFzfType', a:fullscreen, a:dir, a:kwargs)
+    call SiefeTypeSelect('SiefeRipgrepType', a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_type_not_key
-    call FzfTypeSelect('RipgrepFzfTypeNot', a:fullscreen, a:dir, a:kwargs)
+    call SiefeTypeSelect('SiefeRipgrepTypeNot', a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_word_key
     let a:kwargs.word = a:kwargs.word ? 0 : 1
@@ -598,7 +598,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     endif
 
   elseif key ==# g:siefe_rg_dir_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:dir, 0, 0, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, 0, 0, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_rg_yank_key
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
@@ -609,7 +609,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 endfunction
 
 " Lots of functions to use fzf to also select ie rg types
-function! FzfTypeSelect(func, fullscreen, ...) abort
+function! SiefeTypeSelect(func, fullscreen, ...) abort
   call fzf#run(fzf#wrap({
         \ 'source': s:logger . 'rg --color=always --type-list ',
         \ 'options': [
@@ -631,7 +631,7 @@ function! FzfTypeSelect(func, fullscreen, ...) abort
 endfunction
 
 
-function! FzfDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, multi, base_dir, ...) abort
+function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, multi, base_dir, ...) abort
   let fd_hidden = a:fd_hidden ? '-H ' : ''
   let fd_hidden_toggle = a:fd_hidden ? 'off' : 'on'
   let fd_no_ignore = a:fd_no_ignore ? '-u ' : ''
@@ -686,7 +686,7 @@ function! FzfDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, 
       \ }, a:fullscreen))
 endfunction
 
-function! RipgrepFzfDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines) abort
+function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines) abort
   let fd_query = a:lines[0]
   let key = a:lines[1]
 
@@ -702,11 +702,11 @@ function! RipgrepFzfDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines)
 
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:dir, fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, a:dir, a:fd_hidden, fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, a:fd_hidden, fd_no_ignore, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_git_root_key
     let a:kwargs.prompt = siefe#get_git_basename_or_bufdir()
@@ -717,10 +717,10 @@ function! RipgrepFzfDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines)
     call siefe#ripgrepfzf(a:fullscreen, expand(g:siefe_fd_project_root_env), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, siefe#get_git_root(), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, siefe#get_git_root(), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_search_project_root_key
-    call FzfDirSelect('RipgrepFzfDir', a:fullscreen, expand(g:siefe_fd_project_root_env), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, expand(g:siefe_fd_project_root_env), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
 
   else
     let a:kwargs.prompt = siefe#get_relative_git_or_bufdir(new_dir)
@@ -728,7 +728,7 @@ function! RipgrepFzfDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines)
   endif
 endfunction
 
-function! RipgrepFzfType(fullscreen, dir, kwargs, lines) abort
+function! SiefeRipgrepType(fullscreen, dir, kwargs, lines) abort
   if a:lines[0] ==# g:siefe_abort_key
     let a:kwargs.type = ''
   else
@@ -737,7 +737,7 @@ function! RipgrepFzfType(fullscreen, dir, kwargs, lines) abort
   call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 endfunction
 
-function! RipgrepFzfTypeNot(fullscreen, dir, kwargs, lines) abort
+function! SiefeRipgrepTypeNot(fullscreen, dir, kwargs, lines) abort
   if a:lines[0] ==# g:siefe_abort_key
     let a:kwargs.type = ''
   else
@@ -984,20 +984,20 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
     call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 
   elseif key == g:siefe_gitlog_branch_key
-    call FzfBranchSelect('GitPickaxeFzfBranch', a:fullscreen, 0, a:kwargs)
+    call SiefeBranchSelect('SiefeGitPickaxeBranch', a:fullscreen, 0, a:kwargs)
 
   elseif key == g:siefe_gitlog_not_branch_key
-    call FzfBranchSelect('GitPickaxeFzfNotBranch', a:fullscreen, 1, a:kwargs)
+    call SiefeBranchSelect('SiefeGitPickaxeNotBranch', a:fullscreen, 1, a:kwargs)
 
   elseif key == g:siefe_gitlog_author_key
-    call FzfAuthorSelect('GitPickaxeFzfAuthor', a:fullscreen, a:kwargs)
+    call SiefeAuthorSelect('SiefeGitPickaxeAuthor', a:fullscreen, a:kwargs)
 
   elseif key == g:siefe_gitlog_dir_key
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), 0, 0, '', 1, siefe#get_git_root(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), 0, 0, '', 1, siefe#get_git_root(), a:kwargs)
 
   elseif key == g:siefe_gitlog_type_key
     " git understands rg --type-list globs :)
-    call FzfTypeSelect('GitlogFzfType', a:fullscreen, a:kwargs)
+    call SiefeTypeSelect('SiefeGitlogType', a:fullscreen, a:kwargs)
 
   elseif key == g:siefe_gitlog_vdiffsplit_key
     if len(quickfix_list) == 2
@@ -1014,7 +1014,7 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
   endif
 endfunction
 
-function! GitlogFzfType(fullscreen, kwargs, lines) abort
+function! SiefeGitlogType(fullscreen, kwargs, lines) abort
   if a:lines[0] == g:siefe_abort_key
     let a:kwargs.type = ''
     call siefe#gitlogfzf(a:fullscreen, a:kwargs)
@@ -1024,7 +1024,7 @@ function! GitlogFzfType(fullscreen, kwargs, lines) abort
   endif
 endfunction
 
-function! FzfBranchSelect(func, fullscreen, not, ...) abort
+function! SiefeBranchSelect(func, fullscreen, not, ...) abort
   let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
@@ -1073,7 +1073,7 @@ function! FzfBranchSelect(func, fullscreen, not, ...) abort
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! FzfAuthorSelect(func, fullscreen, ...) abort
+function! SiefeAuthorSelect(func, fullscreen, ...) abort
   let spec = {
     \ 'source':  "git log --format='%aN <%aE>' | awk '" . fzf#shellescape('!') . "x[$0]++'",
     \ 'sink*':   function(a:func, [a:fullscreen] + a:000),
@@ -1096,7 +1096,7 @@ function! FzfAuthorSelect(func, fullscreen, ...) abort
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! GitPickaxeFzfAuthor(fullscreen, kwargs, ...) abort
+function! SiefeGitPickaxeAuthor(fullscreen, kwargs, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     let a:kwargs.authors = []
 
@@ -1107,7 +1107,7 @@ function! GitPickaxeFzfAuthor(fullscreen, kwargs, ...) abort
   call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 endfunction
 
-function! GitPickaxeFzfBranch(fullscreen, kwargs, ...) abort
+function! SiefeGitPickaxeBranch(fullscreen, kwargs, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     let a:kwargs.branches = ''
 
@@ -1121,7 +1121,7 @@ function! GitPickaxeFzfBranch(fullscreen, kwargs, ...) abort
   call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 endfunction
 
-function! GitPickaxeFzfNotBranch(fullscreen, kwargs, ...) abort
+function! SiefeGitPickaxeNotBranch(fullscreen, kwargs, ...) abort
   if a:000[0][0] == g:siefe_abort_key
     let a:kwargs.branches = ''
   else
@@ -1130,7 +1130,7 @@ function! GitPickaxeFzfNotBranch(fullscreen, kwargs, ...) abort
   call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 endfunction
 
-function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ...) abort
+function! SiefeGitPickaxePath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ...) abort
   let key = a:000[0][1]
 
   if key ==# g:siefe_abort_key
@@ -1139,14 +1139,14 @@ function! GitPickaxeFzfPath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, ..
 
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
 
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), a:fd_hidden, fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
-    call FzfDirSelect('GitPickaxeFzfPath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, siefe#get_git_root(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, siefe#get_git_root(), a:kwargs)
 
   else
     let a:kwargs.paths = a:000[0][2:]
