@@ -1241,6 +1241,11 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
             \  'prompt' : siefe#get_relative_git_or_bufdir(),
             \  'files' : '//',
             \ })
+  else
+    execute 'e' a:lines[2]
+    normal! zvzz
+
+    call s:fill_quickfix(map(a:lines[2:], "{'filename' : v:val }"))
   endif
 
 endfunction
