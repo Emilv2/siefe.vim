@@ -1190,6 +1190,7 @@ function! siefe#history(fullscreen, kwargs) abort
         \ 'options' : [
           \ '-m',
           \ '--preview', s:files_preview_command,
+          \ '--history', s:data_path . '/rg_history_history',
           \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
           \ '--preview-window', '+{2}-/2,' . default_preview_size,
           \ '--bind', g:siefe_down_key . ':down',
