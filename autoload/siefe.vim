@@ -109,6 +109,7 @@ let g:siefe_rg_text_key = get(g:, 'siefe_rg_text_key', 'alt-t')
 let g:siefe_rg_dir_key = get(g:, 'siefe_rg_dir_key', 'ctrl-d')
 let g:siefe_rg_buffers_key = get(g:, 'siefe_rg_buffers_key', 'ctrl-b')
 let g:siefe_rg_yank_key = get(g:, 'siefe_rg_yank_key', 'ctrl-y')
+let g:siefe_rg_history_key = get(g:, 'siefe_rg_history_key', 'ctrl-h')
 
 let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
 let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
@@ -147,6 +148,7 @@ let s:rg_keys = [
   \ g:siefe_rg_dir_key,
   \ g:siefe_rg_buffers_key,
   \ g:siefe_rg_yank_key,
+  \ g:siefe_rg_history_key,
 \ ] + s:rg_preview_commands
   \ + s:common_keys
 
@@ -376,6 +378,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
           \ . ".\n\t" . 'Toggles between smart case and case sensitive. rg \`-S, --smart-case\`'
         \ . "\n" . s:prettify_help(g:siefe_rg_dir_key) . "\t" . 'change path to search'
         \ . "\n" . s:prettify_help(g:siefe_rg_yank_key) . "\t" . 'yank selected matches line'
+        \ . "\n" . s:prettify_help(g:siefe_rg_history_key) . "\t" . 'search file history'
         \ . "\n" . s:prettify_help(g:siefe_rg_word_key) . "\t" . 'toggle only show matches surrounded by word boundaries ' . word_toggle
           \ . ".\n\t" . 'rg \`-w, --word-regexp\`'
         \ . "\n" . s:prettify_help(g:siefe_rg_fixed_strings_key) . "\t"
@@ -412,7 +415,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . g:siefe_rg_text_key . ','
         \ . g:siefe_rg_dir_key . ','
         \ . g:siefe_rg_buffers_key . ','
-        \ . g:siefe_rg_yank_key . ',',
+        \ . g:siefe_rg_yank_key . ','
+        \ . g:siefe_rg_history_key . ',',
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
       \ '--bind','tab:toggle+up',
@@ -457,6 +461,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_history_key, 'history')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_max_1_key, '-m1:' . max_1_toggle)
@@ -597,7 +602,9 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_yank_key
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
-  return
+
+  elseif key ==# g:siefe_rg_history_key
+    call siefe#history(a:fullscreen, a:kwargs)
   endif
 endfunction
 
@@ -1230,14 +1237,13 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
     call siefe#history(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_history_files_key
+    let a:kwargs.prompt = siefe#get_relative_git_or_bufdir()
+    let a:kwargs.files = '//'
     call siefe#ripgrepfzf(
             \ a:fullscreen,
             \ siefe#bufdir(),
-            \ {
-            \  'query' : a:kwargs.query,
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'files' : '//',
-            \ })
+            \ a:kwargs
+            \ )
   else
     execute 'e' a:lines[2]
     normal! zvzz
