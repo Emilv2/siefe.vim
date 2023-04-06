@@ -8,7 +8,10 @@ else
 fi
 
 path=${1/#\~/$HOME}
-FILE=$(file --uncompress "$no_sandbox_flag" --brief --mime -- "$path")
+# $no_sandbox_flag has no spaces by definition, and some versions of bash
+# seem to have an issue here with quoted variables before "--"  ¯\_(ツ)_/¯
+# shellcheck disable=SC2086
+FILE=$(file --uncompress $no_sandbox_flag --brief --mime -- "$path")
 IFS=';' read -ra FILE_MIME <<<"$FILE"
 TYPE="${FILE_MIME[0]%%/*}"
 if [[ $TYPE == "application" ]]; then
