@@ -799,7 +799,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let paths = join(map(copy(a:kwargs.type), 'shellescape(v:val)'))
 
   else
-    let paths = join(map(copy(a:kwargs.paths), 'shellescape(v:val)'))
+    let paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val)'), 'shellescape(v:val)'))
   endif
 
   let G = a:kwargs.G ? '-G' : '-S'
