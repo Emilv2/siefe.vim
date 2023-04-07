@@ -241,6 +241,10 @@ let g:siefe_rg_default_text = get(g:, 'siefe_rg_default_text', 0)
 let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-r')
 let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
 
+let g:siefe_stash_apply_key = get(g:, 'siefe_stash_apply_key', 'ctrl-a')
+let g:siefe_stash_pop_key = get(g:, 'siefe_stash_pop_key', 'ctrl-p')
+let g:siefe_stash_drop_key = get(g:, 'siefe_stash_drop_key', 'ctrl-d')
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -1252,6 +1256,75 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
     normal! zvzz
 
     call s:fill_quickfix(map(a:lines[2:], "{'filename' : v:val }"))
+  endif
+
+endfunction
+
+function! siefe#gitstash(fullscreen, ...) abort
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+
+  let spec = {
+    \ 'source': 'git stash list -z',
+    \ 'options':
+      \ [
+        \ '--history', s:data_path . '/rg_branch_history',
+        \ '--ansi',
+        \ '--multi',
+        \ '--read0',
+        \ '--bind','tab:toggle+up',
+        \ '--bind', g:siefe_down_key . ':down',
+        \ '--bind', g:siefe_up_key . ':up',
+        \ '--bind', g:siefe_next_history_key . ':next-history',
+        \ '--bind', g:siefe_previous_history_key . ':previous-history',
+        \ '--bind', g:siefe_accept_key . ':accept',
+        \ '--bind', g:siefe_abort_key . ':abort',
+        \ '--preview-window', default_preview_size,
+        \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+        \ '--delimiter', ':',
+        \ '--expect='
+          \ . g:siefe_stash_apply_key . ','
+          \ . g:siefe_stash_pop_key . ','
+          \ . g:siefe_stash_drop_key,
+        \ '--bind','shift-tab:toggle+down',
+        \ '--preview', 'git stash show {1} --stat --patch' ,
+        \ '--preview-window', default_preview_size,
+        \ '--prompt','stashes> ',
+        \ '--header='
+          \ . s:prettify_header(g:siefe_abort_key, 'abort')
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_apply_key, 'apply')
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_pop_key, 'pop')
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_drop_key, 'drop')
+      \ ],
+      \ 'sink*': function('s:stash_sink', [a:fullscreen]),
+    \ 'placeholder': ''
+  \ }
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! s:stash_sink(fullscreen, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let key = a:lines[0]
+  let stashes = map(a:lines[1:], 'split(v:val, ":")[0]')
+
+  if key ==# g:siefe_stash_apply_key
+    for stash in stashes
+      execute 'Git stash apply ' . stash
+    endfor
+
+  elseif key ==# g:siefe_stash_pop_key
+    for stash in stashes
+      execute 'Git stash pop ' . stash
+    endfor
+
+  elseif key ==# g:siefe_stash_drop_key
+    for stash in stashes
+      execute 'Git stash drop ' . stash
+    endfor
   endif
 
 endfunction
