@@ -1064,7 +1064,7 @@ function! SiefeBranchSelect(func, fullscreen, not, ...) abort
           \ . g:siefe_abort_key . ','
           \ . siefe_branches_all_key,
         \ '--bind','shift-tab:toggle+down',
-        \ '--preview', 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"' ,
+        \ '--preview', preview_command_1,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
         \ '--preview-window', '~1,' . default_preview_size,
         \ '--prompt', not . 'branches> ',
