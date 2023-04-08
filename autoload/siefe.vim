@@ -245,6 +245,14 @@ let g:siefe_stash_apply_key = get(g:, 'siefe_stash_apply_key', 'ctrl-a')
 let g:siefe_stash_pop_key = get(g:, 'siefe_stash_pop_key', 'ctrl-p')
 let g:siefe_stash_drop_key = get(g:, 'siefe_stash_drop_key', 'ctrl-d')
 
+let g:siefe_stash_preview_0_key = get(g:, 'siefe_stash_preview_0_key', 'f1')
+let g:siefe_stash_preview_1_key = get(g:, 'siefe_stash_preview_1_key', 'f2')
+let g:siefe_stash_preview_2_key = get(g:, 'siefe_stash_preview_2_key', 'f3')
+let g:siefe_stash_preview_3_key = get(g:, 'siefe_stash_preview_3_key', 'f4')
+let g:siefe_stash_preview_4_key = get(g:, 'siefe_stash_preview_4_key', 'f5')
+
+let g:siefe_stash_default_preview_command = get(g:, 'siefe_stash_default_preview_command', 0)
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -1260,18 +1268,89 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
 
 endfunction
 
-function! siefe#gitstash(fullscreen, ...) abort
+function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
 
+  let a:kwargs.query = get(a:kwargs, 'query', '')
+  let a:kwargs.G = get(a:kwargs, 'G', g:siefe_gitlog_default_G)
+  let a:kwargs.regex = get(a:kwargs, 'regex', g:siefe_gitlog_default_regex)
+  let a:kwargs.ignore_case = get(a:kwargs, 'ignore_case', g:siefe_gitlog_default_ignore_case)
+
+  let G = a:kwargs.G ? '-G' : '-S'
+  let G_prompt = a:kwargs.G ? '-G ' : '-S '
+  " --pickaxe-regex and -G are incompatible
+  let regex = a:kwargs.G ? '' : a:kwargs.regex ? '--pickaxe-regex ' : ''
+  let ignore_case = a:kwargs.ignore_case ? '--regexp-ignore-case ' : ''
+  let ignore_case_toggle = a:kwargs.ignore_case ? 'off' : 'on'
+  let ignore_case_symbol = a:kwargs.ignore_case ? '-i ' : ''
+
+  let SG_expect = g:siefe_gitlog_sg_key . ','
+      \ . g:siefe_gitlog_ignore_case_key . ','
+      \ . g:siefe_gitlog_pickaxe_regex_key
+  let query_file = tempname()
+  let write_query_initial = 'echo '. shellescape(a:kwargs.query) .' > '.query_file.' ;'
+  let write_query_reload = 'echo {q} > '.query_file.' ;'
+  let format = '--format=%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
+  let format = '--format=%C(auto)%h • %s %C(green)%cr %C(reset)'
+  let command_fmt = s:bin.git_SG
+      \ . ' stash list '
+      \ . G
+      \ . '%s -z '
+      \ . ' ' . regex
+      \ . ' ' . ignore_case
+
+  let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
+  let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
+  let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
+  let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_s_key, 'pickaxe')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_dir_key, 'pathspec')
+
+  let current = expand('%')
+  let orderfile = tempname()
+  call writefile([current], orderfile)
+
+  let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
+
+  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show -O'.fzf#shellescape(orderfile).' {1} '
+  let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
+  let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
+
+  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
+    \ . ' --format=format: --patch --stat -- ' . suffix
+  let quote = "'"
+  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
+  let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
+  let preview_command_3 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . quote . suffix : no_grepdiff_message
+  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
+
+  let preview_commands = [
+    \ preview_command_0,
+    \ preview_command_1,
+    \ preview_command_2,
+    \ preview_command_3,
+    \ preview_command_4,
+  \ ]
+
+
   let spec = {
-    \ 'source': 'git stash list -z',
+    \ 'source': initial_command,
     \ 'options':
       \ [
         \ '--history', s:data_path . '/rg_branch_history',
         \ '--ansi',
         \ '--multi',
         \ '--read0',
+        \ '--preview', preview_commands[ g:siefe_stash_default_preview_command ],
+        \ '--bind', g:siefe_stash_preview_0_key . ':change-preview:'.preview_command_0,
+        \ '--bind', g:siefe_stash_preview_1_key . ':change-preview:'.preview_command_1,
+        \ '--bind', g:siefe_stash_preview_2_key . ':change-preview:'.preview_command_2,
+        \ '--bind', g:siefe_stash_preview_3_key . ':change-preview:'.preview_command_3,
+        \ '--bind', g:siefe_stash_preview_4_key . ':change-preview:'.preview_command_4,
         \ '--bind','tab:toggle+up',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
@@ -1281,13 +1360,12 @@ function! siefe#gitstash(fullscreen, ...) abort
         \ '--bind', g:siefe_abort_key . ':abort',
         \ '--preview-window', default_preview_size,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
-        \ '--delimiter', ':',
+        \ '--delimiter', '•',
         \ '--expect='
           \ . g:siefe_stash_apply_key . ','
           \ . g:siefe_stash_pop_key . ','
           \ . g:siefe_stash_drop_key,
         \ '--bind','shift-tab:toggle+down',
-        \ '--preview', 'git stash show {1} --stat --patch' ,
         \ '--preview-window', default_preview_size,
         \ '--prompt','stashes> ',
         \ '--header='
