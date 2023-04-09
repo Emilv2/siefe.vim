@@ -244,6 +244,11 @@ let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
 let g:siefe_stash_apply_key = get(g:, 'siefe_stash_apply_key', 'ctrl-a')
 let g:siefe_stash_pop_key = get(g:, 'siefe_stash_pop_key', 'ctrl-p')
 let g:siefe_stash_drop_key = get(g:, 'siefe_stash_drop_key', 'ctrl-d')
+let g:siefe_stash_ignore_case_key = get(g:, 'siefe_stash_ignore_case_key', 'alt-i')
+let g:siefe_stash_sg_key = get(g:, 'siefe_stash_sg_key', 'ctrl-e')
+let g:siefe_stash_fzf_key = get(g:, 'siefe_stash_fzf_key', 'ctrl-f')
+let g:siefe_stash_s_key = get(g:, 'siefe_stash_s_key', 'ctrl-s')
+let g:siefe_stash_pickaxe_regex_key = get(g:, 'siefe_stash_pickaxe_regex_key', 'ctrl-x')
 
 let g:siefe_stash_preview_0_key = get(g:, 'siefe_stash_preview_0_key', 'f1')
 let g:siefe_stash_preview_1_key = get(g:, 'siefe_stash_preview_1_key', 'f2')
@@ -1302,12 +1307,6 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
   let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
   let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
-  let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
-      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case')
-      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
-      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_s_key, 'pickaxe')
-      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
-      \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_dir_key, 'pathspec')
 
   let current = expand('%')
   let orderfile = tempname()
@@ -1344,6 +1343,8 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
         \ '--ansi',
         \ '--multi',
         \ '--read0',
+        \ '--print-query',
+        \ '--query', a:kwargs.query,
         \ '--preview', preview_commands[ g:siefe_stash_default_preview_command ],
         \ '--bind', g:siefe_stash_preview_0_key . ':change-preview:'.preview_command_0,
         \ '--bind', g:siefe_stash_preview_1_key . ':change-preview:'.preview_command_1,
@@ -1359,34 +1360,46 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
         \ '--bind', g:siefe_abort_key . ':abort',
         \ '--preview-window', default_preview_size,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+        \ '--disabled',
+        \ '--bind', 'change:reload:'.reload_command,
+        \ '--bind', g:siefe_stash_fzf_key . ':unbind(change,' . g:siefe_stash_fzf_key . ')+change-prompt(stash/fzf> )+enable-search+rebind(' . g:siefe_stash_s_key . ')',
+        \ '--bind', g:siefe_stash_s_key . ':unbind(change,' . g:siefe_stash_s_key . ')+change-prompt(' . G_prompt . regex . ignore_case_symbol . 'stash> '. ')+disable-search+reload(' . reload_command . ')+rebind(change,' . g:siefe_stash_fzf_key . ')',
         \ '--delimiter', '•',
         \ '--expect='
           \ . g:siefe_stash_apply_key . ','
           \ . g:siefe_stash_pop_key . ','
-          \ . g:siefe_stash_drop_key,
+          \ . g:siefe_stash_drop_key . ','
+          \ . g:siefe_stash_sg_key . ','
+          \ . g:siefe_stash_pickaxe_regex_key,
         \ '--bind','shift-tab:toggle+down',
         \ '--preview-window', default_preview_size,
-        \ '--prompt','stashes> ',
+        \ '--prompt', G_prompt . regex . ignore_case_symbol . 'stash> ',
         \ '--header='
           \ . s:prettify_header(g:siefe_abort_key, 'abort')
           \ . ' ╱ ' . s:prettify_header(g:siefe_stash_apply_key, 'apply')
           \ . ' ╱ ' . s:prettify_header(g:siefe_stash_pop_key, 'pop')
           \ . ' ╱ ' . s:prettify_header(g:siefe_stash_drop_key, 'drop')
+          \ . ' ╱ '  . s:prettify_header(g:siefe_stash_sg_key, 'toggle S/G')
+          \ . "\n" . s:prettify_header(g:siefe_stash_ignore_case_key, 'ignore case:' . ignore_case_toggle)
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_fzf_key,  'fzf messages')
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_s_key, 'pickaxe')
+          \ . ' ╱ ' . s:prettify_header(g:siefe_stash_pickaxe_regex_key, 'regex')
       \ ],
-      \ 'sink*': function('s:stash_sink', [a:fullscreen]),
+      \ 'sink*': function('s:stash_sink', [a:fullscreen, a:kwargs]),
     \ 'placeholder': ''
   \ }
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:stash_sink(fullscreen, lines) abort
+function! s:stash_sink(fullscreen, kwargs, lines) abort
   " required when using fullscreen and abort, not sure why
   if len(a:lines) == 0
     return
   endif
 
-  let key = a:lines[0]
-  let stashes = map(a:lines[1:], 'split(v:val, ":")[0]')
+  let a:kwargs.query = a:lines[0]
+  let key = a:lines[1]
+  let stashes = map(a:lines[2:], 'split(v:val, ":")[0]')
 
   if key ==# g:siefe_stash_apply_key
     for stash in stashes
@@ -1402,6 +1415,19 @@ function! s:stash_sink(fullscreen, lines) abort
     for stash in stashes
       execute 'Git stash drop ' . stash
     endfor
+
+  elseif key == g:siefe_stash_sg_key
+    let a:kwargs.G = a:kwargs.G ? 0 : 1
+    call siefe#gitstash(a:fullscreen, a:kwargs)
+
+  elseif key == g:siefe_stash_ignore_case_key
+    let a:kwargs.ignore_case = a:kwargs.ignore_case ? 0 : 1
+    call siefe#gitstash(a:fullscreen, a:kwargs)
+
+  elseif key == g:siefe_stash_pickaxe_regex_key
+    let a:kwargs.regex = a:kwargs.regex ? 0 : 1
+    call siefe#gitstash(a:fullscreen, a:kwargs)
+
   endif
 
 endfunction
