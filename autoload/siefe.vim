@@ -1345,6 +1345,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
         \ '--read0',
         \ '--print-query',
         \ '--query', a:kwargs.query,
+        \ '--layout=reverse-list',
         \ '--preview', preview_commands[ g:siefe_stash_default_preview_command ],
         \ '--bind', g:siefe_stash_preview_0_key . ':change-preview:'.preview_command_0,
         \ '--bind', g:siefe_stash_preview_1_key . ':change-preview:'.preview_command_1,
