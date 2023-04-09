@@ -956,7 +956,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
       \ '--disabled',
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', g:siefe_gitlog_fzf_key . ':unbind(change,' . g:siefe_gitlog_fzf_key . ')+change-prompt(pickaxe/fzf> )+enable-search+rebind(' . g:siefe_gitlog_s_key . ')',
-      \ '--bind', g:siefe_gitlog_s_key . ':unbind(change,' . g:siefe_gitlog_s_key . ')+change-prompt(' . branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> '. ')+disable-search+reload(' . reload_command . '"+rebind(change,' . g:siefe_gitlog_fzf_key . ')',
+      \ '--bind', g:siefe_gitlog_s_key . ':unbind(change,' . g:siefe_gitlog_s_key . ')+change-prompt(' . branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> '. ')+disable-search+reload(' . reload_command . ')+rebind(change,' . g:siefe_gitlog_fzf_key . ')',
       \ ]
   endif
 
