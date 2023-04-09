@@ -864,7 +864,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
     let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
     let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case:' . ignore_case_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
