@@ -844,7 +844,6 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_ignore_case_key . ','
         \ . g:siefe_gitlog_type_key . ','
         \ . g:siefe_gitlog_pickaxe_regex_key . ','
-        \ . g:siefe_gitlog_dir_key . ','
         \ . siefe_gitlog_follow_key . ','
         \ . g:siefe_gitlog_dir_key
     let query_file = tempname()
