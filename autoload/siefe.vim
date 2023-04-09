@@ -1508,15 +1508,8 @@ function! siefe#recent_git_files() abort
 endfunction
 
 function! siefe#toggle_git_status() abort
-  " get all buffers called index with filetype fugitive, normally there's only one
-  let buffers = map(filter(
-     \ copy(range(1, bufnr('$'))),
-     \ 'buflisted(v:val) && bufname(v:val) =~# "index" && getbufvar(v:val, "&filetype") ==# "fugitive"'),
-     \ '" " . fnamemodify(bufname(v:val), ":p")')
-  if len(buffers) > 0
-    execute 'bdelete ' . buffers[0]
-  else
-    Git
+  if len(map(filter(range(1, winnr('$')), '!empty(getwinvar(v:val, "fugitive_status"))'), {i -> execute( i . ' close')})) == 0
+    keepalt Git
   endif
 endfunction
 
