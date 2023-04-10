@@ -871,7 +871,6 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case:' . ignore_case_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_s_key, 'pickaxe')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_dir_key, 'pathspec')
   endif
