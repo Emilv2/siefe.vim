@@ -223,6 +223,9 @@ let s:fd_keys = [
 let g:siefe_fd_project_root_env = get(g:, 'siefe_fd_git_root_env', '')
 
 let g:siefe_branches_all_key = get(g:, 'siefe_branches_all_key', 'ctrl-a')
+let g:siefe_branches_switch_key = get(g:, 'siefe_branches_switch_key', 'ctrl-o')
+let g:siefe_branches_merge_key = get(g:, 'siefe_branches_rebase_interactive_key', 'ctrl-e')
+let g:siefe_branches_rebase_interactive_key = get(g:, 'siefe_branches_rebase_interactive_key', 'ctrl-r')
 
 let g:siefe_gitlog_default_G = get(g:, 'siefe_gitlog_default_G', 0)
 let g:siefe_gitlog_default_regex = get(g:, 'siefe_gitlog_default_regex', 0)
@@ -929,6 +932,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_branch_key . ','
         \ . g:siefe_gitlog_not_branch_key . ','
         \ . g:siefe_gitlog_vdiffsplit_key . ','
+        \ . g:siefe_gitlog_switch_key . ','
         \ . SG_expect,
       \ '--multi',
       \ '--bind','tab:toggle+down',
@@ -941,6 +945,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ s:prettify_header(g:siefe_gitlog_author_key, 'authors')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_branch_key, 'branches')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_type_key, 'type')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_switch_key, 'switch')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_not_branch_key, '^branches')
         \ . SG_help
@@ -1013,6 +1018,25 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
   elseif key == g:siefe_gitlog_type_key
     " git understands rg --type-list globs :)
     call SiefeTypeSelect('SiefeGitlogType', a:fullscreen, a:kwargs)
+
+  elseif key == g:siefe_gitlog_switch_key
+    if len(a:lines) != 3
+      echom 'select exactly 1 commit for switch'
+      call siefe#gitlogfzf(a:fullscreen, a:kwargs)
+    endif
+    let commit = split(a:lines[2], ' ')[0]
+    let action = ''
+      let action = input('create branch? (y/n) ')
+    while 1
+      if action ==# 'y'
+        " todo what if fails (branch already exists)
+        execute 'Git switch -c ' . commit
+        break
+      elseif action ==# 'n'
+        execute 'Git switch ' . commit
+        break
+      endif
+    endwhile
 
   elseif key == g:siefe_gitlog_vdiffsplit_key
     if len(quickfix_list) == 2
