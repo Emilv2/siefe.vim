@@ -168,6 +168,7 @@ let g:siefe_gitlog_s_key = get(g:, 'siefe_gitlog_s_key', 'ctrl-s')
 let g:siefe_gitlog_pickaxe_regex_key = get(g:, 'siefe_gitlog_pickaxe_regex_key', 'ctrl-x')
 let g:siefe_gitlog_dir_key = get(g:, 'siefe_gitlog_dir_key', 'ctrl-d')
 let g:siefe_gitlog_follow_key = get(g:, 'siefe_gitlog_follow_key', 'ctrl-o')
+let g:siefe_gitlog_switch_key = get(g:, 'siefe_gitlog_switch_key', 'ctrl-s')
 
 let g:siefe_gitlog_preview_0_key = get(g:, 'siefe_gitlog_preview_0_key', 'f1')
 let g:siefe_gitlog_preview_1_key = get(g:, 'siefe_gitlog_preview_1_key', 'f2')
@@ -1015,10 +1016,10 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
     call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 
   elseif key == g:siefe_gitlog_branch_key
-    call SiefeBranchSelect('SiefeGitPickaxeBranch', a:fullscreen, 0, a:kwargs)
+    call SiefeBranchSelect('SiefeGitPickaxeBranch', a:fullscreen, 0, 0, a:kwargs)
 
   elseif key == g:siefe_gitlog_not_branch_key
-    call SiefeBranchSelect('SiefeGitPickaxeNotBranch', a:fullscreen, 1, a:kwargs)
+    call SiefeBranchSelect('SiefeGitPickaxeNotBranch', a:fullscreen, 1, 0,  a:kwargs)
 
   elseif key == g:siefe_gitlog_author_key
     call SiefeAuthorSelect('SiefeGitPickaxeAuthor', a:fullscreen, a:kwargs)
@@ -1089,7 +1090,7 @@ function! SiefeGitlogType(fullscreen, kwargs, lines) abort
   endif
 endfunction
 
-function! SiefeBranchSelect(func, fullscreen, not, ...) abort
+function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
   let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
   let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
@@ -1098,6 +1099,18 @@ function! SiefeBranchSelect(func, fullscreen, not, ...) abort
   let not = a:not ? '^' : ''
   let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
   let siefe_branches_all_help = a:not ? '' : ' ╱ ' . s:prettify_header(g:siefe_branches_all_key, '--all')
+
+  if a:standalone
+    let extra_keys = g:siefe_branches_switch_key . ','
+      \ . g:siefe_branches_merge_key . ','
+      \ . g:siefe_branches_rebase_interactive_key . ','
+    let extra_help = s:prettify_header(g:siefe_branches_switch_key, 'switch')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_branches_merge_key, 'merge')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_branches_rebase_interactive_key, 'rebase -i')
+  else
+    let extra_keys = siefe_branches_all_key
+    let extra_help = siefe_branches_all_help
+  endif
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
@@ -1109,7 +1122,6 @@ function! SiefeBranchSelect(func, fullscreen, not, ...) abort
       \ [
         \ '--history', s:data_path . '/rg_branch_history',
         \ '--ansi',
-        \ '--multi',
         \ '--delimiter', ':',
         \ '--bind', 'f1:change-preview:'.preview_command_1,
         \ '--bind', 'f2:change-preview:'.preview_command_2,
@@ -1123,7 +1135,7 @@ function! SiefeBranchSelect(func, fullscreen, not, ...) abort
         \ '--bind', g:siefe_accept_key . ':accept',
         \ '--expect='
           \ . g:siefe_abort_key . ','
-          \ . siefe_branches_all_key,
+          \ . extra_keys,
         \ '--bind','shift-tab:toggle+down',
         \ '--preview', preview_command_1,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
@@ -1131,11 +1143,77 @@ function! SiefeBranchSelect(func, fullscreen, not, ...) abort
         \ '--prompt', not . 'branches> ',
         \ '--header='
           \ . s:prettify_header(g:siefe_abort_key, 'abort')
-          \ . siefe_branches_all_help
+          \ . extra_help
       \ ],
     \ 'placeholder': ''
   \ }
+
+  if a:standalone
+    let spec.options += ['--print-query']
+  else
+    let spec.options += ['--multi']
+  endif
+
   call fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! siefe#gitbranch(fullscreen) abort
+   call SiefeBranchSelect('s:branch_sink', a:fullscreen, 0, 1)
+endfunction
+
+function! s:branch_sink(fullscreen, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let query = a:lines[0]
+  let key = a:lines[1]
+  " : is not allowed in branch names, so : as a delimiter is not an issue
+  let branch = split(a:lines[2],':')[0]
+
+  if key ==# g:siefe_branches_switch_key
+    " we need to use execute and then query the result for interative
+    " commands like rebase
+    execute 'Git switch ' . branch
+    let result = FugitiveResult()
+    let action = ''
+    while result.exit_status != 0
+      let action = input(join(readfile(result.file), "\n") . 'Error, stash, open fugitive or abort? (s/f/a) ')
+      if action ==# 's'
+        FugitiveExecute('stash')
+        execute 'Git switch ' . branch
+        let result = FugitiveResult()
+      elseif action ==# 'f'
+        execute 'Git'
+        execute 'Git switch ' . branch
+        let result = FugitiveResult()
+      elseif action ==# 'a'
+        let result = {'exit_status' : 0}
+      endif
+    endwhile
+
+  elseif key ==# g:siefe_branches_rebase_interactive_key
+    " we need to use execute and then query the result for interative
+    " commands like rebase
+    execute 'Git rebase -i ' . branch
+    let result = FugitiveResult()
+    let action = ''
+    while result.exit_status != 0
+      let action = input(join(readfile(result.file), "\n") . 'Error, stash, open fugitive or abort? (s/f/a) ')
+      if action ==# 's'
+        FugitiveExecute('stash')
+        execute 'Git rebase --interactive --autosquash ' . branch
+        let result = FugitiveResult()
+      elseif action ==# 'f'
+        execute 'Git'
+        execute 'Git rebase --interactive --autosquash ' . branch
+        let result = FugitiveResult()
+      elseif action ==# 'a'
+        let result = {'exit_status' : 0}
+      endif
+    endwhile
+  endif
 endfunction
 
 function! SiefeAuthorSelect(func, fullscreen, ...) abort

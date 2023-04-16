@@ -233,5 +233,7 @@ command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': 
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
 command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [expand('%')], 'line_range' : siefe#visual_line_nu()})
 
+command! -bang SiefeGitBranch            call siefe#gitbranch(<bang>0)
+
 command! SiefeToggleGitStatus           call siefe#toggle_git_status()
 command! -bang SiefeGitStash            call siefe#gitstash(<bang>0, {'query': <q-args> })
