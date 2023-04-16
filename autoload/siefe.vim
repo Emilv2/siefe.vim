@@ -1648,7 +1648,7 @@ function! siefe#recent_git_files() abort
 endfunction
 
 function! siefe#toggle_git_status() abort
-  if len(map(filter(range(1, winnr('$')), '!empty(getwinvar(v:val, "fugitive_status"))'), {i -> execute( i . ' close')})) == 0
+  if len(map(filter(range(1, bufnr('$')), 'getbufvar(v:val, "&filetype") ==# "fugitive"'), { _,bufnr -> execute( 'bdelete ' . bufnr )})) == 0
     keepalt Git
   endif
 endfunction
