@@ -793,6 +793,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   let a:kwargs.ignore_case = get(a:kwargs, 'ignore_case', g:siefe_gitlog_default_ignore_case)
   let a:kwargs.type = get(a:kwargs, 'type', '')
   let a:kwargs.line_range = get(a:kwargs, 'line_range', [])
+  let a:kwargs.fixup = get(a:kwargs, 'fixup', 0)
 
   if a:kwargs.branches ==# '--all'
     let branches = '--all '
@@ -946,7 +947,6 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_vdiffsplit_key . ','
         \ . g:siefe_gitlog_switch_key . ','
         \ . SG_expect,
-      \ '--multi',
       \ '--bind','tab:toggle+down',
       \ '--bind','shift-tab:toggle+up',
       \ '--query', a:kwargs.query,
@@ -971,6 +971,12 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
    \ 'source': initial_command
   \ }
 
+  if a:kwargs.fixup == 0
+    let spec.options += [
+      \ '--multi',
+      \ ]
+  endif
+
   if a:kwargs.line_range == []
     let spec.options += [
       \ '--disabled',
@@ -991,13 +997,6 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
 
   let a:kwargs.query = a:lines[0]
   let key = a:lines[1]
-  " split(v:val, " ")[0]) == commit hash
-  " join(split(v:val, " ")[1:] == full commit message
-  let quickfix_list = map(a:lines[2:], '{'
-    \ . '"bufnr":bufadd(trim(fugitive#Open("", 0, "<mods>", split(v:val, " ")[0]))),'
-    \ . '"text":join(split(v:val, " ")[1:], " ")[:(winwidth(0) - (len(split(v:val, " ")[0]) + 7))] . ( len(join(split(v:val, " ")[1:], " ")) > winwidth(0) ? "..." : ""),'
-    \ . '"module":split(v:val, " ")[0],'
-    \ . '}')
 
   if key == g:siefe_gitlog_sg_key
     let a:kwargs.G = a:kwargs.G ? 0 : 1
@@ -1059,7 +1058,22 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
       execute 'Gvdiffsplit '. quickfix_list[0].module . ':%'
     endif
 
+  elseif a:kwargs.fixup == 1
+    let commit = split(a:lines[2], ' ')[0]
+        execute 'Git commit --fixup=' . commit
+
+  elseif a:kwargs.fixup == 2
+    let commit = split(a:lines[2], ' ')[0]
+        execute 'Git commit --squash=' . commit
+
   else
+  " split(v:val, " ")[0]) == commit hash
+  " join(split(v:val, " ")[1:] == full commit message
+  let quickfix_list = map(a:lines[2:], '{'
+    \ . '"bufnr":bufadd(trim(fugitive#Open("", 0, "<mods>", split(v:val, " ")[0]))),'
+    \ . '"text":join(split(v:val, " ")[1:], " ")[:(winwidth(0) - (len(split(v:val, " ")[0]) + 7))] . ( len(join(split(v:val, " ")[1:], " ")) > winwidth(0) ? "..." : ""),'
+    \ . '"module":split(v:val, " ")[0],'
+    \ . '}')
   execute 'Gedit '. quickfix_list[0].module
   call s:fill_quickfix(quickfix_list)
   endif
