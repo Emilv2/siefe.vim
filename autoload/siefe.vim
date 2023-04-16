@@ -609,8 +609,9 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_buffers_key
-    if a:kwargs.paths == []
-      let a:kwargs.paths = map(filter(copy(getbufinfo()), 'v:val.listed'), 'fnamemodify(v:val.name, ":p:~:.")')
+    let bufferlist = map(filter(copy(getbufinfo()), 'v:val.listed'), 'fnamemodify(v:val.name, ":p:~:.")')
+    if a:kwargs.paths != bufferlist
+      let a:kwargs.paths = bufferlist
       call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
     else
       let a:kwargs.paths = []
@@ -623,8 +624,18 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
   elseif key ==# g:siefe_rg_yank_key
     return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
 
-  elseif key ==# g:siefe_rg_history_key
+  elseif key ==# g:siefe_rg_history_key && readfile(a:kwargs.files)[0] == 1
     call siefe#history(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_rg_history_key && readfile(a:kwargs.files)[0] == 0
+    let recent_git_files = siefe#recent_git_files()
+    if a:kwargs.paths != recent_git_files
+      let a:kwargs.paths = recent_git_files
+      call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
+    else
+      let a:kwargs.paths = []
+      call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
+    endif
   endif
 endfunction
 
