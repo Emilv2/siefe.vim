@@ -282,6 +282,22 @@ let g:siefe_stash_preview_4_key = get(g:, 'siefe_stash_preview_4_key', 'f5')
 
 let g:siefe_stash_default_preview_command = get(g:, 'siefe_stash_default_preview_command', 0)
 
+let g:siefe_buffers_delete_key = get(g:, 'siefe_buffers_delete_key', 'ctrl-d')
+let g:siefe_buffers_project_key = get(g:, 'siefe_buffers_project_key', 'ctrl-p')
+let g:siefe_buffers_history_key = get(g:, 'siefe_buffers_history_key', 'ctrl-h')
+
+let g:siefe_buffers_default_preview_command = get(g:, 'siefe_buffers_default_preview_command', g:siefe_rg_default_preview_command)
+let g:siefe_buffers_preview_key = get(g:, 'siefe_buffers_preview_key', g:siefe_rg_preview_key)
+let g:siefe_buffers_fast_preview_key = get(g:, 'siefe_buffers_fast_preview_key', g:siefe_rg_fast_preview_key)
+
+let s:buffers_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
+let s:buffers_fast_preview_command = s:bin.preview . ' {1} cat'
+
+let s:buffers_preview_commands = [
+  \ s:buffers_preview_command,
+  \ s:buffers_fast_preview_command,
+\ ]
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -1729,6 +1745,158 @@ function! siefe#oldfiles() abort
   return oldfiles
 endfunction
 
+" ------------------------------------------------------------------
+" Buffers
+" ------------------------------------------------------------------
+"
+let s:default_action = {
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+
+function! s:action_for(key, ...) abort
+  let default = a:0 ? a:1 : ''
+  let Cmd = get(get(g:, 'fzf_action', s:default_action), a:key, default)
+  return type(Cmd) == s:TYPE.string ? Cmd : default
+endfunction
+
+function! s:find_open_window(b) abort
+  let [tcur, tcnt] = [tabpagenr() - 1, tabpagenr('$')]
+  for toff in range(0, tabpagenr('$') - 1)
+    let t = (tcur + toff) % tcnt + 1
+    let buffers = tabpagebuflist(t)
+    for w in range(1, len(buffers))
+      let b = buffers[w - 1]
+      if b == a:b
+        return [t, w]
+      endif
+    endfor
+  endfor
+  return [0, 0]
+endfunction
+
+function! s:jump(t, w) abort
+  execute a:t.'tabnext'
+  execute a:w.'wincmd w'
+endfunction
+
+
+function! siefe#_format_buffer(b) abort
+  let name = bufname(a:b)
+  let line = exists('*getbufinfo') ? getbufinfo(a:b)[0]['lnum'] : 0
+  let name = empty(name) ? '[No Name]' : fnamemodify(name, ':p:~:.')
+  let flag = a:b == bufnr('')  ? s:blue('%', 'Conditional') :
+          \ (a:b == bufnr('#') ? s:magenta('#', 'Special') : ' ')
+  let modified = getbufvar(a:b, '&modified') ? s:red(' [+]', 'Exception') : ''
+  let modifiable = getbufvar(a:b, '&modifiable') ? '' : s:green(' [-]', 'Constant')
+  let readonly = getbufvar(a:b, '&readonly') ? s:green(' [RO]', 'Constant') : ''
+  let extra = join(filter([modified, readonly], '!empty(v:val)'), '')
+  let target = line == 0 ? name : name.':'.line
+  return s:strip(printf("%s\t%d\t[%s] %s\t%s\t%s", target, line, s:yellow(a:b, 'Number'), flag, name, extra))
+endfunction
+
+function! s:sort_buffers(...) abort
+  let [b1, b2] = map(copy(a:000), 'get(g:fzf#vim#buffers, v:val, v:val)')
+  " Using minus between a float and a number in a sort function causes an error
+  return b1 < b2 ? 1 : -1
+endfunction
+
+function! s:buflisted() abort
+  return filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&filetype") !=# "qf"')
+endfunction
+
+function! siefe#_buflisted_sorted() abort
+  return sort(s:buflisted(), 's:sort_buffers')
+endfunction
+
+function! siefe#buffers(fullscreen, kwargs) abort
+  let a:kwargs.query = get(a:kwargs, 'query', '')
+  let a:kwargs.project = get(a:kwargs, 'project', '')
+
+  let sorted = fzf#vim#_buflisted_sorted()
+  let header_lines = '--header-lines=' . (bufnr('') == get(sorted, 0, 0) ? 1 : 0)
+  let tabstop = len(max(sorted)) >= 4 ? 9 : 8
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+  let spec = {
+    \ 'source': map(sorted, 'fzf#vim#_format_buffer(v:val)'),
+    \ 'options': [
+      \ '--multi',
+      \ '--tiebreak=index',
+      \ '--header', s:prettify_header(g:siefe_buffers_delete_key, 'delete')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_project_key,  'project')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_history_key, 'history'),
+      \ header_lines,
+      \ '--ansi',
+      \ '--delimiter', '\t',
+      \ '--bind', g:siefe_buffers_preview_key . ':change-preview:' . s:buffers_preview_command,
+      \ '--bind', g:siefe_buffers_fast_preview_key . ':change-preview:' . s:buffers_fast_preview_command,
+      \ '--preview', s:buffers_preview_commands[g:siefe_buffers_default_preview_command],
+      \ '--preview-window', '+{2}-/2,' . default_preview_size,
+      \ '--with-nth', '3..',
+      \ '-n', '2,1..2',
+      \ '--prompt', 'Buf> ',
+      \ '--query', a:kwargs.query,
+      \ '--tabstop', tabstop,
+      \ '--bind', g:siefe_accept_key . ':accept',
+      \ '--expect',
+        \   g:siefe_buffers_delete_key . ','
+        \ . g:siefe_buffers_project_key . ','
+        \ . g:siefe_buffers_history_key . ','
+    \ ],
+    \ 'sink*': function('s:buffers_sink', [a:fullscreen, a:kwargs]),
+  \}
+
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! s:buffers_sink(fullscreen, kwargs, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  if len(a:lines) < 2
+    return
+  endif
+
+  let key = a:lines[0]
+  let buffer_numbers = map(a:lines[1:], {_idx, bufline -> matchstr(bufline, '\[\zs[0-9]*\ze\]')})
+
+  if key ==# g:siefe_buffers_delete_key
+    execute 'bdelete' join(buffer_numbers, ' ')
+    call siefe#buffers(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_buffers_project_key
+    " TODO
+    let a:kwargs.project = a:kwargs.project ? 0 : 1
+    call siefe#buffers(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_buffers_history_key
+    call siefe#history(a:fullscreen, a:kwargs)
+  else
+
+    let b = buffer_numbers[0]
+
+    if empty(key) && get(g:, 'siefe_buffers_jump')
+      let [t, w] = s:find_open_window(b)
+      if t
+        call s:jump(t, w)
+        return
+      endif
+    endif
+
+    " TODO
+    let cmd = s:action_for(key)
+    if !empty(cmd)
+      execute 'silent' cmd
+    endif
+
+    execute 'buffer' b
+  endif
+endfunction
+
 function! siefe#toggle_git_status() abort
   if len(map(filter(range(1, bufnr('$')), 'getbufvar(v:val, "&filetype") ==# "fugitive"'), { _,bufnr -> execute( 'bdelete ' . bufnr )})) == 0
     keepalt Git
@@ -1769,6 +1937,22 @@ endfunction
 
 function! s:magenta(str, ...) abort
   return s:ansi(a:str, get(a:, 1, ''), 'magenta')
+endfunction
+
+function! s:blue(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'blue')
+endfunction
+
+function! s:red(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'red')
+endfunction
+
+function! s:green(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'green')
+endfunction
+
+function! s:yellow(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'yellow')
 endfunction
 
 function! s:fill_quickfix(list, ...) abort
@@ -1847,6 +2031,11 @@ function! s:reduce(list, f) abort
     return reduce(a:list, a:f)
   endif
 endfunction
+
+function! s:strip(str) abort
+  return substitute(a:str, '^\s*\|\s*$', '', 'g')
+endfunction
+
 
 " https://stackoverflow.com/a/47051271
 function! siefe#visual_selection() abort

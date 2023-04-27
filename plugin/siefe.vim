@@ -237,3 +237,9 @@ command! -bang SiefeGitBranch            call siefe#gitbranch(<bang>0)
 
 command! SiefeToggleGitStatus           call siefe#toggle_git_status()
 command! -bang SiefeGitStash            call siefe#gitstash(<bang>0, {'query': <q-args> })
+
+command! -nargs=* -bang SiefeBuffers call siefe#buffers(
+            \ <bang>0,
+            \ {
+            \  'query' : <q-args>,
+            \ })
