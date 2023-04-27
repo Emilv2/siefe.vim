@@ -146,7 +146,6 @@ let s:history_preview_commands = [
   \ s:history_fast_preview_command,
 \ ]
 
-let g:siefe_history_default_preview_command = get(g:, 'siefe_history_default_preview_command', 0)
 
 let s:rg_keys = [
   \ g:siefe_rg_fzf_key,
@@ -172,7 +171,9 @@ let s:rg_keys = [
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
-let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview', 0)
+let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview_command', 0)
+
+let g:siefe_history_default_preview_command = get(g:, 'siefe_history_default_preview_command', g:siefe_rg_default_preview_command)
 
 let g:siefe_gitlog_ignore_case_key = get(g:, 'siefe_gitlog_ignore_case_key', 'alt-i')
 let g:siefe_gitlog_vdiffsplit_key = get(g:, 'siefe_gitlog_vdiffsplit_key', 'ctrl-v')
@@ -1352,8 +1353,6 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '-m',
           \ '--ansi',
           \ '--with-nth', '2..',
-          \ '--preview', s:history_preview_commands[g:siefe_history_default_preview_command],
-          \ '--delimiter', '//',
           \ '--history', s:data_path . '/rg_history_history',
           \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
           \ '--preview-window', '+{1}-/2,' . default_preview_size,
@@ -1365,9 +1364,10 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '--bind', g:siefe_abort_key . ':abort',
           \ '--bind','tab:toggle+up',
           \ '--bind','shift-tab:toggle+down',
-          \ '--delimiter', s:delimiter,
           \ '--bind', g:siefe_history_preview_key . ':change-preview:' . s:history_preview_command,
           \ '--bind', g:siefe_history_fast_preview_key . ':change-preview:' . s:history_fast_preview_command,
+          \ '--preview', s:history_preview_commands[g:siefe_history_default_preview_command],
+          \ '--delimiter', '//',
           \ '--expect='
             \  . g:siefe_history_files_key . ','
             \  . g:siefe_history_rg_key . ','
@@ -1662,28 +1662,39 @@ function! siefe#get_relative_git_or_buf(...) abort
 endfunction
 
 function! siefe#recent_files() abort
-  return fzf#vim#_uniq(
+  return siefe#_uniq_with_prefix(
         \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . fnamemodify(v:val, ":~:.")')
         \ + map(filter(fzf#vim#_buflisted_sorted(), 'len(bufname(v:val))'), "getbufinfo(v:val)[0]['lnum'] . '//' . fnamemodify(expand(bufname(v:val)), ':~:.')")
         \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(v:val.name), ':p'))"),
-        \ 'v:val.line . "//" . fnamemodify(expand(v:val.name), ":~:.")'))
+        \ 'v:val.line . "//" . fnamemodify(expand(v:val.name), ":~:.")'), '//')
 endfunction
 
 function! siefe#recent_git_files() abort
-  let git_dir = FugitiveFind(':/', bufnr(''))
-  if git_dir ==# ''
-    let git_dir = FugitiveFind(':/')
-  endif
+  let git_dir = FugitiveFind(':/')
   if git_dir ==# ''
     echom 'not in a git dir'
   endif
-  return fzf#vim#_uniq(
-        \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . substitute(v:val, l:git_dir . "/", "", "")')
-        \ + map(filter(map(fzf#vim#_buflisted_sorted(), 'bufname(v:val)'), 'len(v:val) && fnamemodify(expand(bufname(v:val)), ":p") =~# "^' . l:git_dir . '"'),
-        \ "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(expand(bufname(v:val)), l:git_dir . '/' , '', '')")
+  return siefe#_uniq_with_prefix(
+        \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . substitute(FugitiveReal(), l:git_dir . "/", "", "")')
+        \ + map(filter(map(fzf#vim#_buflisted_sorted(), 'bufname(v:val)'), 'len(v:val) && fnamemodify(expand(bufname(v:val)), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(bufname(v:val)), ':p'), l:git_dir . '/' , '', '')")
         \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(v:val.name), ':p')) && expand(v:val.name) =~# '^" . l:git_dir . "'"),
-        \ 'v:val.line . "//" . substitute(expand(v:val.name), l:git_dir . "/", "", "")'))
+        \ 'v:val.line . "//" . substitute(expand(v:val.name), l:git_dir . "/", "", "")'), '//')
 endfunction
+
+function! siefe#_uniq_with_prefix(list, prefix) abort
+  let visited = {}
+  let ret = []
+  for l in a:list
+    let prefix_file = split(l, a:prefix)
+    let f = len(prefix_file) == 1 ? prefix_file[0] : join(prefix_file[1:], '')
+    if !empty(f) && !has_key(visited, f)
+      call add(ret, l)
+      let visited[f] = 1
+    endif
+  endfor
+  return ret
+endfunction
+
 
 function! siefe#oldfiles() abort
   let viminfo = readfile($HOME . '/.viminfo')
