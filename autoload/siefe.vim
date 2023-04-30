@@ -282,12 +282,13 @@ let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 let g:siefe_rg_default_text = get(g:, 'siefe_rg_default_text', 0)
 
 let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-p')
+let g:siefe_history_buffers_key = get(g:, 'siefe_history_buffers_key', 'ctrl-b')
 let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
 let g:siefe_history_rg_key = get(g:, 'siefe_history_rg_key', 'ctrl-s')
 
 let g:siefe_stash_apply_key = get(g:, 'siefe_stash_apply_key', 'ctrl-a')
 let g:siefe_stash_pop_key = get(g:, 'siefe_stash_pop_key', 'ctrl-p')
-let g:siefe_stash_drop_key = get(g:, 'siefe_stash_drop_key', 'ctrl-d')
+let g:siefe_stash_drop_key = get(g:, 'siefe_stash_drop_key', 'del')
 let g:siefe_stash_ignore_case_key = get(g:, 'siefe_stash_ignore_case_key', 'alt-i')
 let g:siefe_stash_sg_key = get(g:, 'siefe_stash_sg_key', 'ctrl-e')
 let g:siefe_stash_fzf_key = get(g:, 'siefe_stash_fzf_key', 'ctrl-f')
@@ -1444,6 +1445,7 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '--header',
             \ s:prettify_header(g:siefe_history_files_key, 'rg files')
             \ . ' ╱ ' . s:prettify_header(g:siefe_history_rg_key, 'rg')
+            \ . ' ╱ ' . s:prettify_header(g:siefe_history_buffers_key, 'buf')
             \ . git_help
             \ . ' ╱ ' . s:magenta(s:preview_help(s:history_preview_keys), 'Special') . ' change preview'
           \ ],
@@ -1469,6 +1471,9 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
   if key ==# g:siefe_history_git_key
     let a:kwargs.project = a:kwargs.project ? 0 : 1
     call siefe#history(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_history_buffers_key
+    call siefe#buffers(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_history_files_key
     let a:kwargs.prompt = siefe#get_relative_git_or_bufdir()
