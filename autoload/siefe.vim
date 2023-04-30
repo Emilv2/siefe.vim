@@ -1834,12 +1834,13 @@ function! siefe#_format_buffer(b) abort
   let name = empty(name) ? '[No Name]' : fnamemodify(name, ':p:~:.')
   let flag = a:b == bufnr('')  ? s:blue('%', 'Conditional') :
           \ (a:b == bufnr('#') ? s:magenta('#', 'Special') : ' ')
-  let modified = getbufvar(a:b, '&modified') ? s:red(' [+]', 'Exception') : ''
-  let modifiable = getbufvar(a:b, '&modifiable') ? '' : s:green(' [-]', 'Constant')
-  let readonly = getbufvar(a:b, '&readonly') ? s:green(' [RO]', 'Constant') : ''
-  let extra = join(filter([modified, readonly], '!empty(v:val)'), '')
-  let target = line == 0 ? name : name.':'.line
-  return s:strip(printf("%s\t%d\t[%s] %s\t%s\t%s", target, line, s:yellow(a:b, 'Number'), flag, name, extra))
+  let modified = getbufvar(a:b, '&modified') ? s:red('+', 'Exception') : ''
+  let modifiable = getbufvar(a:b, '&modifiable') ? '' : s:red('-', 'Exception')
+  let readonly = getbufvar(a:b, '&readonly') ? s:green(' RO', 'Constant') : ''
+  let line_text = line == 0 ? '' : ' line ' . line
+  let extra = modified . modifiable
+  let extra = empty(extra) ? readonly : s:red(' [', 'Exception') . modified . modifiable . s:red('] ', 'Exception') . readonly
+  return s:strip(printf("%s//%d//[%s] %s\t%s%s\t%s", name, line, s:yellow(a:b, 'Number'), flag, name, extra,  line_text))
 endfunction
 
 function! s:sort_buffers(...) abort
@@ -1860,37 +1861,55 @@ function! siefe#buffers(fullscreen, kwargs) abort
   let a:kwargs.query = get(a:kwargs, 'query', '')
   let a:kwargs.project = get(a:kwargs, 'project', '')
 
-  let sorted = fzf#vim#_buflisted_sorted()
+  let git_dir = FugitiveFind(':/')
+  if git_dir !=# ''
+    let project_toggle = a:kwargs.project ? 'off' : 'on'
+    let git_help =  ' ╱ ' . s:prettify_header(g:siefe_history_git_key, 'project history:' . project_toggle)
+    let git_expect = g:siefe_buffers_git_key . ','
+  else
+    let git_help =  ''
+    let git_expect = ''
+  endif
+  if git_dir !=# '' && a:kwargs.project
+    let project = siefe#get_git_basename_or_bufdir() . ' '
+    let sorted = filter(fzf#vim#_buflisted_sorted(), 'len(v:val) && fnamemodify(expand(bufname(v:val)), ":p") =~# "^' . l:git_dir . '"')
+  else
+    let project = ''
+    let sorted = fzf#vim#_buflisted_sorted()
+  endif
   let header_lines = '--header-lines=' . (bufnr('') == get(sorted, 0, 0) ? 1 : 0)
   let tabstop = len(max(sorted)) >= 4 ? 9 : 8
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   let spec = {
-    \ 'source': map(sorted, 'fzf#vim#_format_buffer(v:val)'),
+    \ 'source': map(sorted, 'siefe#_format_buffer(v:val)'),
     \ 'options': [
       \ '--multi',
       \ '--tiebreak=index',
       \ '--header', s:prettify_header(g:siefe_buffers_delete_key, 'delete')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_project_key,  'project')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_history_key, 'history'),
+        \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_history_key, 'history')
+        \ . git_help,
       \ header_lines,
       \ '--ansi',
-      \ '--delimiter', '\t',
+      \ '--delimiter', '//',
       \ '--bind', g:siefe_buffers_preview_key . ':change-preview:' . s:buffers_preview_command,
       \ '--bind', g:siefe_buffers_fast_preview_key . ':change-preview:' . s:buffers_fast_preview_command,
+      \ '--bind','tab:toggle+up',
+      \ '--bind','shift-tab:toggle+down',
       \ '--preview', s:buffers_preview_commands[g:siefe_buffers_default_preview_command],
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--with-nth', '3..',
       \ '-n', '2,1..2',
-      \ '--prompt', 'Buf> ',
+      \ '--prompt', project . 'Buf> ',
       \ '--query', a:kwargs.query,
+      \ '--print-query',
       \ '--tabstop', tabstop,
       \ '--bind', g:siefe_accept_key . ':accept',
       \ '--expect',
         \   g:siefe_buffers_delete_key . ','
-        \ . g:siefe_buffers_project_key . ','
         \ . g:siefe_buffers_history_key . ','
+        \ . git_expect
         \ . s:common_window_expect_keys,
     \ ],
     \ 'sink*': function('s:buffers_sink', [a:fullscreen, a:kwargs]),
