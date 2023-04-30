@@ -303,8 +303,8 @@ let g:siefe_stash_preview_4_key = get(g:, 'siefe_stash_preview_4_key', 'f5')
 
 let g:siefe_stash_default_preview_command = get(g:, 'siefe_stash_default_preview_command', 0)
 
-let g:siefe_buffers_delete_key = get(g:, 'siefe_buffers_delete_key', 'ctrl-d')
-let g:siefe_buffers_project_key = get(g:, 'siefe_buffers_project_key', 'ctrl-p')
+let g:siefe_buffers_delete_key = get(g:, 'siefe_buffers_delete_key', 'del')
+let g:siefe_buffers_git_key = get(g:, 'siefe_buffers_git_key', 'ctrl-p')
 let g:siefe_buffers_history_key = get(g:, 'siefe_buffers_history_key', 'ctrl-h')
 
 let g:siefe_buffers_default_preview_command = get(g:, 'siefe_buffers_default_preview_command', g:siefe_rg_default_preview_command)
@@ -537,6 +537,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, '-u:' . no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -1434,9 +1435,11 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '--preview', s:history_preview_commands[g:siefe_history_default_preview_command],
           \ '--delimiter', '//',
           \ '--expect='
-            \  . g:siefe_history_files_key . ','
-            \  . g:siefe_history_rg_key . ','
-            \  . git_expect,
+            \ . g:siefe_history_files_key . ','
+            \ . g:siefe_history_rg_key . ','
+            \ . g:siefe_history_buffers_key . ','
+            \ . git_expect
+            \ . s:common_window_expect_keys,
           \ '--header-lines',
           \ !empty(expand('%')),
           \ '--print-query',
