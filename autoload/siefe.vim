@@ -87,6 +87,25 @@ let s:common_keys = [
   \ g:siefe_help_key,
 \ ]
 
+let g:siefe_split_key = get(g:, 'siefe_split_key', 'ctrl-]')
+let g:siefe_vsplit_key = get(g:, 'siefe_vsplit_key', 'ctrl-\')
+let g:siefe_tab_key = get(g:, 'siefe_tab_key', 'alt-enter')
+
+let s:common_window_actions = {
+  \ g:siefe_tab_key : 'tab split',
+  \ g:siefe_split_key : 'split',
+  \ g:siefe_vsplit_key : 'vsplit',
+\ }
+
+let s:fugitive_window_actions = {
+  \ 'tab split' : 'Gtabedit',
+  \ 'split' : 'Gsplit',
+  \ 'vsplit' : 'Gvsplit',
+\ }
+
+let s:common_window_keys = keys(s:common_window_actions)
+let s:common_window_expect_keys = join(filter(keys(s:common_window_actions), '!empty(v:val)'), ',')
+
 let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
 let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 50))
 let g:siefe_2nd_preview_size = str2nr(get(g:, 'siefe_2nd_preview_size', 80))
@@ -168,6 +187,7 @@ let s:rg_keys = [
   \ g:siefe_rg_history_key,
 \ ] + s:rg_preview_commands
   \ + s:common_keys
+  \ + s:common_window_keys
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
@@ -473,7 +493,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . g:siefe_rg_dir_key . ','
         \ . g:siefe_rg_buffers_key . ','
         \ . g:siefe_rg_yank_key . ','
-        \ . g:siefe_rg_history_key . ',',
+        \ . g:siefe_rg_history_key . ','
+        \ . s:common_window_expect_keys,
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
       \ '--bind','tab:toggle+up',
@@ -601,6 +622,19 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     normal! zvzz
 
     call s:fill_quickfix(filelist)
+
+  elseif has_key(s:common_window_actions, key)
+    " no match
+    if len(tmp[2:]) == 0
+      return
+    endif
+
+    let cmd = s:common_window_actions[key]
+    for file in filelist
+      execute 'silent' cmd file.filename
+      call cursor(file.line, file.column)
+      normal! zvzz
+    endfor
   endif
 
   " work around for strange nested fzf change directory behaviour
@@ -982,7 +1016,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_not_branch_key . ','
         \ . g:siefe_gitlog_vdiffsplit_key . ','
         \ . g:siefe_gitlog_switch_key . ','
-        \ . SG_expect,
+        \ . SG_expect . ','
+        \ . s:common_window_expect_keys,
       \ '--bind','tab:toggle+down',
       \ '--bind','shift-tab:toggle+up',
       \ '--query', a:kwargs.query,
@@ -1033,6 +1068,14 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
 
   let a:kwargs.query = a:lines[0]
   let key = a:lines[1]
+
+  " split(v:val, ' ')[0]) == commit hash
+  " join(split(v:val, ' ')[1:] == full commit message
+  let quickfix_list = map(a:lines[2:], '{'
+    \ . '"bufnr":bufadd(trim(fugitive#Open("", 0, "<mods>", split(v:val, " ")[0]))),'
+    \ . '"text":join(split(v:val, " ")[1:], " ")[:(winwidth(0) - (len(split(v:val, " ")[0]) + 7))] . ( len(join(split(v:val, " ")[1:], " ")) > winwidth(0) ? "..." : ""),'
+    \ . '"module":split(v:val, " ")[0],'
+    \ . '}')
 
   if key == g:siefe_gitlog_sg_key
     let a:kwargs.G = a:kwargs.G ? 0 : 1
@@ -1102,14 +1145,19 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
     let commit = split(a:lines[2], ' ')[0]
         execute 'Git commit --squash=' . commit
 
+  elseif has_key(s:common_window_actions, key)
+    " no match
+    if len(a:lines[2:]) == 0
+      return
+    endif
+
+    let cmd = s:fugitive_window_actions[s:common_window_actions[key]]
+    for hash in a:lines[2:]
+      execute 'silent' cmd hash
+      normal! zvzz
+    endfor
+
   else
-  " split(v:val, " ")[0]) == commit hash
-  " join(split(v:val, " ")[1:] == full commit message
-  let quickfix_list = map(a:lines[2:], '{'
-    \ . '"bufnr":bufadd(trim(fugitive#Open("", 0, "<mods>", split(v:val, " ")[0]))),'
-    \ . '"text":join(split(v:val, " ")[1:], " ")[:(winwidth(0) - (len(split(v:val, " ")[0]) + 7))] . ( len(join(split(v:val, " ")[1:], " ")) > winwidth(0) ? "..." : ""),'
-    \ . '"module":split(v:val, " ")[0],'
-    \ . '}')
   execute 'Gedit '. quickfix_list[0].module
   call s:fill_quickfix(quickfix_list)
   endif
@@ -1440,7 +1488,16 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
             \ siefe#bufdir(),
             \ a:kwargs
             \ )
+
+  elseif has_key(s:common_window_actions, key)
+    let cmd = s:common_window_actions[key]
+    for file in a:lines[2:]
+      execute 'silent' cmd split(file, '//')[1]
+      normal! zvzz
+    endfor
+
   else
+    echom a:lines[2]
     execute 'e' split(a:lines[2], '//')[1]
     normal! zvzz
 
@@ -1749,16 +1806,6 @@ endfunction
 " Buffers
 " ------------------------------------------------------------------
 "
-let s:default_action = {
-  \ 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split',
-  \ 'ctrl-v': 'vsplit' }
-
-function! s:action_for(key, ...) abort
-  let default = a:0 ? a:1 : ''
-  let Cmd = get(get(g:, 'fzf_action', s:default_action), a:key, default)
-  return type(Cmd) == s:TYPE.string ? Cmd : default
-endfunction
 
 function! s:find_open_window(b) abort
   let [tcur, tcnt] = [tabpagenr() - 1, tabpagenr('$')]
@@ -1844,6 +1891,7 @@ function! siefe#buffers(fullscreen, kwargs) abort
         \   g:siefe_buffers_delete_key . ','
         \ . g:siefe_buffers_project_key . ','
         \ . g:siefe_buffers_history_key . ','
+        \ . s:common_window_expect_keys,
     \ ],
     \ 'sink*': function('s:buffers_sink', [a:fullscreen, a:kwargs]),
   \}
@@ -1857,25 +1905,41 @@ function! s:buffers_sink(fullscreen, kwargs, lines) abort
     return
   endif
 
-  if len(a:lines) < 2
-    return
-  endif
-
-  let key = a:lines[0]
-  let buffer_numbers = map(a:lines[1:], {_idx, bufline -> matchstr(bufline, '\[\zs[0-9]*\ze\]')})
+  let a:kwargs.query = a:lines[0]
+  let key = a:lines[1]
+  let buffer_numbers = map(a:lines[2:], {_idx, bufline -> matchstr(bufline, '\[\zs[0-9]*\ze\]')})
 
   if key ==# g:siefe_buffers_delete_key
+    if len(buffer_numbers) == 0
+      return
+    endif
     execute 'bdelete' join(buffer_numbers, ' ')
     call siefe#buffers(a:fullscreen, a:kwargs)
 
-  elseif key ==# g:siefe_buffers_project_key
-    " TODO
+  elseif key ==# g:siefe_buffers_git_key
     let a:kwargs.project = a:kwargs.project ? 0 : 1
     call siefe#buffers(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_buffers_history_key
     call siefe#history(a:fullscreen, a:kwargs)
+
+  elseif has_key(s:common_window_actions, key)
+    " no match
+    if len(buffer_numbers) == 0
+      return
+    endif
+
+    let cmd = s:common_window_actions[key]
+    for bufnr in buffer_numbers
+      execute 'silent' cmd
+      execute 'silent buffer' bufnr
+      normal! zvzz
+    endfor
+
   else
+    if len(buffer_numbers) == 0
+      return
+    endif
 
     let b = buffer_numbers[0]
 
@@ -1885,12 +1949,6 @@ function! s:buffers_sink(fullscreen, kwargs, lines) abort
         call s:jump(t, w)
         return
       endif
-    endif
-
-    " TODO
-    let cmd = s:action_for(key)
-    if !empty(cmd)
-      execute 'silent' cmd
     endif
 
     execute 'buffer' b
