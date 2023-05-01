@@ -1934,13 +1934,48 @@ function! s:buffers_sink(fullscreen, kwargs, lines) abort
 
   let a:kwargs.query = a:lines[0]
   let key = a:lines[1]
-  let buffer_numbers = map(a:lines[2:], {_idx, bufline -> matchstr(bufline, '\[\zs[0-9]*\ze\]')})
+  let buffer_numbers = map(a:lines[2:], {_idx, bufline -> str2nr(matchstr(bufline, '\[\zs[0-9]*\ze\]'))})
 
   if key ==# g:siefe_buffers_delete_key
     if len(buffer_numbers) == 0
       return
     endif
-    execute 'bdelete' join(buffer_numbers, ' ')
+
+    for bufnr in buffer_numbers
+      let readonly = getbufvar(bufnr, '&readonly')
+      let modified = getbufvar(bufnr, '&modified')
+      if !modified
+        execute 'bdelete' bufnr
+      elseif modified && !readonly
+        while v:true
+         let action = input('buffer "' . bufname(bufnr) . '" has been modified. Save, discard or abort? (s/d/a) ')
+         if action ==# 's' || action ==# 'save'
+           let cur_bufnr = bufnr('%')
+           set lazyredraw
+           execute 'buffer' bufnr
+           update
+           execute 'buffer' cur_bufnr
+           set nolazyredraw
+           break
+         elseif action ==# 'd' || action ==# 'discard'
+           execute 'bdelete!' bufnr
+           break
+         elseif action ==# 'a' || action ==# 'abort'
+           break
+         endif
+        endwhile
+      elseif modified && readonly
+        while v:true
+         let action = input('buffer "' . bufname(bufnr) . '" has been modified, but is readonly. Discard or abort? (d/a) ')
+         if action ==# 'd' || action ==# 'discard'
+           execute 'bdelete!' bufnr
+           break
+         elseif action ==# 'a' || action ==# 'abort'
+           break
+         endif
+        endwhile
+      endif
+    endfor
     call siefe#buffers(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_buffers_git_key
