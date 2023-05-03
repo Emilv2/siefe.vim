@@ -1921,7 +1921,7 @@ function! s:jump(t, w) abort
 endfunction
 
 
-function! siefe#_format_buffer(b) abort
+function! siefe#_format_buffer(b, git_dir) abort
   let name = bufname(a:b)
   let line = exists('*getbufinfo') ? getbufinfo(a:b)[0]['lnum'] : 0
   let name = empty(name) ? '[No Name]' : fnamemodify(name, ':p:~:.')
@@ -1933,7 +1933,9 @@ function! siefe#_format_buffer(b) abort
   let line_text = line == 0 ? '' : ' line ' . line
   let extra = modified . modifiable
   let extra = empty(extra) ? readonly : s:red(' [', 'Exception') . modified . modifiable . s:red('] ', 'Exception') . readonly
-  return s:strip(printf("%s//%d//[%s] %s\t%s%s\t%s", name, line, s:yellow(a:b, 'Number'), flag, name, extra,  line_text))
+  let rel_name = substitute(fnamemodify(expand(bufname(a:b)), ':p'), a:git_dir . '/' , '', '')
+  let rel_name = empty(a:git_dir) ? rel_name : s:green('√') . '/' .rel_name
+  return s:strip(printf("%s//%d//[%s] %s\t%s%s\t%s", name, line, s:yellow(a:b, 'Number'), flag, rel_name, extra,  line_text))
 endfunction
 
 function! s:sort_buffers(...) abort
@@ -1976,7 +1978,7 @@ function! siefe#buffers(fullscreen, kwargs) abort
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   let spec = {
-    \ 'source': map(sorted, 'siefe#_format_buffer(v:val)'),
+    \ 'source': map(sorted, 'siefe#_format_buffer(v:val, l:git_dir)'),
     \ 'options': [
       \ '--multi',
       \ '--tiebreak=index',
