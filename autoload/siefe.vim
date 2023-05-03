@@ -1990,6 +1990,7 @@ function! siefe#buffers(fullscreen, kwargs) abort
       \ '--delimiter', '//',
       \ '--bind', g:siefe_buffers_preview_key . ':change-preview:' . s:buffers_preview_command,
       \ '--bind', g:siefe_buffers_fast_preview_key . ':change-preview:' . s:buffers_fast_preview_command,
+      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
       \ '--bind','tab:toggle+up',
       \ '--bind','shift-tab:toggle+down',
       \ '--preview', s:buffers_preview_commands[g:siefe_buffers_default_preview_command],
