@@ -319,6 +319,21 @@ let s:buffers_preview_commands = [
   \ s:buffers_fast_preview_command,
 \ ]
 
+let g:siefe_marks_default_preview_command = get(g:, 'siefe_marks_default_preview_command', g:siefe_rg_default_preview_command)
+let g:siefe_marks_preview_key = get(g:, 'siefe_buffers_preview_key', g:siefe_rg_preview_key)
+let g:siefe_marks_fast_preview_key = get(g:, 'siefe_buffers_fast_preview_key', g:siefe_rg_fast_preview_key)
+
+let s:marks_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
+let s:marks_fast_preview_command = s:bin.preview . ' {1} cat'
+
+let s:marks_preview_commands = [
+  \ s:marks_preview_command,
+  \ s:marks_fast_preview_command,
+\ ]
+
+let s:default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+let s:other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -1673,6 +1688,76 @@ function! s:stash_sink(fullscreen, kwargs, lines) abort
 
   endif
 
+endfunction
+
+" " ------------------------------------------------------------------
+" " Marks
+" " ------------------------------------------------------------------
+function! siefe#marks(fullscreen, kwargs) abort
+  let a:kwargs.query = get(a:kwargs, 'query', '')
+
+  let source = map(getmarklist(),
+        \ 'printf("%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.file, v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? v:val.file : v:val.file . ":". s:blue(getbufline(v:val.pos[0], v:val.pos[1])) )')
+           \ + map(getmarklist(bufnr()),
+        \ 'printf("%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", bufname(), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
+  let spec = {
+  \ 'source':  source,
+  \ 'sink*':   function('s:mark_sink'),
+  \ 'options': [
+    \ '--ansi',
+    \ '--multi',
+    \ '--query', a:kwargs.query,
+    \ '--delimiter', '//://',
+    \ '--with-nth', '5..',
+    \ '--tabstop', '4',
+    \ '--preview', s:marks_preview_commands[g:siefe_marks_default_preview_command],
+    \ '--preview-window', '+{2}-/2,' . s:default_preview_size,
+    \ '--bind', g:siefe_marks_preview_key . ':change-preview:' . s:marks_preview_command,
+    \ '--bind', g:siefe_marks_fast_preview_key . ':change-preview:' . s:marks_fast_preview_command,
+    \ '--bind', g:siefe_accept_key . ':accept',
+    \ '--bind','tab:toggle+up',
+    \ '--bind','shift-tab:toggle+down',
+    \ '--header', "m\tl\tc\tfile/text",
+    \ '--expect', s:common_window_expect_keys,
+    \ '--prompt',  'Marks> '
+    \ ],
+  \ }
+  return fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! s:mark_sink(lines) abort
+  if len(a:lines) < 2
+    return
+  endif
+
+  let filelist = []
+  let key = a:lines[0]
+
+  for line in a:lines[1:]
+    let [filename, line, column, buf_nr, content] = split(line, '//://')
+    let file = {}
+    let file.filename = filename
+    let file.line = line
+    let file.column = column
+    let file.content = content
+    let filelist += [file]
+  endfor
+
+  if key ==# ''
+    execute 'e' file.filename
+    call cursor(file.line, file.column)
+    normal! zvzz
+
+    call s:fill_quickfix(filelist)
+
+  elseif has_key(s:common_window_actions, key)
+    let cmd = s:common_window_actions[key]
+    for file in filelist
+      execute 'silent' cmd file.filename
+      call cursor(file.line, file.column)
+      normal! zvzz
+    endfor
+  endif
 endfunction
 
 """ helper functions

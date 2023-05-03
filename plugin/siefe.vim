@@ -227,11 +227,24 @@ command! -nargs=* -bang SiefeProjectHistory call siefe#history(
             \  'project' : 1,
             \ })
 
+" TODO
+command! -nargs=* -bang SiefeRgHistory call siefe#ripgrepfzf(
+            \ <bang>0,
+            \ siefe#get_git_root(),
+            \ {
+            \  'query' : trim(getline('.')),
+            \  'prompt' : siefe#get_git_basename_or_bufdir(),
+            \  'files' : '//',
+            \ })
+
+
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
 command! -nargs=* -bang SiefeGitBufferLog call siefe#gitlogfzf(<bang>0, {'query': <q-args>, 'paths' : [siefe#get_relative_git_or_buf()] })
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
 command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [expand('%')], 'line_range' : siefe#visual_line_nu()})
+
+command! -bang SiefeMarks               call siefe#marks(<bang>0, {'query': <q-args> })
 
 command! -bang SiefeGitBranch            call siefe#gitbranch(<bang>0)
 

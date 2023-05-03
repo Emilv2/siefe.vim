@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# preview fugitive files with vim
+if [[ $1 == "fugitive:///"* ]]; then
+	vim -i NONE --not-a-term --cmd 'set t_ti= t_te=' +redraw +q -- "${1}"
+	exit
+fi
+
 # older versions of file do not have this flag
 if { file --help 2>&1 || :; } | \grep -q -e '--no-sandbox'; then
 	no_sandbox_flag="--no-sandbox"
