@@ -604,22 +604,23 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     " rg/fzf '//' delimited result
     if len(tmp2) >= 4
       let file.filename  = tmp2[0]
-      let file.line  = tmp2[1]
-      let file.column  = tmp2[2]
+      let file.col  = tmp2[1]
+      let file.lnum  = tmp2[2]
 
       if len(tmp2) == 4
-        let file.content = tmp2[3]
+        let file.text = tmp2[3]
       else
         " If it's bigger than 4 that means there was a // in there result,
         " so we recreate the original content
-        let file.content = join(tmp2[3:], s:delimiter)."\n"
+        let file.text = join(tmp2[3:], s:delimiter)."\n"
       endif
 
     " files result
     elseif len(tmp2) == 1
       let file.filename = tmp2[0]
-      let file.line  = 1
-      let file.column  = 1
+      let file.text = readfile(tmp2[0])[0]
+      let file.lnum  = 1
+      let file.col  = 1
 
       " this should never happen
       else
@@ -635,7 +636,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
       return
     endif
     execute 'e' file.filename
-    call cursor(file.line, file.column)
+    call cursor(file.lnum, file.col)
     normal! zvzz
 
     call s:fill_quickfix(filelist)
@@ -649,7 +650,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     let cmd = s:common_window_actions[key]
     for file in filelist
       execute 'silent' cmd file.filename
-      call cursor(file.line, file.column)
+      call cursor(file.lnum, file.col)
       normal! zvzz
     endfor
   endif
