@@ -635,7 +635,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     if len(tmp[2:]) == 0
       return
     endif
-    execute 'e' file.filename
+    execute 'e' fnameescape(file.filename)
     call cursor(file.lnum, file.col)
     normal! zvzz
 
@@ -649,7 +649,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
     let cmd = s:common_window_actions[key]
     for file in filelist
-      execute 'silent' cmd file.filename
+      execute 'silent' cmd fnameescape(file.filename)
       call cursor(file.lnum, file.col)
       normal! zvzz
     endfor
@@ -1516,13 +1516,13 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
   elseif has_key(s:common_window_actions, key)
     let cmd = s:common_window_actions[key]
     for file in a:lines[2:]
-      execute 'silent' cmd split(file, '//')[1]
+      execute 'silent' cmd fnamescape(split(file, '//')[1])
       normal! zvzz
     endfor
 
   else
     echom a:lines[2]
-    execute 'e' split(a:lines[2], '//')[1]
+    execute 'e' fnameescape(split(a:lines[2], '//')[1])
     normal! zvzz
 
     call s:fill_quickfix(map(a:lines[2:], "{'filename' : split(v:val, '//')[1] }"))
@@ -1697,10 +1697,12 @@ endfunction
 function! siefe#marks(fullscreen, kwargs) abort
   let a:kwargs.query = get(a:kwargs, 'query', '')
 
+  let git_dir = FugitiveFind(':/')
+
   let source = map(getmarklist(),
-        \ 'printf("%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.file, v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? v:val.file : v:val.file . ":". s:blue(getbufline(v:val.pos[0], v:val.pos[1])) )')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? s:get_relative_git_or_bufdir(v:val.file, l:git_dir) : s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(getbufline(v:val.pos[0], v:val.pos[1])) )')
            \ + map(getmarklist(bufnr()),
-        \ 'printf("%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", bufname(), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
   let spec = {
   \ 'source':  source,
   \ 'sink*':   function('s:mark_sink'),
@@ -1745,7 +1747,7 @@ function! s:mark_sink(lines) abort
   endfor
 
   if key ==# ''
-    execute 'e' file.filename
+    execute 'e' fnameescape(file.filename)
     call cursor(file.line, file.column)
     normal! zvzz
 
@@ -1754,7 +1756,7 @@ function! s:mark_sink(lines) abort
   elseif has_key(s:common_window_actions, key)
     let cmd = s:common_window_actions[key]
     for file in filelist
-      execute 'silent' cmd file.filename
+      execute 'silent' cmd fnameescape(file.filename)
       call cursor(file.line, file.column)
       normal! zvzz
     endfor
@@ -1843,9 +1845,9 @@ function! siefe#recent_git_files() abort
   endif
   return siefe#_uniq_with_prefix(
         \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . substitute(FugitiveReal(), l:git_dir . "/", "", "")')
-        \ + map(filter(map(fzf#vim#_buflisted_sorted(), 'bufname(v:val)'), 'len(v:val) && fnamemodify(expand(bufname(v:val)), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(bufname(v:val)), ':p'), l:git_dir . '/' , '', '')")
-        \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(v:val.name), ':p')) && expand(v:val.name) =~# '^" . l:git_dir . "'"),
-        \ 'v:val.line . "//" . substitute(expand(v:val.name), l:git_dir . "/", "", "")'), '//')
+        \ + map(filter(map(fzf#vim#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
+        \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:git_dir . "'"),
+        \ 'v:val.line . "//" . substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '//')
 endfunction
 
 function! siefe#_uniq_with_prefix(list, prefix) abort
@@ -1921,9 +1923,16 @@ function! s:jump(t, w) abort
   execute a:w.'wincmd w'
 endfunction
 
+function! s:get_relative_git_or_bufdir(name, git_dir) abort
+  if !empty(a:git_dir)
+    return s:green('√') . substitute(fnameescape(fnamemodify(expand(a:name), ':p')), a:git_dir . '' , '', '')
+  else
+    return fnameescape(fnamemodify(expand(bufname(0)), ':p:~:.'))
+  endif
+endfunction
 
 function! siefe#_format_buffer(b, git_dir) abort
-  let name = bufname(a:b)
+  let name = fnameescape(bufname(a:b))
   let line = exists('*getbufinfo') ? getbufinfo(a:b)[0]['lnum'] : 0
   let name = empty(name) ? '[No Name]' : fnamemodify(name, ':p:~:.')
   let flag = a:b == bufnr('')  ? s:blue('%', 'Conditional') :
@@ -1934,7 +1943,7 @@ function! siefe#_format_buffer(b, git_dir) abort
   let line_text = line == 0 ? '' : ' line ' . line
   let extra = modified . modifiable
   let extra = empty(extra) ? readonly : s:red(' [', 'Exception') . modified . modifiable . s:red('] ', 'Exception') . readonly
-  let rel_name = substitute(fnamemodify(expand(bufname(a:b)), ':p'), a:git_dir . '/' , '', '')
+  let rel_name = substitute(fnamemodify(expand(fnameescape(bufname(a:b))), ':p'), a:git_dir . '/' , '', '')
   let rel_name = empty(a:git_dir) ? rel_name : s:green('√') . '/' .rel_name
   return s:strip(printf("%s//%d//[%s] %s\t%s%s\t%s", name, line, s:yellow(a:b, 'Number'), flag, rel_name, extra,  line_text))
 endfunction
@@ -1968,7 +1977,7 @@ function! siefe#buffers(fullscreen, kwargs) abort
   endif
   if git_dir !=# '' && a:kwargs.project
     let project = siefe#get_git_basename_or_bufdir() . ' '
-    let sorted = filter(fzf#vim#_buflisted_sorted(), 'len(v:val) && fnamemodify(expand(bufname(v:val)), ":p") =~# "^' . l:git_dir . '"')
+    let sorted = filter(fzf#vim#_buflisted_sorted(), 'len(v:val) && fnamemodify(fnameescape(expand(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"')
   else
     let project = ''
     let sorted = fzf#vim#_buflisted_sorted()
