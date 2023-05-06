@@ -1705,7 +1705,7 @@ function! siefe#marks(fullscreen, kwargs) abort
         \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
   let spec = {
   \ 'source':  source,
-  \ 'sink*':   function('s:mark_sink'),
+  \ 'sink*':   function('s:marks_sink'),
   \ 'options': [
     \ '--ansi',
     \ '--multi',
@@ -1728,7 +1728,7 @@ function! siefe#marks(fullscreen, kwargs) abort
   return fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:mark_sink(lines) abort
+function! s:marks_sink(lines) abort
   if len(a:lines) < 2
     return
   endif
