@@ -323,8 +323,8 @@ let g:siefe_marks_default_preview_command = get(g:, 'siefe_marks_default_preview
 let g:siefe_marks_preview_key = get(g:, 'siefe_buffers_preview_key', g:siefe_rg_preview_key)
 let g:siefe_marks_fast_preview_key = get(g:, 'siefe_buffers_fast_preview_key', g:siefe_rg_fast_preview_key)
 
-let s:marks_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
-let s:marks_fast_preview_command = s:bin.preview . ' {1} cat'
+let s:marks_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={3} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {2} cat'
+let s:marks_fast_preview_command = s:bin.preview . ' {2} cat'
 
 let s:marks_preview_commands = [
   \ s:marks_preview_command,
@@ -1723,7 +1723,7 @@ function! siefe#marks(fullscreen, kwargs) abort
   let git_dir = FugitiveFind(':/')
 
   let source = map(getmarklist(),
-        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? s:get_relative_git_or_bufdir(v:val.file, l:git_dir) : s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(getbufline(v:val.pos[0], v:val.pos[1])) )')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? s:get_relative_git_or_bufdir(v:val.file, l:git_dir) : s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(getbufoneline(v:val.pos[0], v:val.pos[1])) )')
            \ + map(getmarklist(bufnr()),
         \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
   let spec = {
@@ -1734,7 +1734,7 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--multi',
     \ '--query', a:kwargs.query,
     \ '--delimiter', '//://',
-    \ '--with-nth', '5..',
+    \ '--with-nth', '6..',
     \ '--tabstop', '4',
     \ '--preview', s:marks_preview_commands[g:siefe_marks_default_preview_command],
     \ '--preview-window', '+{2}-/2,' . s:default_preview_size,
@@ -1760,12 +1760,13 @@ function! s:marks_sink(lines) abort
   let key = a:lines[0]
 
   for line in a:lines[1:]
-    let [filename, line, column, buf_nr, content] = split(line, '//://')
+    let [mark, filename, lnum, col, buf_nr, text] = split(line, '//://')
     let file = {}
+    let file.type = mark
     let file.filename = filename
-    let file.line = line
-    let file.column = column
-    let file.content = content
+    let file.lnum = lnum
+    let file.col = col
+    let file.text = getbufoneline(buf_nr, lnum)
     let filelist += [file]
   endfor
 
@@ -1775,7 +1776,7 @@ function! s:marks_sink(lines) abort
     augroup END
 
     execute 'e' fnameescape(file.filename)
-    call cursor(file.line, file.column)
+    call cursor(file.lnum, file.col)
     normal! zvzz
 
     silent! autocmd! siefe_swap
