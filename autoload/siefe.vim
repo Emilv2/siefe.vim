@@ -635,9 +635,16 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     if len(tmp[2:]) == 0
       return
     endif
+
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
     execute 'e' fnameescape(file.filename)
     call cursor(file.lnum, file.col)
     normal! zvzz
+
+    silent! autocmd! siefe_swap
 
     call s:fill_quickfix(filelist)
 
@@ -647,12 +654,21 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
       return
     endif
 
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
     let cmd = s:common_window_actions[key]
     for file in filelist
+
+
+    silent! autocmd! siefe_swap
       execute 'silent' cmd fnameescape(file.filename)
       call cursor(file.lnum, file.col)
       normal! zvzz
     endfor
+
+    silent! autocmd! siefe_swap
   endif
 
   " work around for strange nested fzf change directory behaviour
@@ -1522,8 +1538,15 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
 
   else
     echom a:lines[2]
+
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
     execute 'e' fnameescape(split(a:lines[2], '//')[1])
     normal! zvzz
+
+    silent! autocmd! siefe_swap
 
     call s:fill_quickfix(map(a:lines[2:], "{'filename' : split(v:val, '//')[1] }"))
   endif
@@ -1747,19 +1770,32 @@ function! s:marks_sink(lines) abort
   endfor
 
   if key ==# ''
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
     execute 'e' fnameescape(file.filename)
     call cursor(file.line, file.column)
     normal! zvzz
+
+    silent! autocmd! siefe_swap
 
     call s:fill_quickfix(filelist)
 
   elseif has_key(s:common_window_actions, key)
     let cmd = s:common_window_actions[key]
+
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
     for file in filelist
       execute 'silent' cmd fnameescape(file.filename)
       call cursor(file.line, file.column)
       normal! zvzz
     endfor
+
+    silent! autocmd! siefe_swap
   endif
 endfunction
 
@@ -2287,4 +2323,21 @@ function! siefe#visual_line_nu() abort
     end
     return sort([line_start, line_end], 'n')
 
+endfunction
+
+" workaround for https://github.com/junegunn/fzf/issues/2895
+function! s:swapchoice(swapname) abort
+  let info = swapinfo(a:swapname)
+  let modified =  info.dirty == 1 ? 'yes' : 'no'
+   while v:swapchoice !=# 'o'
+         \ && v:swapchoice !=# 'e'
+         \ && v:swapchoice !=# 'r'
+         \ && v:swapchoice !=# 'q'
+         \ && v:swapchoice !=# 'a'
+    let v:swapchoice = input('found a swap file by the name "' . a:swapname . '"'
+       \ . "\nuser: " . info.user . '@' . info.host
+       \ . "\npid: " . info.pid
+       \ . "\nmodified: " .  modified
+       \ . "\n[O]pen Read-Only (default), (E)dit anyway, (R)ecover, (Q)uit, (A)bort: ", 'o')
+   endwhile
 endfunction
