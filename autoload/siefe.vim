@@ -636,7 +636,8 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     " files result
     elseif len(tmp2) == 1
       let file.filename = tmp2[0]
-      let file.text = readfile(tmp2[0])[0]
+      let content = readfile(tmp2[0])
+      let file.text = empty(content) ? '' : content[0]
       let file.lnum  = 1
       let file.col  = 1
 
