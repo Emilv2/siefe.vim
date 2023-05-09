@@ -746,7 +746,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, 0, 0, 'd', 0, '', a:kwargs)
 
   elseif key ==# g:siefe_rg_yank_key
-    return s:yank_to_register(join(map(filelist, 'v:val.content'), "\n"))
+    return s:yank_to_register(join(map(filelist, 'v:val.text'), "\n"))
 
   elseif key ==# g:siefe_rg_history_key && readfile(a:kwargs.files)[0] == 1
     call siefe#history(a:fullscreen, a:kwargs)
