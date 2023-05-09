@@ -407,11 +407,27 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let rg_command = printf(command_fmt, shellescape(a:kwargs.query))
   let reload_command = printf(command_fmt, '{q}')
   let empty_command = printf(command_fmt, '""')
+
+  let rel_path = substitute(a:dir, siefe#bufdir(), '', '')
+
+  " not a subdir
+  if rel_path ==# a:dir
+    let rel_path = substitute(siefe#bufdir(), a:dir, '', '')
+  endif
+
+  " also not a superdir
+  if rel_path ==# siefe#bufdir()
+    let bufname_exclude = ''
+  else
+    let bufname_exclude = empty(expand('%:p:t')) ? '' :  ' -g ' . shellescape('!') . rel_path . '/' . expand('%:p:t')
+  endif
+
   let files_command = 'echo 1 > ' . a:kwargs.files . '; rg '
     \ . search_zip
     \ . text
     \ . no_ignore
     \ . hidden_option
+    \ . bufname_exclude
     \ .  ' --color=always --files '.a:kwargs.type
 
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
@@ -445,6 +461,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
   endif
 
+  let name_info = empty(bufname()) ? '[No Name]' : bufname()
   let paths_info = a:kwargs.paths ==# [] ? '' : "\npaths: ".join(a:kwargs.paths)
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
@@ -543,7 +560,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ')'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
-      \ '--header', s:prettify_header(g:siefe_rg_rg_key, 'Rg')
+      \ '--header', name_info
+        \ . "\n" . s:prettify_header(g:siefe_rg_rg_key, 'Rg')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fzf_key,  'fzf')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_rgfzf_key, 'rg/fzf')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
