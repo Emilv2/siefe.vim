@@ -1738,15 +1738,25 @@ endfunction
 " " ------------------------------------------------------------------
 " " Marks
 " " ------------------------------------------------------------------
+function! s:readbuf_or_file_line(bufnr, filename, pos) abort
+  if len(getbufline(a:bufnr, a:filename)) > 0
+    return getbufline(a:bufnr, a:pos)
+  elseif filereadable(expand(fnameescape(a:filename)))
+    return readfile(expand(fnameescape(a:filename)), '', a:pos)[-1]
+  else
+    return ''
+  endif
+
+endfunction
 function! siefe#marks(fullscreen, kwargs) abort
   let a:kwargs.query = get(a:kwargs, 'query', '')
 
   let git_dir = FugitiveFind(':/')
 
   let source = map(getmarklist(),
-        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], len(getbufline(v:val.pos[0], v:val.pos[1])) == 0 ? s:get_relative_git_or_bufdir(v:val.file, l:git_dir) : s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(getbufoneline(v:val.pos[0], v:val.pos[1])) )')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])))')
            \ + map(getmarklist(bufnr()),
-        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:blue(getline(v:val.pos[1])))')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:green(getline(v:val.pos[1])))')
   let spec = {
   \ 'source':  source,
   \ 'sink*':   function('s:marks_sink'),
@@ -1765,7 +1775,9 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--bind','tab:toggle+up',
     \ '--bind','shift-tab:toggle+down',
     \ '--header', "m\tl\tc\tfile/text",
-    \ '--expect', s:common_window_expect_keys,
+    \ '--expect', s:common_window_expect_keys . ','
+      \ . g:siefe_marks_delete_key . ','
+      \ . g:siefe_marks_yank_key,
     \ '--prompt',  'Marks> '
     \ ],
   \ }
@@ -1787,7 +1799,7 @@ function! s:marks_sink(lines) abort
     let file.filename = filename
     let file.lnum = lnum
     let file.col = col
-    let file.text = getbufoneline(buf_nr, lnum)
+    let file.text = s:readbuf_or_file_line(buf_nr, filename, lnum)
     let filelist += [file]
   endfor
 
@@ -1796,13 +1808,24 @@ function! s:marks_sink(lines) abort
     autocmd SwapExists * call s:swapchoice(v:swapname)
     augroup END
 
-    execute 'e' fnameescape(file.filename)
-    call cursor(file.lnum, file.col)
-    normal! zvzz
+    if !empty(file.filename)
+      echom file.filename
+      execute 'e' fnameescape(file.filename)
+      call cursor(file.lnum, file.col)
+      normal! zvzz
+    endif
 
     silent! autocmd! siefe_swap
 
     call s:fill_quickfix(filelist)
+
+  elseif key ==# g:siefe_marks_delete_key
+    for f in filelist
+      call setpos("'" . f.type, [0, 0, 0, 0])
+    endfor
+
+  elseif key ==# g:siefe_marks_yank_key
+    return s:yank_to_register(join(map(filelist, 'v:val.text'), "\n"))
 
   elseif has_key(s:common_window_actions, key)
     let cmd = s:common_window_actions[key]
