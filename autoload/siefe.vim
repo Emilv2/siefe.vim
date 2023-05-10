@@ -622,8 +622,8 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     " rg/fzf '//' delimited result
     if len(tmp2) >= 4
       let file.filename  = tmp2[0]
-      let file.col  = tmp2[1]
-      let file.lnum  = tmp2[2]
+      let file.lnum  = tmp2[1]
+      let file.col  = tmp2[2]
 
       if len(tmp2) == 4
         let file.text = tmp2[3]
