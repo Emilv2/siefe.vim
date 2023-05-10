@@ -319,6 +319,8 @@ let s:buffers_preview_commands = [
   \ s:buffers_fast_preview_command,
 \ ]
 
+let g:siefe_marks_delete_key = get(g:, 'siefe_marks_delete_key', 'del')
+let g:siefe_marks_yank_key = get(g:, 'siefe_marks_yank_key', 'ctrl-y')
 let g:siefe_marks_default_preview_command = get(g:, 'siefe_marks_default_preview_command', g:siefe_rg_default_preview_command)
 let g:siefe_marks_preview_key = get(g:, 'siefe_buffers_preview_key', g:siefe_rg_preview_key)
 let g:siefe_marks_fast_preview_key = get(g:, 'siefe_buffers_fast_preview_key', g:siefe_rg_fast_preview_key)
