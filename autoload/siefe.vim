@@ -1914,7 +1914,7 @@ endfunction
 function! siefe#recent_files() abort
   return siefe#_uniq_with_prefix(
         \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . fnamemodify(v:val, ":~:.")')
-        \ + map(filter(fzf#vim#_buflisted_sorted(), 'len(bufname(v:val))'), "getbufinfo(v:val)[0]['lnum'] . '//' . fnamemodify(expand(bufname(v:val)), ':~:.')")
+        \ + map(filter(siefe#_buflisted_sorted(), 'len(bufname(v:val))'), "getbufinfo(v:val)[0]['lnum'] . '//' . fnamemodify(expand(bufname(v:val)), ':~:.')")
         \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(v:val.name), ':p'))"),
         \ 'v:val.line . "//" . fnamemodify(expand(v:val.name), ":~:.")'), '//')
 endfunction
@@ -1926,7 +1926,7 @@ function! siefe#recent_git_files() abort
   endif
   return siefe#_uniq_with_prefix(
         \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . substitute(FugitiveReal(), l:git_dir . "/", "", "")')
-        \ + map(filter(map(fzf#vim#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
+        \ + map(filter(map(siefe#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
         \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:git_dir . "'"),
         \ 'v:val.line . "//" . substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '//')
 endfunction
@@ -2030,7 +2030,7 @@ function! siefe#_format_buffer(b, git_dir) abort
 endfunction
 
 function! s:sort_buffers(...) abort
-  let [b1, b2] = map(copy(a:000), 'get(g:fzf#vim#buffers, v:val, v:val)')
+  let [b1, b2] = map(copy(a:000), 'get(g:siefe#buffers, v:val, v:val)')
   " Using minus between a float and a number in a sort function causes an error
   return b1 < b2 ? 1 : -1
 endfunction
@@ -2058,10 +2058,10 @@ function! siefe#buffers(fullscreen, kwargs) abort
   endif
   if git_dir !=# '' && a:kwargs.project
     let project = siefe#get_git_basename_or_bufdir() . ' '
-    let sorted = filter(fzf#vim#_buflisted_sorted(), 'len(v:val) && fnamemodify(fnameescape(expand(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"')
+    let sorted = filter(siefe#_buflisted_sorted(), 'len(v:val) && fnamemodify(fnameescape(expand(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"')
   else
     let project = ''
-    let sorted = fzf#vim#_buflisted_sorted()
+    let sorted = siefe#_buflisted_sorted()
   endif
   let header_lines = '--header-lines=' . (bufnr('') == get(sorted, 0, 0) ? 1 : 0)
   let tabstop = len(max(sorted)) >= 4 ? 9 : 8

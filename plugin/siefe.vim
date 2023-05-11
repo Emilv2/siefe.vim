@@ -256,3 +256,17 @@ command! -nargs=* -bang SiefeBuffers call siefe#buffers(
             \ {
             \  'query' : <q-args>,
             \ })
+
+if !exists('g:siefe#buffers')
+  let g:siefe#buffers = {}
+endif
+
+augroup siefe_buffers
+  autocmd!
+  if exists('*reltimefloat')
+    autocmd BufWinEnter,WinEnter * let g:siefe#buffers[bufnr('')] = reltimefloat(reltime())
+  else
+    autocmd BufWinEnter,WinEnter * let g:siefe#buffers[bufnr('')] = localtime()
+  endif
+  autocmd BufDelete * silent! call remove(g:siefe#buffers, expand('<abuf>'))
+augroup END
