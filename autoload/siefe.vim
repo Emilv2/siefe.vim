@@ -1043,7 +1043,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   \ ]
 
   let authors_info = a:kwargs.authors ==# [] ? '' : "\nauthors: ".join(a:kwargs.authors)
-  let paths_info = paths ==# '' ? '' : "\npaths: ". paths
+  let paths_info = paths ==# '' ? '' : "\npaths: " . join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'

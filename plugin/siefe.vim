@@ -239,10 +239,10 @@ command! -nargs=* -bang SiefeRgHistory call siefe#ripgrepfzf(
 
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
-command! -nargs=* -bang SiefeGitBufferLog call siefe#gitlogfzf(<bang>0, {'query': <q-args>, 'paths' : [siefe#get_relative_git_or_buf()] })
+command! -nargs=* -bang SiefeGitBufferLog call siefe#gitlogfzf(<bang>0, {'query': <q-args>, 'paths' : [fnamemodify(expand('%'), ':p')] })
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
 command! -nargs=* -bang SiefeGitLogWORD call siefe#gitlogfzf(<bang>0, {'query': expand("<cWORD>")})
-command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [expand('%')], 'line_range' : siefe#visual_line_nu()})
+command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [fnamemodify(expand('%'), ':p')], 'line_range' : siefe#visual_line_nu()})
 
 command! -bang SiefeMarks               call siefe#marks(<bang>0, {'query': <q-args> })
 
