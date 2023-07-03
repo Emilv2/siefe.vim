@@ -196,8 +196,10 @@ let s:common_keys = [
 let g:siefe_split_key = get(g:, 'siefe_split_key', 'ctrl-]')
 let g:siefe_vsplit_key = get(g:, 'siefe_vsplit_key', 'ctrl-\')
 let g:siefe_tab_key = get(g:, 'siefe_tab_key', 'alt-enter')
+let g:siefe_vdiffsplit_key = get(g:, 'siefe_vdiffsplit_key', 'alt-d')
 
 let s:common_window_actions = {
+  \ g:siefe_vdiffsplit_key : 'vert diffsplit',
   \ g:siefe_tab_key : 'tab split',
   \ g:siefe_split_key : 'split',
   \ g:siefe_vsplit_key : 'vsplit',
