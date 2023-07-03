@@ -213,6 +213,7 @@ let s:fugitive_window_actions = {
 
 let s:common_window_keys = keys(s:common_window_actions)
 let s:common_window_expect_keys = join(filter(keys(s:common_window_actions), '!empty(v:val)'), ',')
+let s:common_window_help = join(map(filter(keys(s:common_window_actions), '!empty(v:val)'), 's:prettify_help(v:val) . " " . get(s:common_window_actions, v:val)'), ' ╱ ')
 
 let g:siefe_preview_hide_threshold = str2nr(get(g:, 'siefe_preview_hide_threshold', 80))
 let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 50))
@@ -691,6 +692,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_search_zip_key, '-z:' . search_zip_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_text_key, '--text:' . text_toggle)
         \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
+        \ . "\n" . s:common_window_help
         \ . paths_info,
       \ '--prompt', initial_prompt,
       \ ],
@@ -1194,6 +1196,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_switch_key, 'switch')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitlog_preview_keys), 'Special') . ' change preview'
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_not_branch_key, '^branches')
+        \ . "\n" . s:common_window_help
         \ . SG_help
         \ . siefe_gitlog_follow_help
         \ . authors_info
@@ -1612,6 +1615,7 @@ function! siefe#history(fullscreen, kwargs) abort
             \ . ' ╱ ' . s:prettify_header(g:siefe_history_buffers_key, 'buf')
             \ . git_help
             \ . ' ╱ ' . s:magenta(s:preview_help(s:history_preview_keys), 'Special') . ' change preview'
+            \ . "\n" . s:common_window_help
           \ ],
         \ 'sink*': function('s:history_sink', [a:fullscreen, a:kwargs]),
    \ }
@@ -1882,7 +1886,8 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--bind', g:siefe_accept_key . ':accept',
     \ '--bind','tab:toggle+up',
     \ '--bind','shift-tab:toggle+down',
-    \ '--header', "m\tl\tc\tfile/text",
+    \ '--header', "m\tl\tc\tfile/text"
+      \ . "\n" . s:common_window_help,
     \ '--expect', s:common_window_expect_keys . ','
       \ . g:siefe_marks_delete_key . ','
       \ . g:siefe_marks_yank_key,
@@ -2183,7 +2188,8 @@ function! siefe#buffers(fullscreen, kwargs) abort
       \ '--tiebreak=index',
       \ '--header', s:prettify_header(g:siefe_buffers_delete_key, 'delete')
         \ . ' ╱ ' . s:prettify_header(g:siefe_buffers_history_key, 'history')
-        \ . git_help,
+        \ . git_help
+        \ . "\n" . s:common_window_help,
       \ header_lines,
       \ '--ansi',
       \ '--delimiter', '//',
