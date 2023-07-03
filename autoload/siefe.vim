@@ -1553,7 +1553,7 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
   elseif has_key(s:common_window_actions, key)
     let cmd = s:common_window_actions[key]
     for file in a:lines[2:]
-      execute 'silent' cmd fnamescape(split(file, '//')[1])
+      execute 'silent' cmd fnameescape(split(file, '//')[1])
       normal! zvzz
     endfor
 
