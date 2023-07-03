@@ -23,6 +23,112 @@ if s:is_win
   endif
 endif
 
+function! s:prettify_help(key) abort
+    return s:magenta(toupper(a:key), 'Special')
+endfunction
+
+let s:ansi = {'black': 30, 'red': 31, 'green': 32, 'yellow': 33, 'blue': 34, 'magenta': 35, 'cyan': 36}
+
+function! s:csi(color, fg) abort
+  let prefix = a:fg ? '38;' : '48;'
+  if a:color[0] ==# '#'
+    return prefix.'2;'.join(map([a:color[1:2], a:color[3:4], a:color[5:6]], 'str2nr(v:val, 16)'), ';')
+  endif
+  return prefix.'5;'.a:color
+endfunction
+
+function! s:ansi(str, group, default, ...) abort
+  let fg = s:get_color('fg', a:group)
+  let bg = s:get_color('bg', a:group)
+  let color = (empty(fg) ? s:ansi[a:default] : s:csi(fg, 1)) .
+        \ (empty(bg) ? '' : ';'.s:csi(bg, 0))
+  return printf("\x1b[%s%sm%s\x1b[m", color, a:0 ? ';1' : '', a:str)
+endfunction
+
+function! s:magenta(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'magenta')
+endfunction
+
+function! s:blue(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'blue')
+endfunction
+
+function! s:red(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'red')
+endfunction
+
+function! s:green(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'green')
+endfunction
+
+function! s:yellow(str, ...) abort
+  return s:ansi(a:str, get(a:, 1, ''), 'yellow')
+endfunction
+
+function! s:fill_quickfix(list, ...) abort
+  if len(a:list) > 1
+    call setqflist(a:list)
+    copen
+    wincmd p
+    if a:0
+      execute a:1
+    endif
+  endif
+endfunction
+
+function! s:yank_to_register(data) abort
+  let @" = a:data
+  silent! let @* = a:data
+  silent! let @+ = a:data
+endfunction
+
+function! s:prettify_header(key, text) abort
+  let char = split(a:key, '-')[-1]
+  if char == a:text[0]
+    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text
+  else
+    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", '')
+  endif
+endfunction
+
+function! s:get_color(attr, ...) abort
+  let gui = has('termguicolors') && &termguicolors
+  let fam = gui ? 'gui' : 'cterm'
+  let pat = gui ? '^#[a-f0-9]\+' : '^[0-9]\+$'
+  for group in a:000
+    let code = synIDattr(synIDtrans(hlID(group)), a:attr, fam)
+    if code =~? pat
+      return code
+    endif
+  endfor
+  return ''
+endfunction
+
+
+
+function! s:preview_help(preview_keys) abort
+  let f_keys = filter(copy(a:preview_keys), 'v:val[0] ==? "f"')
+  let non_f_keys = filter(copy(a:preview_keys), 'v:val[0] !=? "f"')
+  let f_ints = sort(map(f_keys, 'str2nr(v:val[1:])'), 'n')
+  let last_val = f_ints[0]
+  let result = ''
+  let val_start = f_ints[0]
+  for val in f_ints[1:]
+    if val != last_val + 1
+      if val_start != last_val
+        let result .= 'f' . val_start . '-' . last_val . ', '
+      else
+        let result .= 'f'. last_val . ', '
+      endif
+      let val_start = val
+    endif
+    let last_val = val
+  endfor
+  let result .= 'f' . val_start . '-' . last_val
+  return result . join(map(non_f_keys, '", " . v:val'), '')
+endfunction
+
+
 """ ripgrep < 13 does not support setting the match separator
 let _ = system('rg --help | grep -- "--field-match-separator"')
 let s:delimiter = v:shell_error ? ':' : '//'
@@ -2200,110 +2306,6 @@ function! siefe#toggle_git_status() abort
   if len(map(filter(range(1, bufnr('$')), 'getbufvar(v:val, "&filetype") ==# "fugitive"'), { _,bufnr -> execute( 'bdelete ' . bufnr )})) == 0
     keepalt Git
   endif
-endfunction
-
-function! s:get_color(attr, ...) abort
-  let gui = has('termguicolors') && &termguicolors
-  let fam = gui ? 'gui' : 'cterm'
-  let pat = gui ? '^#[a-f0-9]\+' : '^[0-9]\+$'
-  for group in a:000
-    let code = synIDattr(synIDtrans(hlID(group)), a:attr, fam)
-    if code =~? pat
-      return code
-    endif
-  endfor
-  return ''
-endfunction
-
-
-let s:ansi = {'black': 30, 'red': 31, 'green': 32, 'yellow': 33, 'blue': 34, 'magenta': 35, 'cyan': 36}
-
-function! s:csi(color, fg) abort
-  let prefix = a:fg ? '38;' : '48;'
-  if a:color[0] ==# '#'
-    return prefix.'2;'.join(map([a:color[1:2], a:color[3:4], a:color[5:6]], 'str2nr(v:val, 16)'), ';')
-  endif
-  return prefix.'5;'.a:color
-endfunction
-
-function! s:ansi(str, group, default, ...) abort
-  let fg = s:get_color('fg', a:group)
-  let bg = s:get_color('bg', a:group)
-  let color = (empty(fg) ? s:ansi[a:default] : s:csi(fg, 1)) .
-        \ (empty(bg) ? '' : ';'.s:csi(bg, 0))
-  return printf("\x1b[%s%sm%s\x1b[m", color, a:0 ? ';1' : '', a:str)
-endfunction
-
-function! s:magenta(str, ...) abort
-  return s:ansi(a:str, get(a:, 1, ''), 'magenta')
-endfunction
-
-function! s:blue(str, ...) abort
-  return s:ansi(a:str, get(a:, 1, ''), 'blue')
-endfunction
-
-function! s:red(str, ...) abort
-  return s:ansi(a:str, get(a:, 1, ''), 'red')
-endfunction
-
-function! s:green(str, ...) abort
-  return s:ansi(a:str, get(a:, 1, ''), 'green')
-endfunction
-
-function! s:yellow(str, ...) abort
-  return s:ansi(a:str, get(a:, 1, ''), 'yellow')
-endfunction
-
-function! s:fill_quickfix(list, ...) abort
-  if len(a:list) > 1
-    call setqflist(a:list)
-    copen
-    wincmd p
-    if a:0
-      execute a:1
-    endif
-  endif
-endfunction
-
-function! s:yank_to_register(data) abort
-  let @" = a:data
-  silent! let @* = a:data
-  silent! let @+ = a:data
-endfunction
-
-function! s:prettify_help(key) abort
-    return s:magenta(toupper(a:key), 'Special')
-endfunction
-
-function! s:prettify_header(key, text) abort
-  let char = split(a:key, '-')[-1]
-  if char == a:text[0]
-    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text
-  else
-    return s:magenta(toupper(a:key), 'Special') . ' ' . a:text[0] . substitute(a:text[1:], char, "\e[3m".char."\e[m", '')
-  endif
-endfunction
-
-function! s:preview_help(preview_keys) abort
-  let f_keys = filter(copy(a:preview_keys), 'v:val[0] ==? "f"')
-  let non_f_keys = filter(copy(a:preview_keys), 'v:val[0] !=? "f"')
-  let f_ints = sort(map(f_keys, 'str2nr(v:val[1:])'), 'n')
-  let last_val = f_ints[0]
-  let result = ''
-  let val_start = f_ints[0]
-  for val in f_ints[1:]
-    if val != last_val + 1
-      if val_start != last_val
-        let result .= 'f' . val_start . '-' . last_val . ', '
-      else
-        let result .= 'f'. last_val . ', '
-      endif
-      let val_start = val
-    endif
-    let last_val = val
-  endfor
-  let result .= 'f' . val_start . '-' . last_val
-  return result . join(map(non_f_keys, '", " . v:val'), '')
 endfunction
 
 function! s:detect_dups(lst) abort
