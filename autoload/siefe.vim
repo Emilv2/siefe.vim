@@ -490,8 +490,12 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let hidden_toggle = a:kwargs.hidden ? 'off' : 'on'
   let case_sensitive = a:kwargs.case_sensitive ? '--case-sensitive ' : '--smart-case '
   let case_symbol = a:kwargs.case_sensitive ? '-s ' : ''
-  let no_ignore = a:kwargs.no_ignore ? '-u ' : ''
-  let no_ignore_toggle = a:kwargs.no_ignore ? 'off' : 'on'
+  let no_ignore = a:kwargs.no_ignore == 1 ? '-u ' :
+        \ a:kwargs.no_ignore == 2 ? '-uu ' :
+        \ a:kwargs.no_ignore == 3 ? '-uuu ' : ' '
+  let no_ignore_toggle = a:kwargs.no_ignore == 1 ? '-uu' :
+        \ a:kwargs.no_ignore == 2 ? '-uuu' :
+        \ a:kwargs.no_ignore == 3 ? 'off' : '-u'
   let fixed_strings = a:kwargs.fixed_strings ? '-F ' : ''
   let fixed_strings_toggle = a:kwargs.fixed_strings ? 'off' : 'on'
   let max_1 = a:kwargs.max_1 ? '-m1 ' : ''
@@ -825,7 +829,9 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_no_ignore_key
-    let a:kwargs.no_ignore = a:kwargs.no_ignore ? 0 : 1
+    let a:kwargs.no_ignore = a:kwargs.no_ignore == 0 ? 1 :
+          \ a:kwargs.no_ignore == 1 ? 2 :
+          \ a:kwargs.no_ignore == 2 ? 3 : 0
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_fixed_strings_key
