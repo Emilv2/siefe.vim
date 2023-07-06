@@ -1093,6 +1093,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
       \ . ' ' . authors
       \ . ' ' . regex
       \ . ' ' . ignore_case
+      \ . ' --color=always '
       \ . ' --abbrev-commit -- '
       \ . ' | sed -E -z "s/commit ([0-9a-f]*)([^\n]*)*.*\n\n/\1\2 •/" '
       \ . ' | sed -E -z "s/[ ][ ]*/ /g"'
@@ -1117,6 +1118,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' log '
         \ . G
         \ . '%s -z '
+        \ . ' --color=always'
         \ . follow
         \ . ' ' . branches
         \ . ' ' . notbranches
@@ -1138,17 +1140,17 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
 
   let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
 
-  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show -O'.fzf#shellescape(orderfile).' {1} '
+  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show --color=always -O'.fzf#shellescape(orderfile).' {1} '
   let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
   let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
+  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show --color=always ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
   let quote = "'"
-  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
+  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show --color=always {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_3 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . quote . suffix : no_grepdiff_message
-  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
+  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff --color=always -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
 
   let preview_commands = [
     \ preview_command_0,
@@ -1346,10 +1348,10 @@ function! SiefeGitlogType(fullscreen, kwargs, lines) abort
 endfunction
 
 function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
-  let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_4 = 'echo git log {1}... \(what we both have, common ancester not\); echo {2}... -- | xargs git log --format="%m%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_4 = 'echo git log {1}... \(what we both have, common ancester not\); echo {2}... -- | xargs git log --color=always --format="%m%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
 
   let not = a:not ? '^' : ''
   let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
@@ -1721,6 +1723,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
       \ . ' stash list '
       \ . G
       \ . '%s -z '
+      \ . ' --color=always'
       \ . ' ' . regex
       \ . ' ' . ignore_case
 
