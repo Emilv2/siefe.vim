@@ -247,8 +247,8 @@ let s:rg_preview_keys = [
   \ g:siefe_rg_fast_preview_key,
 \ ]
 
-let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
-let s:fd_command = executable('fdfind') ? 'fdfind' : executable('fd') ? 'fd' : ''
+let s:bat_command = executable('batcat') ? 'echo ".."; batcat' : executable('bat') ? 'echo ".."; bat' : ''
+let s:fd_command = executable('fdfind') ? 'echo ".."; fdfind' : executable('fd') ? 'echo ".."; fd' : ''
 let s:files_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {} '. s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {} cat'
 let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
 let s:rg_fast_preview_command = s:bin.preview . ' {1} cat'
@@ -642,6 +642,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . g:siefe_rg_buffers_key . ','
         \ . g:siefe_rg_yank_key . ','
         \ . g:siefe_rg_history_key . ','
+        \ . g:siefe_abort_key . ','
         \ . s:common_window_expect_keys,
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
@@ -919,6 +920,8 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
 
   " TODO disable git/project root for git log
 
+  exe 'cd' a:dir
+
   let options = [
     \ '--history', s:data_path . '/git_dir_history',
     \ '--print-query',
@@ -940,7 +943,8 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
     \ . siefe_fd_project_root_key
     \ . siefe_fd_search_project_root_key
     \ . g:siefe_abort_key,
-    \ '--header', s:prettify_header(g:siefe_fd_hidden_key, 'hidden:' . fd_hidden_toggle)
+    \ '--header',  getcwd()
+      \ . "\n" . s:prettify_header(g:siefe_fd_hidden_key, 'hidden:' . fd_hidden_toggle)
       \ . ' ╱ ' . s:prettify_header(g:siefe_fd_no_ignore_key, 'no ignore:' . fd_no_ignore_toggle)
       \ . ' ╱ ' . s:prettify_header(g:siefe_fd_git_root_key, '√git')
       \ . siefe_fd_project_root_help
