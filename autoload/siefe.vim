@@ -1102,6 +1102,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let SG_expect = ''
     let SG_help = ''
     let query_file = '/dev/null'
+    let line_range = '-L' . join(a:kwargs.line_range, ',') . ' '
+    let G_prompt = ''
   else
     let SG_expect = g:siefe_gitlog_sg_key . ','
         \ . g:siefe_gitlog_ignore_case_key . ','
@@ -1132,6 +1134,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_pickaxe_regex_key, 'regex')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_dir_key, 'pathspec')
+    let line_range = ''
   endif
 
   let current = expand('%')
@@ -1193,7 +1196,6 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . s:common_window_expect_keys,
       \ '--bind','tab:toggle+down',
       \ '--bind','shift-tab:toggle+up',
-      \ '--query', a:kwargs.query,
       \ '--delimiter', '•',
       \ '--preview-window', default_preview_size,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
@@ -1209,7 +1211,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . siefe_gitlog_follow_help
         \ . authors_info
         \ . paths_info,
-      \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . follow . 'pickaxe> ',
+      \ '--prompt', branches . notbranches . G_prompt . regex . ignore_case_symbol . follow . line_range . 'pickaxe> ',
       \ ],
    \ 'dir': siefe#get_git_root(),
    \ 'sink*': function('s:gitpickaxe_sink', [a:fullscreen, a:kwargs]),
@@ -1225,6 +1227,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   if a:kwargs.line_range == []
     let spec.options += [
       \ '--disabled',
+      \ '--query', a:kwargs.query,
       \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', g:siefe_gitlog_fzf_key . ':unbind(change,' . g:siefe_gitlog_fzf_key . ')+change-prompt(pickaxe/fzf> )+enable-search+rebind(' . g:siefe_gitlog_s_key . ')',
       \ '--bind', g:siefe_gitlog_s_key . ':unbind(change,' . g:siefe_gitlog_s_key . ')+change-prompt(' . branches . notbranches . G_prompt . regex . ignore_case_symbol . 'pickaxe> '. ')+disable-search+reload(' . reload_command . ')+rebind(change,' . g:siefe_gitlog_fzf_key . ')',
