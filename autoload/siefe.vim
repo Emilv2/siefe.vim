@@ -1986,29 +1986,16 @@ function!  siefe#bufdir() abort
 endfunction
 
 function! siefe#get_git_root() abort
-  let bufdir = siefe#bufdir()
-  let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
-  if !v:shell_error
-    return root
-  elseif v:shell_error && systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --is-bare-repository')[0] ==# 'true'
-    return readfile(bufdir . '/gitdir')[0][0:-5]
-  else
-    return s:warn('Not in a git repository')
-  endif
+  return FugitiveFind(':/')
 endfunction
 
 function! siefe#get_git_basename_or_bufdir() abort
-  let bufdir = siefe#bufdir()
-  let basename = '#'.systemlist('basename `git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel`')[0]
-  if !v:shell_error
-    return basename
-  elseif v:shell_error && systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --is-bare-repository')[0] ==# 'true'
-    return '#' . split(readfile(bufdir . '/gitdir')[0][0:-5], '/')[-1]
+  let root = FugitiveFind(':/')
+  if root ==# ''
+    return expand('%:p:h')
   else
-    return bufdir
+   return fnamemodify(root, ':t')
   endif
-
-  return v:shell_error ? bufdir : basename
 endfunction
 
 function! siefe#get_relative_git_or_bufdir(...) abort
@@ -2027,17 +2014,12 @@ function! siefe#get_relative_git_or_bufdir(...) abort
 endfunction
 
 function! siefe#get_relative_git_or_buf(...) abort
-  let bufdir = siefe#bufdir()
   if a:0 == 0
-    let dir = get(a:, 1, '')
-    let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
-    return v:shell_error ? bufdir : rel_dir . expand('%:t')
+    return substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   else
-    let file = fzf#shellescape(get(a:, 1, ''))
-    let git_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-toplevel'))
-    let rel_to_dir = v:shell_error ? bufdir : git_dir
-    return trim(system('realpath --relative-to='.rel_to_dir . ' ' . file))
+    return substitute(fnamemodify(expand(a:1), ':p'), FugitiveFind(':/') . '/', '', '')
   endif
+
 endfunction
 
 function! siefe#recent_files() abort
