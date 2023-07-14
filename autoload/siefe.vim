@@ -871,9 +871,9 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#history(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_rg_history_key && readfile(a:kwargs.files)[0] == 0
-    let recent_git_files = siefe#recent_git_files()
-    if a:kwargs.paths != recent_git_files
-      let a:kwargs.paths = recent_git_files
+    let recent_files = siefe#recent_files()
+    if a:kwargs.paths != recent_files
+      let a:kwargs.paths = recent_files
       call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
     else
       let a:kwargs.paths = []
@@ -1582,10 +1582,10 @@ function! siefe#history(fullscreen, kwargs) abort
   endif
 
   if a:kwargs.project && git
-    let a:kwargs.source = siefe#recent_git_files()
+    let a:kwargs.source = siefe#recent_git_files_info()
     let project = siefe#get_git_basename_or_bufdir() . ' '
   else
-    let a:kwargs.source = siefe#recent_files()
+    let a:kwargs.source = siefe#recent_files_info()
     let project = ''
   endif
 
@@ -2022,7 +2022,7 @@ function! siefe#get_relative_git_or_buf(...) abort
 
 endfunction
 
-function! siefe#recent_files() abort
+function! siefe#recent_files_info() abort
   return siefe#_uniq_with_prefix(
         \ map(filter([expand('%')], 'len(v:val)'), 'line(".") . "//" . fnamemodify(v:val, ":~:.")')
         \ + map(filter(siefe#_buflisted_sorted(), 'len(bufname(v:val))'), "getbufinfo(v:val)[0]['lnum'] . '//' . fnamemodify(expand(bufname(v:val)), ':~:.')")
@@ -2030,7 +2030,7 @@ function! siefe#recent_files() abort
         \ 'v:val.line . "//" . fnamemodify(expand(v:val.name), ":~:.")'), '//')
 endfunction
 
-function! siefe#recent_git_files() abort
+function! siefe#recent_git_files_info() abort
   let git_dir = FugitiveFind(':/')
   if git_dir ==# ''
     echom 'not in a git dir'
@@ -2040,6 +2040,23 @@ function! siefe#recent_git_files() abort
         \ + map(filter(map(siefe#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "getbufinfo(v:val)[0]['lnum'] . '//' . substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
         \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:git_dir . "'"),
         \ 'v:val.line . "//" . substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '//')
+endfunction
+
+function! siefe#recent_files() abort
+  let git_dir = FugitiveFind(':/')
+  if git_dir ==# ''
+    return siefe#_uniq_with_prefix(
+          \ map(filter([expand('%')], 'len(v:val)'), 'fnamemodify(v:val, ":~:.")')
+          \ + map(filter(siefe#_buflisted_sorted(), 'len(bufname(v:val))'), "fnamemodify(expand(bufname(v:val)), ':~:.')")
+          \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(v:val.name), ':p'))"),
+          \ 'fnamemodify(expand(v:val.name), ":~:.")'), '')
+  else
+    return siefe#_uniq_with_prefix(
+          \ map(filter([expand('%')], 'len(v:val)'), 'substitute(FugitiveReal(), l:git_dir . "/", "", "")')
+          \ + map(filter(map(siefe#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
+          \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:git_dir . "'"),
+          \ 'substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '')
+  endif
 endfunction
 
 function! siefe#_uniq_with_prefix(list, prefix) abort
