@@ -722,45 +722,44 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
   endif
 
   " query can contain newlines, we have to reconstruct it
-  let tmp = split(a:lines[-1], "\n", 1)[0:-2]
+  let [query, key; l:files] = split(a:lines[-1], "\n", 1)[0:-2]
   if len(a:lines) == 1
-    let a:kwargs.query = tmp[0]
+    let a:kwargs.query = query
   else
-    let a:kwargs.query = join(a:lines[0:-2], "\n")."\n".tmp[0]
+    let a:kwargs.query = join(a:lines[0:-2], "\n") . "\n" . query
   endif
 
-  let key = tmp[1]
   let filelist = []
 
-  for item in tmp[2:]
-    let tmp2 = split(item, s:delimiter, 1)
+  for item in l:files
+    let file_data = split(item, s:delimiter, 1)
     let file = {}
 
     " rg/fzf '//' delimited result
-    if len(tmp2) >= 4
-      let file.filename  = tmp2[0]
-      let file.lnum  = tmp2[1]
-      let file.col  = tmp2[2]
+    if len(file_data) >= 4
+      let file.filename  = file_data[0]
+      let file.lnum  = file_data[1]
+      let file.col  = file_data[2]
 
-      if len(tmp2) == 4
-        let file.text = tmp2[3]
+      if len(file_data) == 4
+        let file.text = file_data[3]
       else
         " If it's bigger than 4 that means there was a // in there result,
         " so we recreate the original content
-        let file.text = join(tmp2[3:], s:delimiter)."\n"
+        let file.text = join(file_data[3:], s:delimiter)."\n"
       endif
 
     " files result
-    elseif len(tmp2) == 1
-      let file.filename = tmp2[0]
-      let content = readfile(tmp2[0])
+    elseif len(file_data) == 1
+      let file.filename = file_data[0]
+      let content = readfile(file_data[0])
       let file.text = empty(content) ? '' : content[0]
       let file.lnum  = 1
       let file.col  = 1
 
       " this should never happen
       else
-        return s:warn('Something went wrong... tmp2 = '.string(tmp2).'lines = '.string(a:lines))
+        return s:warn('Something went wrong... file_data = '.string(file_data).'lines = '.string(a:lines))
       endif
         let filelist += [file]
   endfor
@@ -768,7 +767,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   if key ==# ''
     " no match
-    if len(tmp[2:]) == 0
+    if len(l:files) == 0
       return
     endif
 
@@ -786,7 +785,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif has_key(s:common_window_actions, key)
     " no match
-    if len(tmp[2:]) == 0
+    if len(l:files) == 0
       return
     endif
 
@@ -796,12 +795,10 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
     let cmd = s:common_window_actions[key]
     for file in filelist
-
-
-    silent! autocmd! siefe_swap
-      execute 'silent' cmd fnameescape(file.filename)
-      call cursor(file.lnum, file.col)
-      normal! zvzz
+      silent! autocmd! siefe_swap
+        execute 'silent' cmd fnameescape(file.filename)
+        call cursor(file.lnum, file.col)
+        normal! zvzz
     endfor
 
     silent! autocmd! siefe_swap
