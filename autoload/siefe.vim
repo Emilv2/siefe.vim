@@ -248,7 +248,7 @@ let s:rg_preview_keys = [
 \ ]
 
 let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
-let s:fd_command = executable('fdfind') ? 'echo ".."; fdfind' : executable('fd') ? 'echo ".."; fd' : ''
+let s:fd_command = executable('fdfind') ? 'echo -e "' . s:blue('..') . '"; fdfind' : executable('fd') ? 'echo -e "' . s:blue('..') . '"; fd' : ''
 let s:files_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {} '. s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {} cat'
 let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
 let s:rg_fast_preview_command = s:bin.preview . ' {1} cat'
