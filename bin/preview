@@ -64,6 +64,9 @@ if [[ $TYPE == "text" ]]; then
 		;;
 	esac
 
+elif [[ $TYPE == "inode" ]]; then
+	ls --color=always --almost-all --human-readable -l "$path"
+
 elif [[ $TYPE == "tar" ]]; then
 	# tar does auto-decompression
 	tar --to-stdout --extract --file="$path"
