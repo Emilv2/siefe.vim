@@ -1867,7 +1867,8 @@ function! s:readbuf_or_file_line(bufnr, filename, pos) abort
   if len(getbufline(a:bufnr, a:filename)) > 0
     return getbufline(a:bufnr, a:pos)
   elseif filereadable(expand(fnameescape(a:filename)))
-    return readfile(expand(fnameescape(a:filename)), '', a:pos)[-1]
+    let contents = readfile(expand(fnameescape(a:filename)), '', a:pos)
+    return len(contents) > 0 ? contents[-1] : ''
   else
     return ''
   endif
