@@ -38,6 +38,18 @@ Search with ripgrep.
 | ---               | ---                                                                                   |
 | `word` (`ctrl-w`  | Enable ripgrep's `-w` option to only show matches surrounded by word boundaries       |
 
-### Git log
+### Git
+
+## log
+
+| Command           | List                                                                                  |
+| ---               | ---                                                                                   |
+| SiefeGitLog       |                                                                                       |
+| SiefeGitLogWord   |                                                                                       |
+| SiefeGitLogWORD   |                                                                                       |
+| SiefeGitBufferLog       |                                                                                       |
+| SiefeGitBufferLogWord   |                                                                                       |
+| SiefeGitBufferLogWORD   |                                                                                       |
+| SiefeGitLLog      |                                                                                       |
 
 ### History
