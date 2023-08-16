@@ -2076,6 +2076,7 @@ function! siefe#oldfiles() abort
   let viminfo = readfile($HOME . '/.viminfo')
   let oldfiles = []
   let name_found = v:false
+  let long_line = v:false
   let loc_found = v:false
   let start = v:false
   for line in viminfo
@@ -2083,11 +2084,20 @@ function! siefe#oldfiles() abort
       if line ==# '# History of marks within files (newest to oldest):'
         let start = v:true
       endif
+    elseif long_line
+      let filename_match = matchlist(line, '^<\(.*\)$')
+      let name_found = v:true
+      let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
+      let long_line = v:false
     elseif !name_found
       let filename_match = matchlist(line, '^> \(.*\)$')
       if len(filename_match) > 0
-        let name_found = v:true
-        let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
+        if len(matchlist(filename_match[1], '[\x16]\([0-9]\+\)')) > 0
+          let long_line = v:true
+        else
+          let name_found = v:true
+          let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
+        endif
       endif
     elseif !loc_found
         let mark_match = matchlist(line, '^\t\(.\)\t\([0-9]\+\)\t\([0-9]\+\)$')
