@@ -15,6 +15,8 @@ let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings',
 let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
 let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 
+let g:siefe_map_keys = get(g:, 'siefe_map_keys', 1)
+
 command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(
   \ <bang>0,
   \ siefe#bufdir(),
@@ -274,3 +276,152 @@ augroup siefe_buffers
   endif
   autocmd BufDelete * silent! call remove(g:siefe#buffers, expand('<abuf>'))
 augroup END
+
+nnoremap <silent> <Plug>SiefeRG :SiefeRg<CR>
+nnoremap <silent> <Plug>SiefeRgWord :SiefeRgWord<CR>
+nnoremap <silent> <Plug>SiefeRgWORD :SiefeRgWORD<CR>
+nnoremap <silent> <Plug>SiefeRgLine :SiefeRgLine<CR>
+nnoremap <silent> <Plug>SiefeFiles :SiefeFiles<CR>
+xnoremap <silent> <Plug>SiefeRgVisual :<c-u>SiefeRgVisual<CR>
+
+nnoremap <silent> <Plug>SiefeProjectRG :SiefeProjectRg<CR>
+nnoremap <silent> <Plug>SiefeProjectRgWord :SiefeProjectRgWord<CR>
+nnoremap <silent> <Plug>SiefeProjectRgWORD :SiefeProjectRgWORD<CR>
+nnoremap <silent> <Plug>SiefeProjectRgLine :SiefeProjectRgLine<CR>
+nnoremap <silent> <Plug>SiefeProjectFiles :SiefeProjectFiles<CR>
+
+nnoremap <silent> <Plug>SiefeRgP :SiefeRg <c-r>+<CR>
+nnoremap <silent> <Plug>SiefeProjectRgP :SiefeProjectRg <c-r>+<CR>
+
+nnoremap <silent> <Plug>SiefeMarks :SiefeMarks<CR>
+nnoremap <silent> <Plug>SiefeHistory :SiefeHistory<CR>
+nnoremap <silent> <Plug>SiefeProjectHistory :SiefeProjectHistory<CR>
+nnoremap <silent> <Plug>SiefeBuffers :SiefeBuffers<CR>
+nnoremap <silent> <Plug>SiefeToggleGitStatus :SiefeToggleGitStatus<CR>
+nnoremap <silent> <Plug>SiefeGitBufferLogg :SiefeGitBufferLog<CR>
+xnoremap <silent> <Plug>SiefeGitBufferLogVisual :<c-u>SiefeGitBufferLogVisual<CR>
+xnoremap <silent> <Plug>SiefeGitLLog :<c-u>SiefeGitLLog<CR>
+nnoremap <silent> <Plug>SiefeGitBufferLogWord :SiefeGitBufferLogWord<CR>
+nnoremap <silent> <Plug>SiefeGitBufferLogWORD :SiefeGitBufferLogWORD<CR>
+nnoremap <silent> <Plug>SiefeGitLogg :SiefeGitLog<CR>
+xnoremap <silent> <Plug>SiefeGitLogVisual :<c-u>SiefeGitLogVisual<CR>
+nnoremap <silent> <Plug>SiefeGitLogWord :SiefeGitLogWord<CR>
+nnoremap <silent> <Plug>SiefeGitLogWORD :SiefeGitLogWORD<CR>
+
+if g:siefe_map_keys
+
+"if !hasmapto('<Plug>(GitGutterPrevHunk)') && maparg('[c', 'n') ==# ''
+"  nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+"
+  if !hasmapto('<Plug>SiefeRG') && maparg('<leader>rg', 'n') ==# ''
+    nmap <leader>rg <Plug>SiefeRG
+  endif
+
+  if !hasmapto('<Plug>SiefeRgWord') && maparg('<leader>rw', 'n') ==# ''
+    nmap <leader>rw <Plug>SiefeRgWord
+  endif
+
+  if !hasmapto('<Plug>SiefeRgWORD') && maparg('<leader>rW', 'n') ==# ''
+    nmap <leader>rW <Plug>SiefeRgWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeRgLine') && maparg('<leader>rl', 'n') ==# ''
+    nmap <leader>rl <Plug>SiefeRgLine
+  endif
+
+  if !hasmapto('<Plug>SiefeFiles') && maparg('<leader>rf', 'n') ==# ''
+    nmap <leader>rf <Plug>SiefeFiles
+  endif
+
+  if !hasmapto('<Plug>SiefeRgVisual') && maparg('<leader>rg', 'x') ==# ''
+    xmap <leader>rg <Plug>SiefeRgVisual
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRg') && maparg('<leader>Rg', 'n') ==# ''
+    nmap <leader>Rg <Plug>SiefeProjectRg
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgWord') && maparg('<leader>Rw', 'n') ==# ''
+    nmap <leader>Rw <Plug>SiefeProjectRgWord
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgWORD') && maparg('<leader>RW', 'n') ==# ''
+    nmap <leader>RW <Plug>SiefeProjectRgWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgLines') && maparg('<leader>Rl', 'n') ==# ''
+    nmap <leader>Rl <Plug>SiefeProjectRgLines
+  endif
+
+  if !hasmapto('<Plug>SiefeProjecFiles') && maparg('<leader>Rf', 'n') ==# ''
+    nmap <leader>Rf <Plug>SiefeProjectFiles
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgVisual') && maparg('<leader>Rg', 'x') ==# ''
+    xmap <leader>Rg <Plug>SiefeProjectRgVisual
+  endif
+
+  if !hasmapto('<Plug>SiefeRgP') && maparg('<leader>rp', 'n') ==# ''
+    nmap <leader>rp <Plug>SiefeRgP
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgP') && maparg('<leader>Rp', 'n') ==# ''
+    nmap <leader>Rp <Plug>SiefeProjectRgP
+  endif
+
+  if !hasmapto('<Plug>SiefeMarks') && maparg('<leader>m', 'n') ==# ''
+    nmap <leader>m <Plug>SiefeMarks
+  endif
+
+  if !hasmapto('<Plug>SiefeHistory') && maparg('<leader>ha', 'n') ==# ''
+    nmap <leader>ha <Plug>SiefeHistory
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectHistory') && maparg('<leader>hh', 'n') ==# ''
+    nmap <leader>hh <Plug>SiefeProjectHistory
+  endif
+
+  if !hasmapto('<Plug>SiefeBuffers') && maparg('<leader>b', 'n') ==# ''
+    nmap <leader>b <Plug>SiefeBuffers
+  endif
+
+  if !hasmapto('<Plug>SiefeToggleGitStatus') && maparg('<leader>gg', 'n') ==# ''
+    nmap <leader>gg <Plug>SiefeToggleGitStatus
+  endif
+
+  if !hasmapto('<Plug>SiefeGitBufferLogg') && maparg('<leader>gl', 'n') ==# ''
+    nmap <leader>gl <Plug>SiefeGitBufferLogg
+  endif
+
+  if !hasmapto('<Plug>SiefeGitBufferLogg') && maparg('<leader>gl', 'n') ==# ''
+    nmap <leader>gl <Plug>SiefeGitBufferLogg
+  endif
+
+  if !hasmapto('<Plug>SiefeGitBufferLogVisual') && maparg('<leader>gl', 'x') ==# ''
+    xmap <leader>gl <Plug>SiefeGitBufferLogVisual
+  endif
+
+  if !hasmapto('<Plug>SiefeGitLLog') && maparg('<leader>gL', 'x') ==# ''
+    xmap <leader>gL <Plug>SiefeGitLLog
+  endif
+
+  if !hasmapto('<Plug>SiefeGitBufferLogWord') && maparg('<leader>gw', 'n') ==# ''
+    nmap <leader>gw <Plug>SiefeGitBufferLogWord
+  endif
+
+  if !hasmapto('<Plug>SiefeGitBufferLogWORD') && maparg('<leader>gW', 'n') ==# ''
+    nmap <leader>gW <Plug>SiefeGitBufferLogWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeGitLogg') && maparg('<leader>Gl', 'n') ==# ''
+    nmap <leader>Gl <Plug>SiefeGitLogg
+  endif
+
+  if !hasmapto('<Plug>SiefeGitLogWord') && maparg('<leader>Gw', 'n') ==# ''
+    nmap <leader>Gw <Plug>SiefeGitLogWord
+  endif
+
+  if !hasmapto('<Plug>SiefeGitLogWORD') && maparg('<leader>GW', 'n') ==# ''
+    nmap <leader>GW <Plug>SiefeGitLogWORD
+  endif
+endif
