@@ -16,226 +16,226 @@ let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
 let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 
 command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : <q-args>,
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeRgVisual call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : siefe#visual_selection(),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'fixed_strings' : 1,
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : siefe#visual_selection(),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'fixed_strings' : 1,
             \ })
 
 command! -nargs=* -bang SiefeRgWord call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : expand('<cword>'),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : expand('<cword>'),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeRgWORD call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : expand('<cWORD>'),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : expand('<cWORD>'),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : trim(getline('.')),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeProjectRg call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : <q-args>,
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeProjectRgVisual call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : siefe#visual_selection(),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : siefe#visual_selection(),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeProjectRgWord call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cword>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cword>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeProjectRgWORD call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cWORD>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cWORD>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeProjectRgLine call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : trim(getline('.')),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
 
 command! -nargs=* -bang SiefeBuffersRg call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : <q-args>,
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+  \ })
 
 command! -nargs=* -bang SiefeBuffersRgWord call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cword>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cword>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+  \ })
 
 command! -nargs=* -bang SiefeBuffersRgWORD call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cWORD>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cWORD>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'paths' : map(filter(copy(getbufinfo()), 'v:val.listed'),  'fnamemodify(v:val.name, ":p:~:.")'),
+  \ })
 
 command! -nargs=* -bang SiefeFiles call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : <q-args>,
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeFilesVisual call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : siefe#visual_selection(),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'fixed_strings' : 1,
-            \  'files' : '//',
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : siefe#visual_selection(),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'fixed_strings' : 1,
+  \  'files' : '//',
             \ })
 
 command! -nargs=* -bang SiefeFilesWord call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : expand('<cword>'),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : expand('<cword>'),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeFilesWORD call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : expand('<cWORD>'),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : expand('<cWORD>'),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeFilesLine call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#bufdir(),
-            \ {
-            \  'query' : trim(getline('.')),
-            \  'prompt' : siefe#get_relative_git_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeProjectFiles call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : <q-args>,
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : <q-args>,
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeProjectFilesVisual call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : siefe#visual_selection(),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : siefe#visual_selection(),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeProjectFilesWord call siefe#ripgrepfzf(expand(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cword>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cword>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeProjectFilesWORD call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : expand('<cWORD>'),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : expand('<cWORD>'),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeProjectFilesLine call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : trim(getline('.')),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 command! -nargs=* -bang SiefeHistory call siefe#history(
-            \ <bang>0,
-            \ {
-            \  'query' : <q-args>,
-            \ })
+  \ <bang>0,
+  \ {
+  \  'query' : <q-args>,
+  \ })
 
 command! -nargs=* -bang SiefeProjectHistory call siefe#history(
-            \ <bang>0,
-            \ {
-            \  'query' : <q-args>,
-            \  'project' : 1,
-            \ })
+  \ <bang>0,
+  \ {
+  \  'query' : <q-args>,
+  \  'project' : 1,
+  \ })
 
 " TODO
 command! -nargs=* -bang SiefeRgHistory call siefe#ripgrepfzf(
-            \ <bang>0,
-            \ siefe#get_git_root(),
-            \ {
-            \  'query' : trim(getline('.')),
-            \  'prompt' : siefe#get_git_basename_or_bufdir(),
-            \  'files' : '//',
-            \ })
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \  'files' : '//',
+  \ })
 
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
