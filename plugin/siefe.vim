@@ -308,6 +308,15 @@ xnoremap <silent> <Plug>SiefeGitLogVisual :<c-u>SiefeGitLogVisual<CR>
 nnoremap <silent> <Plug>SiefeGitLogWord :SiefeGitLogWord<CR>
 nnoremap <silent> <Plug>SiefeGitLogWORD :SiefeGitLogWORD<CR>
 
+if exists(':Maps')
+  nnoremap <silent> <Plug>Maps :Maps<CR>
+endif
+
+if exists(':History')
+  nnoremap <silent> <Plug>HistorySearch :History/<CR>
+  nnoremap <silent> <Plug>HistoryCommands :History:<CR>
+endif
+
 if g:siefe_map_keys
 
 "if !hasmapto('<Plug>(GitGutterPrevHunk)') && maparg('[c', 'n') ==# ''
@@ -423,5 +432,21 @@ if g:siefe_map_keys
 
   if !hasmapto('<Plug>SiefeGitLogWORD') && maparg('<leader>GW', 'n') ==# ''
     nmap <leader>GW <Plug>SiefeGitLogWORD
+  endif
+
+  if exists(':Maps')
+    if !hasmapto('<Plug>Maps') && maparg('<leader>M', 'n') ==# ''
+      nmap <leader>M <Plug>Maps
+    endif
+  endif
+
+  if exists(':History')
+    if !hasmapto('<Plug>HistorySearch') && maparg('<leader>h/', 'n') ==# ''
+      nmap <leader>h/ <Plug>HistorySearch
+    endif
+
+    if !hasmapto('<Plug>HistoryCommands') && maparg('<leader>h:', 'n') ==# ''
+      nmap <leader>h: <Plug>HistoryCommands
+    endif
   endif
 endif
