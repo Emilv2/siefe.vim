@@ -1864,7 +1864,7 @@ endfunction
 " " Marks
 " " ------------------------------------------------------------------
 function! s:readbuf_or_file_line(bufnr, filename, pos) abort
-  if len(getbufline(a:bufnr, a:filename)) > 0
+  if len(getbufline(a:bufnr, a:pos)) > 0
     return getbufline(a:bufnr, a:pos)
   elseif filereadable(expand(fnameescape(a:filename)))
     let contents = readfile(expand(fnameescape(a:filename)), '', a:pos)
