@@ -1879,6 +1879,8 @@ function! siefe#marks(fullscreen, kwargs) abort
 
   let git_dir = FugitiveFind(':/')
 
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   let source = map(getmarklist(),
         \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])))')
            \ + map(getmarklist(bufnr()),
@@ -1895,6 +1897,7 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--tabstop', '4',
     \ '--preview', s:marks_preview_commands[g:siefe_marks_default_preview_command],
     \ '--preview-window', '+{2}-/2,' . s:default_preview_size,
+    \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
     \ '--bind', g:siefe_marks_preview_key . ':change-preview:' . s:marks_preview_command,
     \ '--bind', g:siefe_marks_fast_preview_key . ':change-preview:' . s:marks_fast_preview_command,
     \ '--bind', g:siefe_accept_key . ':accept',
