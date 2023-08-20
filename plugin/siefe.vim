@@ -373,8 +373,8 @@ if g:siefe_map_keys
     nmap <leader>m <Plug>SiefeMarks
   endif
 
-  if !hasmapto('<Plug>SiefeHistory') && maparg('<leader>ha', 'n') ==# ''
-    nmap <leader>ha <Plug>SiefeHistory
+  if !hasmapto('<Plug>SiefeHistory') && maparg('<leader>hH', 'n') ==# ''
+    nmap <leader>hH <Plug>SiefeHistory
   endif
 
   if !hasmapto('<Plug>SiefeProjectHistory') && maparg('<leader>hh', 'n') ==# ''
