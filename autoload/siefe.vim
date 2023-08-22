@@ -1138,23 +1138,23 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let line_range = ''
   endif
 
-  let current = expand('%')
+  let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   let orderfile = tempname()
   call writefile([current], orderfile)
 
   let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
 
-  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show --color=always -O'.fzf#shellescape(orderfile).' {1} '
+  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git -C $(git rev-parse --show-toplevel) show --color=always -O'.fzf#shellescape(orderfile).' {1} '
   let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
   let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show --color=always ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
+  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' -C $(git rev-parse --show-toplevel) show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . '--color=always {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
   let quote = "'"
-  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show --color=always {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
+  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat ' . query_file . '`; ' . s:bin.git_SG . ' -C $(git rev-parse --show-toplevel) -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O' . fzf#shellescape(orderfile) . ' --ext-diff ' . regex . G . '"`cat ' . query_file . '`"'
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_3 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . quote . suffix : no_grepdiff_message
-  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff --color=always -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
+  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git -C $(git rev-parse --show-toplevel) diff --color=always -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
 
   let preview_commands = [
     \ preview_command_0,
@@ -1735,23 +1735,23 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
   let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
 
-  let current = expand('%')
+  let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   let orderfile = tempname()
   call writefile([current], orderfile)
 
   let suffix = executable('delta') ? '| delta ' . g:siefe_delta_options  : ''
 
-  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git show -O'.fzf#shellescape(orderfile).' {1} '
+  let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git -C $(git rev-parse --show-toplevel) show --color=always -O'.fzf#shellescape(orderfile).' {1} '
   let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
   let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
 
-  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . ' {1} '
+  let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' -C $(git rev-parse --show-toplevel) show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . '--color=always {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
   let quote = "'"
-  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat '.query_file.'`; git -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O'.fzf#shellescape(orderfile).' --ext-diff '.regex . G . '"`cat '.query_file.'`"'
+  let preview_pickaxe_hunks_command = ' bash -c ' . quote . ' echo -e "\033[0;35mgit show matching hunks\033[0m" && (export GREPDIFF_REGEX=`cat ' . query_file . '`; git -C $(git rev-parse --show-toplevel) -c diff.external=' . s:bin.pickaxe_diff . ' show {1} -O' . fzf#shellescape(orderfile) . ' --ext-diff ' . regex . G . '"`cat ' . query_file . '`"'
   let no_grepdiff_message = 'echo install grepdiff from the patchutils package for this preview'
   let preview_command_3 = executable('grepdiff') ? preview_pickaxe_hunks_command . ' --format=format: --patch --stat --) ' . quote . suffix : no_grepdiff_message
-  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git diff -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
+  let preview_command_4 = 'echo -e "\033[0;35mgit diff\033[0m" && git -C $(git rev-parse --show-toplevel) diff --color=always -O'.fzf#shellescape(orderfile).' --patch --stat {1} -- ' . suffix
 
   let preview_commands = [
     \ preview_command_0,
