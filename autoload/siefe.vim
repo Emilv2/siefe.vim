@@ -481,7 +481,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     let files = readfile(a:kwargs.files)[0]
   endif
 
-  let paths = join(map(copy(a:kwargs.paths), 'shellescape(v:val)'), ' ')
+  let paths = join(map(copy(a:kwargs.paths), 'shellescape(split(v:val,"//")[-1])'), ' ')
 
   let word = a:kwargs.word ? '-w ' : ''
   let word_toggle = a:kwargs.word ? 'off' : 'on'
@@ -577,7 +577,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   endif
 
   let name_info = empty(bufname()) ? '[No Name]' : bufname()
-  let paths_info = a:kwargs.paths ==# [] ? '' : "\npaths: ".join(a:kwargs.paths)
+  let paths_info = a:kwargs.paths ==# [] ? '' : "\npaths: " . join(map(copy(a:kwargs.paths), 'split(v:val,"//")[-1]'), ' ')
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
