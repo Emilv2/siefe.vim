@@ -2002,7 +2002,6 @@ endfunction
 function! siefe#get_relative_git_or_bufdir(...) abort
   let bufdir = siefe#bufdir()
   if a:0 == 0
-    let dir = get(a:, 1, '')
     let rel_dir = trim(system('git -C '. fzf#shellescape(bufdir) .' rev-parse --show-prefix'))
     return v:shell_error ? bufdir : '#'.split(system('basename `git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel`'), '\n')[0].'/'.rel_dir
   else
