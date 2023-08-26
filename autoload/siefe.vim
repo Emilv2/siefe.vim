@@ -431,8 +431,8 @@ let s:buffers_preview_commands = [
 let g:siefe_marks_delete_key = get(g:, 'siefe_marks_delete_key', 'del')
 let g:siefe_marks_yank_key = get(g:, 'siefe_marks_yank_key', 'ctrl-y')
 let g:siefe_marks_default_preview_command = get(g:, 'siefe_marks_default_preview_command', g:siefe_rg_default_preview_command)
-let g:siefe_marks_preview_key = get(g:, 'siefe_buffers_preview_key', g:siefe_rg_preview_key)
-let g:siefe_marks_fast_preview_key = get(g:, 'siefe_buffers_fast_preview_key', g:siefe_rg_fast_preview_key)
+let g:siefe_marks_preview_key = get(g:, 'siefe_marks_preview_key', g:siefe_rg_preview_key)
+let g:siefe_marks_fast_preview_key = get(g:, 'siefe_marks_fast_preview_key', g:siefe_rg_fast_preview_key)
 
 let s:marks_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={3} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {2} cat'
 let s:marks_fast_preview_command = s:bin.preview . ' {2} cat'
