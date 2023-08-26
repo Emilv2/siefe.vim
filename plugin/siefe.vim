@@ -294,6 +294,7 @@ nnoremap <silent> <Plug>SiefeRgP :SiefeRg <c-r>+<CR>
 nnoremap <silent> <Plug>SiefeProjectRgP :SiefeProjectRg <c-r>+<CR>
 
 nnoremap <silent> <Plug>SiefeMarks :SiefeMarks<CR>
+nnoremap <silent> <Plug>SiefeJumps :SiefeJumps<CR>
 nnoremap <silent> <Plug>SiefeHistory :SiefeHistory<CR>
 nnoremap <silent> <Plug>SiefeProjectHistory :SiefeProjectHistory<CR>
 nnoremap <silent> <Plug>SiefeBuffers :SiefeBuffers<CR>
@@ -346,8 +347,8 @@ if g:siefe_map_keys
     xmap <leader>rg <Plug>SiefeRgVisual
   endif
 
-  if !hasmapto('<Plug>SiefeProjectRg') && maparg('<leader>Rg', 'n') ==# ''
-    nmap <leader>Rg <Plug>SiefeProjectRg
+  if !hasmapto('<Plug>SiefeProjectRG') && maparg('<leader>Rg', 'n') ==# ''
+    nmap <leader>Rg <Plug>SiefeProjectRG
   endif
 
   if !hasmapto('<Plug>SiefeProjectRgWord') && maparg('<leader>Rw', 'n') ==# ''
