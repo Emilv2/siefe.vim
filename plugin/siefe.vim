@@ -251,6 +251,7 @@ command! -nargs=* -bang SiefeGitBufferLogVisual call siefe#gitlogfzf(<bang>0, {'
 command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [fnamemodify(expand('%'), ':p')], 'line_range' : siefe#visual_line_nu()})
 
 command! -bang SiefeMarks               call siefe#marks(<bang>0, {'query': <q-args> })
+command! -bang SiefeJumps               call siefe#jumps(<bang>0, {'query': <q-args> })
 
 command! -bang SiefeGitBranch            call siefe#gitbranch(<bang>0)
 
@@ -381,6 +382,10 @@ if g:siefe_map_keys
 
   if !hasmapto('<Plug>SiefeMarks') && maparg('<leader>m', 'n') ==# ''
     nmap <leader>m <Plug>SiefeMarks
+  endif
+
+  if !hasmapto('<Plug>SiefeJumps') && maparg('<leader>j', 'n') ==# ''
+    nmap <leader>j <Plug>SiefeJumps
   endif
 
   if !hasmapto('<Plug>SiefeHistory') && maparg('<leader>hH', 'n') ==# ''

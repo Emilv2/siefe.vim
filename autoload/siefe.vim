@@ -442,6 +442,19 @@ let s:marks_preview_commands = [
   \ s:marks_fast_preview_command,
 \ ]
 
+let g:siefe_jumps_yank_key = get(g:, 'siefe_jumps_yank_key', 'ctrl-y')
+let g:siefe_jumps_preview_key = get(g:, 'siefe_jumps_preview_key', g:siefe_rg_preview_key)
+let g:siefe_jumps_default_preview_command = get(g:, 'siefe_jumps_default_preview_command', g:siefe_rg_default_preview_command)
+let g:siefe_jumps_fast_preview_key = get(g:, 'siefe_jumps_fast_preview_key', g:siefe_rg_fast_preview_key)
+let g:siefe_jumps_clear_key = get(g:, 'siefe_jumps_clear_key', 'del')
+
+let s:jumps_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
+let s:jumps_fast_preview_command = s:bin.preview . ' {1} cat'
+
+let s:jumps_preview_commands = [
+  \ s:jumps_preview_command,
+  \ s:jumps_fast_preview_command,
+\ ]
 
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
@@ -1970,6 +1983,111 @@ function! s:marks_sink(lines) abort
 
     silent! autocmd! siefe_swap
   endif
+endfunction
+
+" ------------------------------------------------------------------
+" Jumps
+" ------------------------------------------------------------------
+function! s:jump_format(line) abort
+  return substitute(a:line, '[0-9]\+', '\=s:yellow(submatch(0), "Number")', '')
+endfunction
+
+function! s:jumps_sink(lines) abort
+  if len(a:lines) < 2
+    return
+  endif
+
+  let key = a:lines[0]
+  let [filename, lnum, coln, index , text] = split(a:lines[1], '//://')
+
+  if key ==# ''
+    if index < 0
+      execute 'normal! ' . -index . "\<C-O>"
+    else
+      execute 'normal! ' . index . "\<C-I>"
+    endif
+
+  elseif key ==# g:siefe_jumps_clear_key
+    clearjumps
+
+  elseif key ==# g:siefe_jumps_yank_key
+    return s:yank_to_register(text)
+
+  elseif has_key(s:common_window_actions, key)
+    let cmd = s:common_window_actions[key]
+
+    augroup siefe_swap
+    autocmd SwapExists * call s:swapchoice(v:swapname)
+    augroup END
+
+    execute 'silent' cmd fnameescape(filename)
+    call cursor(lnum, coln)
+    normal! zvzz
+
+    silent! autocmd! siefe_swap
+  endif
+endfunction
+
+function! s:printjump(git_dir, current, jump_max, lnum_max, index, jump) abort
+  if a:jump.bufnr == -1
+    return ' //:// //:// //://0//:// '
+  endif
+  let result = bufname(a:jump.bufnr)
+    \ . '//://' . a:jump.lnum
+    \ . '//://' . a:jump.col
+    \ . '//://' . (a:index - a:current)
+    \ . '//://' . abs(a:index - a:current) . repeat(' ', a:jump_max - len(abs(a:index - a:current)) + 1)
+    \ . a:jump.lnum . repeat(' ', a:lnum_max - len(a:jump.lnum) + 1)
+  if bufnr() == a:jump.bufnr
+    return result . s:green(join(getbufline(a:jump.bufnr, a:jump.lnum)))
+  else
+    return result . s:get_relative_git_or_bufdir(bufname(a:jump.bufnr), a:git_dir) . ': ' . s:blue(s:readbuf_or_file_line(a:jump.bufnr, bufname(a:jump.bufnr), a:jump.lnum))
+  endif
+endfunction
+
+function! siefe#jumps(fullscreen, kwargs) abort
+  let git_dir = FugitiveFind(':/')
+  let [jumplist, current] = getjumplist()
+  let jump_max = len(abs(len(jumplist) - 2*current))
+  let lnum_max =  max(map(copy(jumplist), 'v:val.lnum'))
+
+  " not sure why this is possible, but it is the case when we haven't jumped yet
+  if current >= len(jumplist)
+    let jumplist += [{'lnum' : 0, 'bufnr' : '-1'}]
+  endif
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+  let source = map(jumplist, function('s:printjump', [l:git_dir, l:current, l:jump_max, len(l:lnum_max)]))
+  let spec = {
+  \ 'source':  source,
+  \ 'sink*':   function('s:jumps_sink'),
+  \ 'options': [
+    \ '--ansi',
+    \ '--query', a:kwargs.query,
+    \ '--delimiter', '//://',
+    \ '--with-nth', '5..',
+    \ '--tac',
+    \ '--sync',
+    \ '--cycle',
+    \ '--scroll-off', '999',
+    \ '--bind', 'start:pos:' . (len(jumplist) - current),
+    \ '--preview', s:jumps_preview_commands[g:siefe_jumps_default_preview_command],
+    \ '--preview-window', '+{2}-/2,' . default_preview_size,
+    \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+    \ '--bind', g:siefe_jumps_preview_key . ':change-preview:' . s:jumps_preview_command,
+    \ '--bind', g:siefe_jumps_fast_preview_key . ':change-preview:' . s:jumps_fast_preview_command,
+    \ '--bind', g:siefe_accept_key . ':accept',
+    \ '--bind','tab:toggle+up',
+    \ '--bind','shift-tab:toggle+down',
+    \ '--header', "m\tl\tc\tfile/text" . 'current:' . current
+      \ . "\n" . s:common_window_help,
+    \ '--expect', s:common_window_expect_keys . ','
+      \ . g:siefe_jumps_yank_key,
+    \ '--prompt',  'Jumps> '
+    \ ],
+  \ }
+  return fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
 """ helper functions
