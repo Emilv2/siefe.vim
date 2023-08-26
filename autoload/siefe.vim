@@ -442,8 +442,6 @@ let s:marks_preview_commands = [
   \ s:marks_fast_preview_command,
 \ ]
 
-let s:default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
-let s:other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
 
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
@@ -1896,7 +1894,7 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--with-nth', '6..',
     \ '--tabstop', '4',
     \ '--preview', s:marks_preview_commands[g:siefe_marks_default_preview_command],
-    \ '--preview-window', '+{2}-/2,' . s:default_preview_size,
+    \ '--preview-window', '+{2}-/2,' . default_preview_size,
     \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
     \ '--bind', g:siefe_marks_preview_key . ':change-preview:' . s:marks_preview_command,
     \ '--bind', g:siefe_marks_fast_preview_key . ':change-preview:' . s:marks_fast_preview_command,
