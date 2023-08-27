@@ -879,13 +879,17 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#history(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_rg_history_key && readfile(a:kwargs.files)[0] == 0
+    let dir = FugitiveFind(':/')
+    if dir ==# ''
+      let dir = expand('%:p:h')
+    endif
     let recent_files = siefe#recent_files()
     if a:kwargs.paths != recent_files
       let a:kwargs.paths = recent_files
-      call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
+      call siefe#ripgrepfzf( a:fullscreen, dir, a:kwargs)
     else
       let a:kwargs.paths = []
-      call siefe#ripgrepfzf( a:fullscreen, a:dir, a:kwargs)
+      call siefe#ripgrepfzf( a:fullscreen, a:kwargs.orig_dir, a:kwargs)
     endif
   endif
 endfunction
@@ -2158,9 +2162,13 @@ function! siefe#recent_git_files_info() abort
         \ 'v:val.line . "//" . substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '//')
 endfunction
 
-function! siefe#recent_files() abort
-  let git_dir = FugitiveFind(':/')
-  if git_dir ==# ''
+function! siefe#recent_files(...) abort
+  if a:0 == 0
+    let dir = FugitiveFind(':/')
+  else
+    let dir = get(a:, 1, '')
+  endif
+  if dir ==# ''
     return siefe#_uniq_with_prefix(
           \ map(filter([expand('%')], 'len(v:val)'), 'fnamemodify(v:val, ":~:.")')
           \ + map(filter(siefe#_buflisted_sorted(), 'len(bufname(v:val))'), "fnamemodify(expand(bufname(v:val)), ':~:.')")
@@ -2168,10 +2176,10 @@ function! siefe#recent_files() abort
           \ 'fnamemodify(expand(v:val.name), ":~:.")'), '')
   else
     return siefe#_uniq_with_prefix(
-          \ map(filter([expand('%')], 'len(v:val)'), 'substitute(FugitiveReal(), l:git_dir . "/", "", "")')
-          \ + map(filter(map(siefe#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:git_dir . '"'), "substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:git_dir . '/' , '', '')")
-          \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:git_dir . "'"),
-          \ 'substitute(expand(fnameescape(v:val.name)), l:git_dir . "/", "", "")'), '')
+          \ map(filter([expand('%')], 'len(v:val)'), 'substitute(FugitiveReal(), l:dir . "/", "", "")')
+          \ + map(filter(map(siefe#_buflisted_sorted(), 'fnameescape(bufname(v:val))'), 'len(v:val) && fnamemodify(expand(fnameescape(bufname(v:val))), ":p") =~# "^' . l:dir . '"'), "substitute(fnamemodify(expand(fnameescape(bufname(v:val))), ':p'), l:dir . '/' , '', '')")
+          \ + map(filter(map(siefe#oldfiles(), 'v:val'), "filereadable(fnamemodify(expand(fnameescape(v:val.name)), ':p')) && expand(fnameescape(v:val.name)) =~# '^" . l:dir . "'"),
+          \ 'substitute(expand(fnameescape(v:val.name)), l:dir . "/", "", "")'), '')
   endif
 endfunction
 
