@@ -241,21 +241,25 @@ let g:siefe_rg_history_key = get(g:, 'siefe_rg_history_key', 'ctrl-h')
 
 let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
 let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
+let g:siefe_rg_faster_preview_key = get(g:, 'siefe_rg_faster_preview_key', 'f3')
 
 let s:rg_preview_keys = [
   \ g:siefe_rg_preview_key,
   \ g:siefe_rg_fast_preview_key,
+  \ g:siefe_rg_faster_preview_key,
 \ ]
 
 let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
 let s:fd_command = executable('fdfind') ? 'echo -e "' . s:blue('..') . '"; fdfind' : executable('fd') ? 'echo -e "' . s:blue('..') . '"; fd' : ''
 let s:files_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {} '. s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {} cat'
-let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
-let s:rg_fast_preview_command = s:bin.preview . ' {1} cat'
+let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
+let s:rg_fast_preview_command = s:bin.preview . ' {1} cat | awk ' . "'" . '{ if (NR == {2} ) { gsub ("/\xb1[[0-9 ; ]*m/", "& \x1b[7m" ) ; printf( "\x1b[7m%s\n\x1b[m", $0) ; } else printf("\x1b[m%s\n", $0) ; }' . "'"
+let s:rg_faster_preview_command = s:bin.preview . ' {1} cat'
 
 let s:rg_preview_commands = [
   \ s:rg_preview_command,
   \ s:rg_fast_preview_command,
+  \ s:rg_faster_preview_command,
 \ ]
 
 let g:siefe_history_preview_key = get(g:, 'siefe_history_preview_key', g:siefe_rg_preview_key)
@@ -478,6 +482,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.paths = get(a:kwargs, 'paths', [])
   let a:kwargs.type = get(a:kwargs, 'type', '')
   let a:kwargs.files = get(a:kwargs, 'files', '')
+  let a:kwargs.preview = get(a:kwargs, 'preview', g:siefe_rg_default_preview_command)
 
   if empty(a:kwargs.files)
     let a:kwargs.files = tempname()
@@ -584,7 +589,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   else
     let initial_command = rg_command
     let initial_prompt = rg_prompt
-    let preview = s:rg_preview_commands[g:siefe_rg_default_preview_command]
+    let preview = s:rg_preview_commands[a:kwargs.preview]
   endif
 
   let name_info = empty(bufname()) ? '[No Name]' : bufname()
@@ -600,6 +605,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--preview', preview,
       \ '--bind', g:siefe_rg_preview_key . ':change-preview:'.s:rg_preview_command,
       \ '--bind', g:siefe_rg_fast_preview_key . ':change-preview:'.s:rg_fast_preview_command,
+      \ '--bind', g:siefe_rg_faster_preview_key . ':change-preview:'.s:rg_faster_preview_command,
       \ '--bind', g:siefe_help_key . ':change-preview:echo -e "'
         \ . s:prettify_help(g:siefe_help_key) . "\t" . 'show this help file'
         \ . "\n" . s:prettify_help(g:siefe_rg_rg_key) . "\t". 'search with ripgrep'
