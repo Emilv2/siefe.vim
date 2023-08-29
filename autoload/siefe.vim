@@ -264,18 +264,22 @@ let s:rg_preview_commands = [
 
 let g:siefe_history_preview_key = get(g:, 'siefe_history_preview_key', g:siefe_rg_preview_key)
 let g:siefe_history_fast_preview_key = get(g:, 'siefe_history_fast_preview_key', g:siefe_rg_fast_preview_key)
+let g:siefe_history_faster_preview_key = get(g:, 'siefe_history_faster_preview_key', g:siefe_rg_faster_preview_key)
 
 let s:history_preview_keys = [
   \ g:siefe_history_preview_key,
   \ g:siefe_history_fast_preview_key,
+  \ g:siefe_history_faster_preview_key,
 \ ]
 
 let s:history_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={1} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {2} cat'
-let s:history_fast_preview_command = s:bin.preview . ' {2} cat'
+let s:history_fast_preview_command = s:bin.preview . ' {2} cat | awk ' . "'" . '{ if (NR == {1} ) { gsub ("/\xb1[[0-9 ; ]*m/", "& \x1b[7m" ) ; printf( "\x1b[7m%s\n\x1b[m", $0) ; } else printf("\x1b[m%s\n", $0) ; }' . "'"
+let s:history_faster_preview_command = s:bin.preview . ' {2} cat'
 
 let s:history_preview_commands = [
   \ s:history_preview_command,
   \ s:history_fast_preview_command,
+  \ s:history_faster_preview_command,
 \ ]
 
 
@@ -1585,6 +1589,7 @@ function! siefe#history(fullscreen, kwargs) abort
   " default values
   let a:kwargs.query = get(a:kwargs, 'query', '')
   let a:kwargs.project = get(a:kwargs, 'project', 0)
+  let a:kwargs.preview = get(a:kwargs, 'preview', g:siefe_history_default_preview_command)
 
   let bufdir = siefe#bufdir()
   let root = systemlist('git -C ' . fzf#shellescape(bufdir) . ' rev-parse --show-toplevel')[0]
@@ -1629,7 +1634,8 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '--bind','shift-tab:toggle+down',
           \ '--bind', g:siefe_history_preview_key . ':change-preview:' . s:history_preview_command,
           \ '--bind', g:siefe_history_fast_preview_key . ':change-preview:' . s:history_fast_preview_command,
-          \ '--preview', s:history_preview_commands[g:siefe_history_default_preview_command],
+          \ '--bind', g:siefe_history_faster_preview_key . ':change-preview:' . s:history_faster_preview_command,
+          \ '--preview', s:history_preview_commands[a:kwargs.preview],
           \ '--delimiter', '//',
           \ '--expect='
             \ . g:siefe_history_files_key . ','
