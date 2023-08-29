@@ -358,6 +358,10 @@ let s:gitlog_keys = [
 \ ] + s:gitlog_preview_keys
   \ + s:common_keys
 
+let g:siefe_gitbranch_preview_0_key = get(g:, 'siefe_gitbranch_preview_0_key', 'f1')
+let g:siefe_gitbranch_preview_1_key = get(g:, 'siefe_gitbranch_preview_1_key', 'f2')
+let g:siefe_gitbranch_preview_2_key = get(g:, 'siefe_gitbranch_preview_2_key', 'f3')
+let g:siefe_gitbranch_preview_3_key = get(g:, 'siefe_gitbranch_preview_3_key', 'f4')
 
 let g:siefe_fd_hidden_key = get(g:, 'siefe_fd_hidden_key', 'ctrl-h')
 let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-u')
@@ -1377,10 +1381,10 @@ function! SiefeGitlogType(fullscreen, kwargs, lines) abort
 endfunction
 
 function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
-  let preview_command_1 = 'echo git log {1} ; echo {2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_2 = 'echo git log ..{1} \(what they have, we dont\); echo ..{2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_3 = 'echo git log {1}.. \(what we have, they dont\); echo {2}.. -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
-  let preview_command_4 = 'echo git log {1}... \(what we both have, common ancester not\); echo {2}... -- | xargs git log --color=always --format="%m%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_0 = 'echo -e "\033[0;35m"git log {1}"\033[0m" ; echo {2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_1 = 'echo -e "\033[0;35m"git log ..{1} \(what they have, we dont\)"\033[0m"; echo ..{2} -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_2 = 'echo -e "\033[0;35m"git log {1}.. \(what we have, they dont\)"\033[0m"; echo {2}.. -- | xargs git log --color=always --format="%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
+  let preview_command_3 = 'echo -e "\033[0;35m"git log {1}... \(what we both have, common ancester not\)"\033[0m"; echo {2}... -- | xargs git log --color=always --format="%m%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)"'
 
   let not = a:not ? '^' : ''
   let siefe_branches_all_key = a:not ? '' : g:siefe_branches_all_key . ','
@@ -1409,10 +1413,10 @@ function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
         \ '--history', s:data_path . '/rg_branch_history',
         \ '--ansi',
         \ '--delimiter', ':',
-        \ '--bind', 'f1:change-preview:'.preview_command_1,
-        \ '--bind', 'f2:change-preview:'.preview_command_2,
-        \ '--bind', 'f3:change-preview:'.preview_command_3,
-        \ '--bind', 'f4:change-preview:'.preview_command_4,
+        \ '--bind', g:siefe_gitbranch_preview_0_key . ':change-preview:' . preview_command_0,
+        \ '--bind', g:siefe_gitbranch_preview_1_key . ':change-preview:' . preview_command_1,
+        \ '--bind', g:siefe_gitbranch_preview_2_key . ':change-preview:' . preview_command_2,
+        \ '--bind', g:siefe_gitbranch_preview_3_key . ':change-preview:' . preview_command_3,
         \ '--bind','tab:toggle+up',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
@@ -1423,7 +1427,7 @@ function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
           \ . g:siefe_abort_key . ','
           \ . extra_keys,
         \ '--bind','shift-tab:toggle+down',
-        \ '--preview', preview_command_1,
+        \ '--preview', preview_command_0,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
         \ '--preview-window', '~1,' . default_preview_size,
         \ '--prompt', not . 'branches> ',
