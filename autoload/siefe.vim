@@ -181,6 +181,8 @@ let g:siefe_previous_history_key = get(g:, 'siefe_previous_history_key', 'ctrl-p
 let g:siefe_up_key = get(g:, 'siefe_up_key', 'ctrl-k')
 let g:siefe_down_key = get(g:, 'siefe_down_key', 'ctrl-j')
 let g:siefe_accept_key = get(g:, 'siefe_accept_key', 'ctrl-m')
+let g:siefe_toggle_up_key = get(g:, 'siefe_toggle_up_key', 'tab')
+let g:siefe_toggle_down_key = get(g:, 'siefe_toggle_down_key', 'shift-tab')
 let g:siefe_help_key = get(g:, 'siefe_help_key', 'f9')
 
 let s:common_keys = [
@@ -190,6 +192,8 @@ let s:common_keys = [
   \ g:siefe_up_key,
   \ g:siefe_down_key,
   \ g:siefe_accept_key,
+  \ g:siefe_toggle_up_key,
+  \ g:siefe_toggle_down_key,
   \ g:siefe_help_key,
 \ ]
 
@@ -671,8 +675,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . s:common_window_expect_keys,
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--multi',
-      \ '--bind','tab:toggle+up',
-      \ '--bind','shift-tab:toggle+down',
+      \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+      \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
       \ '--query', a:kwargs.query,
       \ '--delimiter', s:delimiter,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
@@ -921,8 +925,8 @@ function! SiefeTypeSelect(func, fullscreen, ...) abort
           \ '--bind', g:siefe_next_history_key . ':next-history',
           \ '--bind', g:siefe_previous_history_key . ':previous-history',
           \ '--bind', g:siefe_accept_key . ':accept',
-          \ '--bind','tab:toggle+up',
-          \ '--bind','shift-tab:toggle+down',
+          \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+          \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
           \ '--expect', g:siefe_abort_key,
           \ '--header', s:prettify_header(g:siefe_abort_key, 'abort'),
           \ ],
@@ -953,8 +957,8 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
     \ '--print-query',
     \ '--ansi',
     \ '--scheme=path',
-    \ '--bind', 'tab:toggle+up',
-    \ '--bind', 'shift-tab:toggle+down',
+    \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+    \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
     \ '--bind', g:siefe_down_key . ':down',
     \ '--bind', g:siefe_up_key . ':up',
     \ '--bind', g:siefe_next_history_key . ':next-history',
@@ -1224,8 +1228,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_switch_key . ','
         \ . SG_expect . ','
         \ . s:common_window_expect_keys,
-      \ '--bind','tab:toggle+down',
-      \ '--bind','shift-tab:toggle+up',
+      \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+      \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
       \ '--delimiter', '•',
       \ '--preview-window', default_preview_size,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
@@ -1417,7 +1421,8 @@ function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
         \ '--bind', g:siefe_gitbranch_preview_1_key . ':change-preview:' . preview_command_1,
         \ '--bind', g:siefe_gitbranch_preview_2_key . ':change-preview:' . preview_command_2,
         \ '--bind', g:siefe_gitbranch_preview_3_key . ':change-preview:' . preview_command_3,
-        \ '--bind','tab:toggle+up',
+        \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+        \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
@@ -1514,10 +1519,10 @@ function! SiefeAuthorSelect(func, fullscreen, ...) abort
       \ [
         \ '--history', s:data_path . '/rg_author_history',
         \ '--multi',
-        \ '--bind','tab:toggle+up',
         \ '--expect', g:siefe_abort_key,
         \ '--header', s:prettify_header(g:siefe_abort_key, 'abort'),
-        \ '--bind','shift-tab:toggle+down',
+        \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+        \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
@@ -1634,8 +1639,8 @@ function! siefe#history(fullscreen, kwargs) abort
           \ '--bind', g:siefe_previous_history_key . ':previous-history',
           \ '--bind', g:siefe_accept_key . ':accept',
           \ '--bind', g:siefe_abort_key . ':abort',
-          \ '--bind','tab:toggle+up',
-          \ '--bind','shift-tab:toggle+down',
+          \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+          \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
           \ '--bind', g:siefe_history_preview_key . ':change-preview:' . s:history_preview_command,
           \ '--bind', g:siefe_history_fast_preview_key . ':change-preview:' . s:history_fast_preview_command,
           \ '--bind', g:siefe_history_faster_preview_key . ':change-preview:' . s:history_faster_preview_command,
@@ -1810,7 +1815,8 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
         \ '--bind', g:siefe_stash_preview_2_key . ':change-preview:'.preview_command_2,
         \ '--bind', g:siefe_stash_preview_3_key . ':change-preview:'.preview_command_3,
         \ '--bind', g:siefe_stash_preview_4_key . ':change-preview:'.preview_command_4,
-        \ '--bind','tab:toggle+up',
+        \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+        \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
@@ -1932,7 +1938,8 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--bind', g:siefe_marks_preview_key . ':change-preview:' . s:marks_preview_command,
     \ '--bind', g:siefe_marks_fast_preview_key . ':change-preview:' . s:marks_fast_preview_command,
     \ '--bind', g:siefe_accept_key . ':accept',
-    \ '--bind','tab:toggle+up',
+    \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+    \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
     \ '--bind','shift-tab:toggle+down',
     \ '--header', "m\tl\tc\tfile/text"
       \ . "\n" . s:common_window_help,
@@ -2098,7 +2105,8 @@ function! siefe#jumps(fullscreen, kwargs) abort
     \ '--bind', g:siefe_jumps_preview_key . ':change-preview:' . s:jumps_preview_command,
     \ '--bind', g:siefe_jumps_fast_preview_key . ':change-preview:' . s:jumps_fast_preview_command,
     \ '--bind', g:siefe_accept_key . ':accept',
-    \ '--bind','tab:toggle+up',
+    \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+    \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
     \ '--bind','shift-tab:toggle+down',
     \ '--header', "m\tl\tc\tfile/text" . 'current:' . current
       \ . "\n" . s:common_window_help,
@@ -2361,8 +2369,8 @@ function! siefe#buffers(fullscreen, kwargs) abort
       \ '--bind', g:siefe_buffers_preview_key . ':change-preview:' . s:buffers_preview_command,
       \ '--bind', g:siefe_buffers_fast_preview_key . ':change-preview:' . s:buffers_fast_preview_command,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
-      \ '--bind','tab:toggle+up',
-      \ '--bind','shift-tab:toggle+down',
+      \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+      \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
       \ '--preview', s:buffers_preview_commands[g:siefe_buffers_default_preview_command],
       \ '--preview-window', '+{2}-/2,' . default_preview_size,
       \ '--with-nth', '3..',
