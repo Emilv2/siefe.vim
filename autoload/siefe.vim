@@ -256,7 +256,7 @@ let s:rg_preview_keys = [
 let s:bat_command = executable('batcat') ? 'batcat' : executable('bat') ? 'bat' : ''
 let s:fd_command = executable('fdfind') ? 'echo -e "' . s:blue('..') . '"; fdfind' : executable('fd') ? 'echo -e "' . s:blue('..') . '"; fd' : ''
 let s:files_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {} '. s:bat_command . ' --color=always --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {} cat'
-let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
+let s:rg_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {1} ' . s:bat_command . ' --color=always --highlight-line={2} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {1} cat'
 let s:rg_fast_preview_command = s:bin.preview . ' {1} cat | awk ' . "'" . '{ if (NR == {2} ) { gsub ("/\xb1[[0-9 ; ]*m/", "& \x1b[7m" ) ; printf( "\x1b[7m%s\n\x1b[m", $0) ; } else printf("\x1b[m%s\n", $0) ; }' . "'"
 let s:rg_faster_preview_command = s:bin.preview . ' {1} cat'
 
