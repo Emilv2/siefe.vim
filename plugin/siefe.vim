@@ -189,7 +189,7 @@ command! -nargs=* -bang SiefeProjectFilesVisual call siefe#ripgrepfzf(
   \  'files' : '//',
   \ })
 
-command! -nargs=* -bang SiefeProjectFilesWord call siefe#ripgrepfzf(expand(
+command! -nargs=* -bang SiefeProjectFilesWord call siefe#ripgrepfzf(
   \ <bang>0,
   \ siefe#get_git_root(),
   \ {
