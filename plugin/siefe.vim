@@ -142,7 +142,7 @@ command! -nargs=* -bang SiefeFilesVisual call siefe#ripgrepfzf(
   \  'prompt' : siefe#get_relative_git_or_bufdir(),
   \  'fixed_strings' : 1,
   \  'files' : '//',
-            \ })
+  \ })
 
 command! -nargs=* -bang SiefeFilesWord call siefe#ripgrepfzf(
   \ <bang>0,
