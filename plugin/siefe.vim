@@ -282,14 +282,23 @@ nnoremap <silent> <Plug>SiefeRG :SiefeRg<CR>
 nnoremap <silent> <Plug>SiefeRgWord :SiefeRgWord<CR>
 nnoremap <silent> <Plug>SiefeRgWORD :SiefeRgWORD<CR>
 nnoremap <silent> <Plug>SiefeRgLine :SiefeRgLine<CR>
-nnoremap <silent> <Plug>SiefeFiles :SiefeFiles<CR>
 xnoremap <silent> <Plug>SiefeRgVisual :<c-u>SiefeRgVisual<CR>
+nnoremap <silent> <Plug>SiefeFiless :SiefeFiles<CR>
+nnoremap <silent> <Plug>SiefeFilesWord :SiefeFilesWord<CR>
+nnoremap <silent> <Plug>SiefeFilesWORD :SiefeFilesWORD<CR>
+nnoremap <silent> <Plug>SiefeFilesLine :<c-u>SiefeFilesLine<CR>
+xnoremap <silent> <Plug>SiefeFilesVisual :<c-u>SiefeFilesVisual<CR>
 
 nnoremap <silent> <Plug>SiefeProjectRG :SiefeProjectRg<CR>
 nnoremap <silent> <Plug>SiefeProjectRgWord :SiefeProjectRgWord<CR>
 nnoremap <silent> <Plug>SiefeProjectRgWORD :SiefeProjectRgWORD<CR>
 nnoremap <silent> <Plug>SiefeProjectRgLine :SiefeProjectRgLine<CR>
-nnoremap <silent> <Plug>SiefeProjectFiles :SiefeProjectFiles<CR>
+nnoremap <silent> <Plug>SiefeProjectRgVisual :SiefeProjectRgVisual<CR>
+nnoremap <silent> <Plug>SiefeProjectFiless :SiefeProjectFiles<CR>
+nnoremap <silent> <Plug>SiefeProjectFilesWord :SiefeProjectFilesWord<CR>
+nnoremap <silent> <Plug>SiefeProjectFilesWORD :SiefeProjectFilesWORD<CR>
+nnoremap <silent> <Plug>SiefeProjectFilesLine :SiefeProjectFilesLine<CR>
+xnoremap <silent> <Plug>SiefeProjectFilesVisual :SiefeProjectFilesVisual<CR>
 
 nnoremap <silent> <Plug>SiefeRgP :SiefeRg <c-r>+<CR>
 nnoremap <silent> <Plug>SiefeProjectRgP :SiefeProjectRg <c-r>+<CR>
@@ -340,12 +349,28 @@ if g:siefe_map_keys
     nmap <leader>rl <Plug>SiefeRgLine
   endif
 
-  if !hasmapto('<Plug>SiefeFiles') && maparg('<leader>rf', 'n') ==# ''
-    nmap <leader>rf <Plug>SiefeFiles
-  endif
-
   if !hasmapto('<Plug>SiefeRgVisual') && maparg('<leader>rg', 'x') ==# ''
     xmap <leader>rg <Plug>SiefeRgVisual
+  endif
+
+  if !hasmapto('<Plug>SiefeFiless') && maparg('<leader>ff', 'n') ==# ''
+    nmap <leader>ff <Plug>SiefeFiless
+  endif
+
+  if !hasmapto('<Plug>SiefeFilesWord') && maparg('<leader>fw', 'n') ==# ''
+    nmap <leader>fw <Plug>SiefeFilesWord
+  endif
+
+  if !hasmapto('<Plug>SiefeFilesWORD') && maparg('<leader>fW', 'n') ==# ''
+    nmap <leader>fW <Plug>SiefeFilesWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeFilesLine') && maparg('<leader>fl', 'n') ==# ''
+    nmap <leader>fl <Plug>SiefeFilesLine
+  endif
+
+  if !hasmapto('<Plug>SiefeFilesVisual') && maparg('<leader>ff', 'x') ==# ''
+    xmap <leader>ff <Plug>SiefeFilesVisual
   endif
 
   if !hasmapto('<Plug>SiefeProjectRG') && maparg('<leader>Rg', 'n') ==# ''
@@ -360,16 +385,32 @@ if g:siefe_map_keys
     nmap <leader>RW <Plug>SiefeProjectRgWORD
   endif
 
-  if !hasmapto('<Plug>SiefeProjectRgLines') && maparg('<leader>Rl', 'n') ==# ''
-    nmap <leader>Rl <Plug>SiefeProjectRgLines
-  endif
-
-  if !hasmapto('<Plug>SiefeProjecFiles') && maparg('<leader>Rf', 'n') ==# ''
-    nmap <leader>Rf <Plug>SiefeProjectFiles
+  if !hasmapto('<Plug>SiefeProjectRgLine') && maparg('<leader>Rl', 'n') ==# ''
+    nmap <leader>Rl <Plug>SiefeProjectRgLine
   endif
 
   if !hasmapto('<Plug>SiefeProjectRgVisual') && maparg('<leader>Rg', 'x') ==# ''
     xmap <leader>Rg <Plug>SiefeProjectRgVisual
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectFiless') && maparg('<leader>Ff', 'n') ==# ''
+    nmap <leader>Ff <Plug>SiefeProjectFiless
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectFilesWord') && maparg('<leader>Fw', 'n') ==# ''
+    nmap <leader>Fw <Plug>SiefeProjectFilesWord
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectFilesWORD') && maparg('<leader>FW', 'n') ==# ''
+    nmap <leader>FW <Plug>SiefeProjectFilesWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectFilesLine') && maparg('<leader>Fl', 'n') ==# ''
+    nmap <leader>Fl <Plug>SiefeProjectFilesLine
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectFilesVisual') && maparg('<leader>Ff', 'x') ==# ''
+    xmap <leader>Ff <Plug>SiefeProjectFilesVisual
   endif
 
   if !hasmapto('<Plug>SiefeRgP') && maparg('<leader>rp', 'n') ==# ''
