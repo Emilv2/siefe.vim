@@ -224,10 +224,9 @@ let g:siefe_default_preview_size = str2nr(get(g:, 'siefe_default_preview_size', 
 let g:siefe_2nd_preview_size = str2nr(get(g:, 'siefe_2nd_preview_size', 80))
 
 
-let g:siefe_rg_fzf_key = get(g:, 'siefe_rg_fzf_key', 'ctrl-f')
-let g:siefe_rg_rg_key = get(g:, 'siefe_rg_rg_key', 'ctrl-r')
+let g:siefe_rg_toggle_fzf_key = get(g:, 'siefe_rg_toggle_fzf_key', 'ctrl-r')
 let g:siefe_rg_rgfzf_key = get(g:, 'siefe_rg_rgfzf_key', 'alt-f')
-let g:siefe_rg_files_key = get(g:, 'siefe_rg_files_key', 'ctrl-l')
+let g:siefe_rg_files_key = get(g:, 'siefe_rg_files_key', 'ctrl-f')
 let g:siefe_rg_type_key = get(g:, 'siefe_rg_type_key', 'ctrl-t')
 let g:siefe_rg_type_not_key = get(g:, 'siefe_rg_type_not_key', 'ctrl-^')
 let g:siefe_rg_word_key = get(g:, 'siefe_rg_word_key', 'ctrl-w')
@@ -288,8 +287,7 @@ let s:history_preview_commands = [
 
 
 let s:rg_keys = [
-  \ g:siefe_rg_fzf_key,
-  \ g:siefe_rg_rg_key,
+  \ g:siefe_rg_toggle_fzf_key,
   \ g:siefe_rg_rgfzf_key,
   \ g:siefe_rg_files_key,
   \ g:siefe_rg_type_key,
@@ -312,6 +310,7 @@ let s:rg_keys = [
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
+let g:siefe_rg_fzf_default = get(g:, 'siefe_rg_fzf_default', 0)
 let g:siefe_rg_default_preview_command = get(g:, 'siefe_rg_default_preview_command', 0)
 
 let g:siefe_history_default_preview_command = get(g:, 'siefe_history_default_preview_command', g:siefe_rg_default_preview_command)
@@ -495,6 +494,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.type = get(a:kwargs, 'type', '')
   let a:kwargs.files = get(a:kwargs, 'files', '')
   let a:kwargs.preview = get(a:kwargs, 'preview', g:siefe_rg_default_preview_command)
+  let a:kwargs.fzf = get(a:kwargs, 'fzf', g:siefe_rg_fzf_default)
 
   if empty(a:kwargs.files)
     let a:kwargs.files = tempname()
@@ -547,7 +547,11 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . a:kwargs.type
     \ . ' -- %s '
     \ . paths
-  let rg_command = printf(command_fmt, shellescape(a:kwargs.query))
+  if a:kwargs.fzf
+    let rg_command = printf(command_fmt, shellescape(''))
+  else
+    let rg_command = printf(command_fmt, shellescape(a:kwargs.query))
+  endif
   let reload_command = printf(command_fmt, '{q}')
   let empty_command = printf(command_fmt, '""')
 
@@ -573,6 +577,9 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . bufname_exclude
     \ .  ' --color=always --files '.a:kwargs.type
 
+  let fzf_rg = a:kwargs.fzf ? 'fzf' : 'rg'
+  let fzf_rg_help = a:kwargs.fzf ? 'rg' : 'fzf'
+
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
   let rg_prompt = word
     \ . no_ignore
@@ -584,7 +591,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . text_symbol
     \ . type_prompt
     \ . a:kwargs.prompt
-    \ . ' rg> '
+    \ . ' ' . fzf_rg . '> '
 
   let files_prompt = no_ignore
     \ . hidden
@@ -607,6 +614,53 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let name_info = empty(bufname()) ? '[No Name]' : bufname()
   let paths_info = a:kwargs.paths ==# [] ? '' : "\npaths: " . join(map(copy(a:kwargs.paths), 'split(v:val,"//")[-1]'), ' ')
 
+  let rg_fzf_help_line = a:kwargs.fzf ? '' : ' ╱ ' . s:prettify_header(g:siefe_rg_rgfzf_key, 'rg/fzf')
+
+  let header = name_info
+        \ . "\n" . s:prettify_header(g:siefe_rg_toggle_fzf_key, fzf_rg_help)
+        \ . rg_fzf_help_line
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_key, '-t')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_not_key, '-T')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, '-u:' . no_ignore_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
+        \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_history_key, 'history')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_max_1_key, '-m1:' . max_1_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_search_zip_key, '-z:' . search_zip_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_text_key, '--text:' . text_toggle)
+        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
+        \ . "\n" . s:common_window_help
+        \ . paths_info
+
+  let files_header = name_info
+        \ . "\n" . s:prettify_header(g:siefe_rg_toggle_fzf_key, fzf_rg)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_key, '-t')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_not_key, '-T')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, '-u:' . no_ignore_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
+        \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_history_key, 'history')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_max_1_key, '-m1:' . max_1_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_search_zip_key, '-z:' . search_zip_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_text_key, '--text:' . text_toggle)
+        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
+        \ . "\n" . s:common_window_help
+        \ . paths_info
+
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
   " https://github.com/junegunn/fzf.vim
@@ -620,7 +674,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--bind', g:siefe_rg_faster_preview_key . ':change-preview:'.s:rg_faster_preview_command,
       \ '--bind', g:siefe_help_key . ':change-preview:echo -e "'
         \ . s:prettify_help(g:siefe_help_key) . "\t" . 'show this help file'
-        \ . "\n" . s:prettify_help(g:siefe_rg_rg_key) . "\t". 'search with ripgrep'
+        \ . "\n" . s:prettify_help(g:siefe_rg_toggle_fzf_key) . "\t". 'search with ' . fzf_rg_help
         \ . "\n" . s:prettify_help(g:siefe_rg_rgfzf_key) . "\t" . 'search with fzf in current ripgrep result'
         \ . "\n" . s:prettify_help(g:siefe_rg_files_key) . "\t" . 'search files with fzf'
         \ . "\n" . s:prettify_help(g:siefe_rg_type_key) . "\t" . 'select file type to search, rg \`-t, --type\`'
@@ -657,6 +711,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--ansi',
       \ '--print0',
       \ '--expect='
+        \ . g:siefe_rg_toggle_fzf_key . ','
         \ . g:siefe_rg_type_key . ','
         \ . g:siefe_rg_type_not_key . ','
         \ . g:siefe_rg_word_key . ','
@@ -680,64 +735,32 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--query', a:kwargs.query,
       \ '--delimiter', s:delimiter,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
-      \ '--bind', 'change:reload:'.reload_command,
       \ '--bind', 'change:+first',
-      \ '--bind', g:siefe_rg_fzf_key
-        \ . ':unbind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_rgfzf_key . ')'
-        \ . '+change-prompt(' . no_ignore . hidden . type_prompt . a:kwargs.prompt . ' fzf> )'
-        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_files_key . ')'
-        \ . '+reload('.empty_command.')'
-        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind',  g:siefe_rg_rgfzf_key
-        \ . ':unbind(change,' . g:siefe_rg_rgfzf_key . ')'
-        \ . '+change-prompt('.no_ignore.hidden.a:kwargs.type . ' ' . a:kwargs.prompt.' rg/fzf> )'
-        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ')'
-        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
-      \ '--bind', g:siefe_rg_rg_key
-        \ . ':unbind(' . g:siefe_rg_rg_key . ')'
-        \ . '+change-prompt(' . rg_prompt . ')'
-        \ . '+disable-search+reload('.reload_command.')'
-        \ . '+rebind(change,' . g:siefe_rg_fzf_key . ',' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
-        \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')',
       \ '--bind', g:siefe_rg_files_key
         \ . ':unbind(change,' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+change-prompt(' . files_prompt . ')'
-        \ . '+enable-search+rebind(' . g:siefe_rg_rg_key . ',' . g:siefe_rg_fzf_key . ')'
+        \ . '+change-header(' . files_header . ')'
+        \ . '+enable-search'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
-      \ '--header', name_info
-        \ . "\n" . s:prettify_header(g:siefe_rg_rg_key, 'Rg')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fzf_key,  'fzf')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_rgfzf_key, 'rg/fzf')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_key, '-t')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_type_not_key, '-T')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, '-u:' . no_ignore_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
-        \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_history_key, 'history')
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_word_key, '-w:' . word_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_fixed_strings_key, '-F:' . fixed_strings_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_max_1_key, '-m1:' . max_1_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_search_zip_key, '-z:' . search_zip_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_text_key, '--text:' . text_toggle)
-        \ . ' ╱ ' . s:magenta(s:preview_help(s:rg_preview_keys), 'Special') . ' change preview'
-        \ . "\n" . s:common_window_help
-        \ . paths_info,
+      \ '--header', header,
       \ '--prompt', initial_prompt,
       \ ],
    \ 'dir': a:dir,
    \ 'sink*': function('s:ripgrep_sink', [a:fullscreen, a:dir, a:kwargs]),
    \ 'source': initial_command
   \ }
-
-  if files == 0
-    let spec.options += ['--disabled']
-  else
+  if files == 0 && a:kwargs.fzf == 0
+    let spec.options += [
+      \ '--disabled',
+      \ '--bind', 'change:reload:' . reload_command,
+      \ '--bind',  g:siefe_rg_rgfzf_key
+      \ . ':unbind(change,' . g:siefe_rg_rgfzf_key . ')'
+      \ . '+change-prompt(' . no_ignore.hidden.a:kwargs.type . ' ' . a:kwargs.prompt . ' rg/fzf> )'
+      \ . '+enable-search+rebind(' . g:siefe_rg_files_key . ')'
+      \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')'
+    \ ]
+  elseif files == 1 && a:kwargs.fzf == 0
     let spec.options += ['--bind', 'start:unbind(change)']
   endif
 
@@ -875,6 +898,14 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_text_key
     let a:kwargs.text = a:kwargs.text ? 0 : 1
+    call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
+
+  elseif key ==# g:siefe_rg_toggle_fzf_key
+    if readfile(a:kwargs.files)[0]
+      call writefile([0], a:kwargs.files)
+    else
+      let a:kwargs.fzf = a:kwargs.fzf ? 0 : 1
+    endif
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_buffers_key
