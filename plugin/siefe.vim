@@ -328,6 +328,11 @@ if exists(':History')
   nnoremap <silent> <Plug>HistoryCommands :History:<CR>
 endif
 
+if exists(':GFiles')
+  nnoremap <silent> <Plug>GFiless :GFiles<CR>
+  nnoremap <silent> <Plug>GFilesStatus :GFiles?<CR>
+endif
+
 if g:siefe_map_keys
 
 "if !hasmapto('<Plug>(GitGutterPrevHunk)') && maparg('[c', 'n') ==# ''
@@ -494,6 +499,16 @@ if g:siefe_map_keys
 
     if !hasmapto('<Plug>HistoryCommands') && maparg('<leader>h:', 'n') ==# ''
       nmap <leader>h: <Plug>HistoryCommands
+    endif
+  endif
+
+  if exists(':GFiles')
+    if !hasmapto('<Plug>GFiless') && maparg('<leader>gf', 'n') ==# ''
+      nmap <leader>gf <Plug>GFiless
+    endif
+
+    if !hasmapto('<Plug>GFilesStatus') && maparg('<leader>g?', 'n') ==# ''
+      nmap <leader>g? <Plug>GFilesStatus
     endif
   endif
 endif
