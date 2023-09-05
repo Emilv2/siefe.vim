@@ -1185,7 +1185,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' log '
         \ . G
         \ . '%s -z '
-        \ . ' --color=always'
+        \ . ' --color=always '
         \ . follow
         \ . ' ' . branches
         \ . ' ' . notbranches
@@ -1794,7 +1794,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
       \ . ' stash list '
       \ . G
       \ . '%s -z '
-      \ . ' --color=always'
+      \ . ' --color=always '
       \ . ' ' . regex
       \ . ' ' . ignore_case
 
