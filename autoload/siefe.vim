@@ -1192,8 +1192,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . ' ' . authors
         \ . ' ' . regex
         \ . ' ' . ignore_case
-    let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
-    let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
+    let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . paths . remove_newlines
+    let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . paths . remove_newlines
     let SG_help = " \n " . s:prettify_header(g:siefe_gitlog_sg_key, 'toggle S/G')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_ignore_case_key, 'ignore case:' . ignore_case_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitlog_fzf_key,  'fzf messages')
@@ -1799,8 +1799,8 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
       \ . ' ' . ignore_case
 
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
-  let initial_command = s:logger . write_query_initial . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
-  let reload_command = s:logger . write_query_reload . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
+  let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
+  let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
 
   let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   let orderfile = tempname()
