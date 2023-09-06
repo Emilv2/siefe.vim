@@ -1788,10 +1788,9 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let query_file = tempname()
   let write_query_initial = 'echo '. shellescape(a:kwargs.query) .' > '.query_file.' ;'
   let write_query_reload = 'echo {q} > '.query_file.' ;'
-  let format = '--format=%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
-  let format = '--format=%C(auto)%h • %s %C(green)%cr %C(reset)'
+  let format = '--format=%C(blue)%gd • %C(auto)%h • %s %C(green)%cr %C(reset)'
   let command_fmt = s:bin.git_SG
-      \ . ' stash list '
+      \ . ' log '
       \ . G
       \ . '%s -z '
       \ . ' --color=always '
@@ -1799,7 +1798,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
       \ . ' ' . ignore_case
 
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
-  let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)).fzf#shellescape(format).' -- ' . remove_newlines
+  let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)) . fzf#shellescape(format) . ' -g --first-parent -m "$@" "stash" -- ' . remove_newlines
   let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
 
   let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
@@ -1895,7 +1894,7 @@ function! s:stash_sink(fullscreen, kwargs, lines) abort
 
   let a:kwargs.query = a:lines[0]
   let key = a:lines[1]
-  let stashes = map(a:lines[2:], 'split(v:val, ":")[0]')
+  let stashes = map(a:lines[2:], 'split(v:val, "•")[0]')
 
   if key ==# g:siefe_stash_apply_key
     for stash in stashes
