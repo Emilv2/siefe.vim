@@ -1259,8 +1259,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
         \ . g:siefe_gitlog_switch_key . ','
         \ . SG_expect . ','
         \ . s:common_window_expect_keys,
-      \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
-      \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+      \ '--bind', g:siefe_toggle_up_key . ':toggle+down',
+      \ '--bind', g:siefe_toggle_down_key . ':toggle+up',
       \ '--delimiter', '•',
       \ '--preview-window', default_preview_size,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
@@ -1846,8 +1846,8 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
         \ '--bind', g:siefe_stash_preview_2_key . ':change-preview:'.preview_command_2,
         \ '--bind', g:siefe_stash_preview_3_key . ':change-preview:'.preview_command_3,
         \ '--bind', g:siefe_stash_preview_4_key . ':change-preview:'.preview_command_4,
-        \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
-        \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+        \ '--bind', g:siefe_toggle_up_key . ':toggle+down',
+        \ '--bind', g:siefe_toggle_down_key . ':toggle+up',
         \ '--bind', g:siefe_down_key . ':down',
         \ '--bind', g:siefe_up_key . ':up',
         \ '--bind', g:siefe_next_history_key . ':next-history',
