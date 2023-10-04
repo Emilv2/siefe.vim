@@ -239,6 +239,7 @@ command! -nargs=* -bang SiefeRgHistory call siefe#ripgrepfzf(
   \  'files' : '//',
   \ })
 
+command! -nargs=* -bang SiefeRegisters call siefe#registers(0,{'query' : ''})
 
 command! -nargs=* -bang SiefeGitLog     call siefe#gitlogfzf(<bang>0, {'query': <q-args> })
 command! -nargs=* -bang SiefeGitLogWord call siefe#gitlogfzf(<bang>0, {'query': expand("<cword>")})
@@ -318,6 +319,9 @@ nnoremap <silent> <Plug>SiefeGitLogg :SiefeGitLog<CR>
 xnoremap <silent> <Plug>SiefeGitLogVisual :<c-u>SiefeGitLogVisual<CR>
 nnoremap <silent> <Plug>SiefeGitLogWord :SiefeGitLogWord<CR>
 nnoremap <silent> <Plug>SiefeGitLogWORD :SiefeGitLogWORD<CR>
+
+nnoremap <silent> <Plug>SiefeRegisters :<c-u>SiefeRegisters<CR>
+
 
 if exists(':Maps')
   nnoremap <silent> <Plug>Maps :Maps<CR>
@@ -484,6 +488,10 @@ if g:siefe_map_keys
 
   if !hasmapto('<Plug>SiefeGitLogWORD') && maparg('<leader>GW', 'n') ==# ''
     nmap <leader>GW <Plug>SiefeGitLogWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeRegisters') && maparg('<leader>RR', 'n') ==# ''
+    nmap <leader>RR <Plug>SiefeRegisters
   endif
 
   if exists(':Maps')

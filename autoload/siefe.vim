@@ -471,6 +471,9 @@ let s:jumps_preview_commands = [
   \ s:jumps_fast_preview_command,
 \ ]
 
+let g:siefe_registers_paste_key = get(g:, 'siefe_registers_paste_key', 'ctrl-p')
+let g:siefe_registers_edit_key = get(g:, 'siefe_registers_edit_key', 'ctrl-e')
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -2147,6 +2150,83 @@ function! siefe#jumps(fullscreen, kwargs) abort
   \ }
   return fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
+
+" ------------------------------------------------------------------
+" Registers
+" ------------------------------------------------------------------
+"
+function! s:get_all_registers() abort
+  let regnames = map(range(char2nr('a'), char2nr('z')) + range(char2nr('0'), char2nr('9')), 'nr2char(v:val)') + ['"','-','*','%','/','.','#',':']
+  return map(copy(regnames), '[v:val, getreginfo(v:val)]')
+endfunction
+
+function! s:printreg(reg) abort
+  return s:red('"' . a:reg[0]) . ' ' . s:blue(join(a:reg[1].regcontents, '↵'))
+endfunction
+
+function! s:regsave() abort
+  let file = getbufvar(bufnr(''), 'siefe_tempfile')
+  let reg = getbufvar(bufnr(''), 'siefe_reg')
+  let contents = readfile(file)
+  let reg_amode = getregtype(reg)
+  call setreg(reg, contents, reg_amode)
+endfunction
+
+function! s:registers_sink(lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let key = a:lines[0]
+  let reg = split(a:lines[1], ' ')[0][1]
+  echom l:reg
+
+  if key ==# g:siefe_registers_edit_key
+    let tempfile = tempname()
+    execute 'edit ' . tempfile
+    execute 'put ' . l:reg
+    execute '1delete _'
+    call setbufvar(bufnr(''), 'siefe_reg', reg)
+    call setbufvar(bufnr(''), 'siefe_tempfile', tempfile)
+
+    augroup siefe_registers
+    autocmd BufWritePost <buffer> call s:regsave()
+    augroup END
+
+  else
+    " TODO
+  endif
+
+
+endfunction
+
+function! siefe#registers(fullscreen, kwargs) abort
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+  let spec = {
+        \ 'source': map(filter(s:get_all_registers(), 'v:val[1] != {}'), 's:printreg(v:val)'),
+  \ 'sink*':  function('s:registers_sink'),
+  \ 'options': [
+    \ '--ansi',
+    \ '--query', a:kwargs.query,
+    \ '--delimiter', ' ',
+    \ '--sync',
+    \ '--bind', g:siefe_accept_key . ':accept',
+    \ '--bind', g:siefe_abort_key . ':abort',
+    \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+    \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+    \ '--bind','shift-tab:toggle+down',
+    \ '--expect',
+      \ g:siefe_registers_paste_key . ','
+      \ . g:siefe_registers_edit_key,
+    \ '--prompt',  'Regs> '
+    \ ],
+  \ }
+  return fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
 
 """ helper functions
 function! s:warn(message) abort
