@@ -2183,9 +2183,10 @@ endfunction
 function! s:regsave() abort
   let file = getbufvar(bufnr(''), 'siefe_tempfile')
   let reg = getbufvar(bufnr(''), 'siefe_reg')
-  let contents = readfile(file)
+  let contents = readfile(file)[1:]
   let reg_amode = getregtype(reg)
   call setreg(reg, contents, reg_amode)
+  call delete(file)
 endfunction
 
 function! s:registers_sink(lines) abort
@@ -2196,24 +2197,24 @@ function! s:registers_sink(lines) abort
 
   let key = a:lines[0]
   let reg = split(a:lines[1], ' ')[0][1]
-  echom l:reg
 
-  if key ==# g:siefe_registers_edit_key
-    let tempfile = tempname()
-    execute 'edit ' . tempfile
+  if key ==# g:siefe_registers_paste_key
     execute 'put ' . l:reg
-    execute '1delete _'
+
+  else
+    let tempfile = tempname()
+    execute 'split ' . tempfile
+    call append(0, '### Editing register `' . l:reg . '`. Add control characters by preceding them with `ctrl-v` ###')
+    execute 'put ' . l:reg
+    execute '2delete _'
+    call matchaddpos('Error', [1])
     call setbufvar(bufnr(''), 'siefe_reg', reg)
     call setbufvar(bufnr(''), 'siefe_tempfile', tempfile)
 
     augroup siefe_registers
     autocmd BufWritePost <buffer> call s:regsave()
     augroup END
-
-  else
-    " TODO
   endif
-
 
 endfunction
 
@@ -2229,15 +2230,17 @@ function! siefe#registers(fullscreen, kwargs) abort
     \ '--query', a:kwargs.query,
     \ '--delimiter', ' ',
     \ '--sync',
-    \ '--bind', g:siefe_accept_key . ':accept',
     \ '--bind', 'enter:ignore',
     \ '--bind', 'esc:ignore',
+    \ '--bind', g:siefe_registers_edit_key . ':accept',
     \ '--bind', g:siefe_abort_key . ':abort',
     \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
     \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
     \ '--expect',
-      \ g:siefe_registers_paste_key . ','
-      \ . g:siefe_registers_edit_key,
+      \ g:siefe_registers_paste_key,
+    \ '--header', s:prettify_header(g:siefe_registers_edit_key, 'edit')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_registers_paste_key, 'paste')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort'),
     \ '--prompt',  'Regs> '
     \ ],
   \ }
