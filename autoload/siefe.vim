@@ -1465,7 +1465,6 @@ function! SiefeBranchSelect(func, fullscreen, not, standalone, ...) abort
         \ '--expect='
           \ . g:siefe_abort_key . ','
           \ . extra_keys,
-        \ '--bind','shift-tab:toggle+down',
         \ '--preview', preview_command_0,
         \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
         \ '--preview-window', '~1,' . default_preview_size,
@@ -1869,7 +1868,6 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
           \ . g:siefe_stash_drop_key . ','
           \ . g:siefe_stash_sg_key . ','
           \ . g:siefe_stash_pickaxe_regex_key,
-        \ '--bind','shift-tab:toggle+down',
         \ '--preview-window', default_preview_size,
         \ '--prompt', G_prompt . regex . ignore_case_symbol . 'stash> ',
         \ '--header='
@@ -1973,7 +1971,6 @@ function! siefe#marks(fullscreen, kwargs) abort
     \ '--bind', g:siefe_accept_key . ':accept',
     \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
     \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
-    \ '--bind','shift-tab:toggle+down',
     \ '--header', "m\tl\tc\tfile/text"
       \ . "\n" . s:common_window_help,
     \ '--expect', s:common_window_expect_keys . ','
@@ -2140,7 +2137,6 @@ function! siefe#jumps(fullscreen, kwargs) abort
     \ '--bind', g:siefe_accept_key . ':accept',
     \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
     \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
-    \ '--bind','shift-tab:toggle+down',
     \ '--header', "m\tl\tc\tfile/text" . 'current:' . current
       \ . "\n" . s:common_window_help,
     \ '--expect', s:common_window_expect_keys . ','
@@ -2217,7 +2213,6 @@ function! siefe#registers(fullscreen, kwargs) abort
     \ '--bind', g:siefe_abort_key . ':abort',
     \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
     \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
-    \ '--bind','shift-tab:toggle+down',
     \ '--expect',
       \ g:siefe_registers_paste_key . ','
       \ . g:siefe_registers_edit_key,
