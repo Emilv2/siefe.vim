@@ -490,6 +490,8 @@ let s:jumps_preview_commands = [
 
 let g:siefe_registers_paste_key = get(g:, 'siefe_registers_paste_key', 'ctrl-p')
 let g:siefe_registers_edit_key = get(g:, 'siefe_registers_edit_key', 'ctrl-e')
+let g:siefe_registers_execute_key = get(g:, 'siefe_registers_execute_key', 'ctrl-x')
+let g:siefe_registers_clear_key = get(g:, 'siefe_registers_clear_key', 'del')
 
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
@@ -2235,6 +2237,13 @@ function! s:registers_sink(lines) abort
   if key ==# g:siefe_registers_paste_key
     execute 'put ' . l:reg
 
+  elseif key ==# g:siefe_registers_execute_key
+    execute 'normal @' . l:reg
+
+  elseif key ==# g:siefe_registers_clear_key
+    execute 'normal @' . l:reg
+    call setreg(l:reg, [], getregtype(l:reg))
+
   else
     let tempfile = tempname()
     execute 'split ' . tempfile
@@ -2271,9 +2280,13 @@ function! siefe#registers(fullscreen, kwargs) abort
     \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
     \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
     \ '--expect',
-      \ g:siefe_registers_paste_key,
+      \ g:siefe_registers_paste_key . ','
+      \ . g:siefe_registers_execute_key . ','
+      \ . g:siefe_registers_clear_key,
     \ '--header', s:prettify_header(g:siefe_registers_edit_key, 'edit')
       \ . ' ╱ ' . s:prettify_header(g:siefe_registers_paste_key, 'paste')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_registers_execute_key, 'execute')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_registers_clear_key, 'clear')
       \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort'),
     \ '--prompt',  'Regs> '
     \ ],
