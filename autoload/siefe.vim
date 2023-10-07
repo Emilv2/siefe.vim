@@ -76,6 +76,17 @@ function! s:fill_quickfix(list, ...) abort
   endif
 endfunction
 
+function! s:fill_loc(list, ...) abort
+  if len(a:list) > 1
+    call setloclist(0, a:list)
+    lopen
+    wincmd p
+    if a:0
+      execute a:1
+    endif
+  endif
+endfunction
+
 function! s:yank_to_register(data) abort
   let @" = a:data
   silent! let @* = a:data
@@ -172,6 +183,12 @@ endif
 let s:logger = s:bin.logger . ' '. s:data_path . '/error_log '
 
 """ load configuration options
+let g:siefe_loclist = get(g:, 'siefe_loclist', 0)
+let g:siefe_rg_loclist = get(g:, 'siefe_rg_loclist', g:siefe_loclist)
+let g:siefe_gitlog_loclist = get(g:, 'siefe_gitlog_loclist', g:siefe_loclist)
+let g:siefe_history_loclist = get(g:, 'siefer_history_loclist', g:siefe_loclist)
+let g:siefe_marks_loclist = get(g:, 'siefe_marks_loclist', g:siefe_loclist)
+
 let g:siefe_delta_options = get(g:, 'siefe_delta_options', '--keep-plus-minus-markers') . ' ' . get(g:, 'siefe_delta_extra_options', '')
 let g:siefe_bat_options = get(g:, 'siefe_bat_options', '--style=numbers,changes') . ' ' . get(g:, 'siefe_bat_extra_options', '')
 
@@ -838,7 +855,11 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
     silent! autocmd! siefe_swap
 
-    call s:fill_quickfix(filelist)
+    if g:siefe_rg_loclist
+      call s:fill_loc(filelist)
+    else
+      call s:fill_quickfix(filelist)
+    endif
 
   elseif has_key(s:common_window_actions, key)
     " no match
@@ -1412,8 +1433,12 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
     endfor
 
   else
-  execute 'Gedit '. quickfix_list[0].module
-  call s:fill_quickfix(quickfix_list)
+    execute 'Gedit '. quickfix_list[0].module
+    if g:siefe_gitlog_loclist
+      call s:fill_loc(quickfix_list)
+    else
+      call s:fill_quickfix(quickfix_list)
+    endif
   endif
 endfunction
 
@@ -1777,7 +1802,11 @@ function! s:history_sink(fullscreen, kwargs, lines) abort
 
     silent! autocmd! siefe_swap
 
-    call s:fill_quickfix(map(a:lines[2:], "{'filename' : split(v:val, '//')[1] }"))
+    if g:siefe_history_loclist
+      call s:fill_loc(map(a:lines[2:], "{'filename' : split(v:val, '//')[1] }"))
+    else
+      call s:fill_quickfix(map(a:lines[2:], "{'filename' : split(v:val, '//')[1] }"))
+    endif
   endif
 
 endfunction
@@ -2034,7 +2063,11 @@ function! s:marks_sink(lines) abort
 
     silent! autocmd! siefe_swap
 
-    call s:fill_quickfix(filelist)
+    if g:siefe_marks_loclist
+      call s:fill_loc(filelist)
+    else
+      call s:fill_quickfix(filelist)
+    endif
 
   elseif key ==# g:siefe_marks_delete_key
     for f in filelist
