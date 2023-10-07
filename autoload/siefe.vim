@@ -1258,6 +1258,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
       \ '--bind', g:siefe_next_history_key . ':next-history',
       \ '--bind', g:siefe_previous_history_key . ':previous-history',
       \ '--bind', g:siefe_accept_key . ':accept',
+      \ '--bind', g:siefe_abort_key . ':abort',
       \ '--print-query',
       \ '--layout=reverse-list',
       \ '--ansi',
