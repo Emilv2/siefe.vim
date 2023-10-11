@@ -259,6 +259,8 @@ command! -bang SiefeGitBranch            call siefe#gitbranch(<bang>0)
 command! SiefeToggleGitStatus           call siefe#toggle_git_status()
 command! -bang SiefeGitStash            call siefe#gitstash(<bang>0, {'query': <q-args> })
 
+command! -bang SiefeMaps                call siefe#maps(<bang>0, '', ['n'])
+
 command! -nargs=* -bang SiefeBuffers call siefe#buffers(
             \ <bang>0,
             \ {
@@ -323,9 +325,7 @@ nnoremap <silent> <Plug>SiefeGitLogWORD :SiefeGitLogWORD<CR>
 nnoremap <silent> <Plug>SiefeRegisters :<c-u>SiefeRegisters<CR>
 
 
-if exists(':Maps')
-  nnoremap <silent> <Plug>Maps :Maps<CR>
-endif
+nnoremap <silent> <Plug>SiefeMaps :SiefeMaps<CR>
 
 if exists(':History')
   nnoremap <silent> <Plug>HistorySearch :History/<CR>
@@ -494,10 +494,8 @@ if g:siefe_map_keys
     nmap <leader>RR <Plug>SiefeRegisters
   endif
 
-  if exists(':Maps')
-    if !hasmapto('<Plug>Maps') && maparg('<leader>M', 'n') ==# ''
-      nmap <leader>M <Plug>Maps
-    endif
+  if !hasmapto('<Plug>Maps') && maparg('<leader>M', 'n') ==# ''
+    nmap <leader>M <Plug>SiefeMaps
   endif
 
   if exists(':History')

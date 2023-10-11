@@ -493,6 +493,12 @@ let g:siefe_registers_edit_key = get(g:, 'siefe_registers_edit_key', 'ctrl-e')
 let g:siefe_registers_execute_key = get(g:, 'siefe_registers_execute_key', 'ctrl-x')
 let g:siefe_registers_clear_key = get(g:, 'siefe_registers_clear_key', 'del')
 
+
+let g:siefe_maps_open_key = get(g:, 'siefe_maps_open_key', 'ctrl-o')
+let g:siefe_maps_modes_key = get(g:, 'siefe_maps_modes_key', 'ctrl-d')
+
+let g:siefe_modes_select_all_key = get(g:, 'siefe_modes_select_all_key', 'ctrl-a')
+
 function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   call s:check_requirements()
 
@@ -2208,9 +2214,131 @@ function! siefe#jumps(fullscreen, kwargs) abort
 endfunction
 
 " ------------------------------------------------------------------
+" Maps
+" ------------------------------------------------------------------
+function! s:align_pairs(list) abort
+  let maxlen = 0
+  let pairs = []
+  for elem in a:list
+    let match = matchlist(elem, '^\(\S*\)\s*\(.*\)$')
+    let [_, k, v] = match[0:2]
+    let maxlen = max([maxlen, len(k)])
+    call add(pairs, [k, substitute(v, '^\*\?[@ ]\?', '', '')])
+  endfor
+  let maxlen = min([maxlen, 35])
+  return map(pairs, "printf('%-'.maxlen.'s', v:val[0]).' '.v:val[1]")
+endfunction
+
+function! s:highlight_keys(str) abort
+  return substitute(
+        \ substitute(a:str, '<[^ >]\+>', s:yellow('\0', 'Special'), 'g'),
+        \ '<Plug>', s:blue('<Plug>', 'SpecialKey'), 'g')
+endfunction
+
+function! SiefeModeSelect(fullscreen, query) abort
+  let options = [
+    \ '--history', s:data_path . '/git_dir_history',
+    \ '--ansi',
+    \ '--multi',
+    \ '--bind', 'enter:ignore',
+    \ '--bind', 'esc:ignore',
+    \ '--bind', g:siefe_accept_key . ':accept',
+    \ '--bind', g:siefe_abort_key . ':abort',
+    \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+    \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+    \ '--bind', g:siefe_down_key . ':down',
+    \ '--bind', g:siefe_up_key . ':up',
+    \ '--bind', g:siefe_next_history_key . ':next-history',
+    \ '--bind', g:siefe_previous_history_key . ':previous-history',
+    \ '--bind', g:siefe_modes_select_all_key . ':select-all',
+    \ '--bind', g:siefe_modes_select_all_key . ':select-all',
+    \ '--prompt', 'mode> ',
+    \ '--header', s:prettify_header(g:siefe_abort_key, 'abort')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_modes_select_all_key, 'select all')
+    \ ]
+
+  call fzf#run(fzf#wrap({
+        \ 'source': ['i', 'n', 'v', 'x'],
+        \ 'options': options,
+        \ 'sink*': function('siefe#maps', [a:fullscreen, a:query] + a:000)
+      \ }, a:fullscreen))
+endfunction
+
+
+function! s:key_sink(fullscreen, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let query = a:lines[0]
+  let key = a:lines[1]
+
+  let file = split(a:lines[2], '•')[0]
+  let lnum = split(a:lines[2], '•')[1]
+  let mode = split(a:lines[2], '•')[2]
+  let map  = split(a:lines[2], '•')[3]
+
+  if key ==# g:siefe_maps_open_key
+    execute 'e' fnameescape(file)
+    call cursor(lnum, 0)
+    normal! zvzz
+
+  elseif key ==# g:siefe_maps_modes_key
+    call SiefeModeSelect(a:fullscreen, query)
+
+  else
+    redraw
+    let map_gv  = l:mode ==# 'x' ? 'gv' : ''
+    let map_cnt = v:count ==# 0 ? '' : v:count
+    let map_reg = empty(v:register) ? '' : ('"' . v:register)
+    let map_op  = l:mode ==# 'o' ? v:operator : ''
+    call feedkeys(l:map_gv . l:map_cnt . l:map_reg, 'n')
+    call feedkeys(l:map_op .
+          \ substitute(l:map, '<[^ >]\+>', '\=eval("\"\\".submatch(0)."\"")', 'g'))
+  endif
+endfunction
+
+function! siefe#maps(fullscreen, query, modes) abort
+
+  let maps = filter(maplist(), 'index(a:modes, v:val.mode) >= 0')
+  let max_len = max(map(copy(maps), 'len(v:val.lhs)'))
+  let maps = map(copy(maps), 'getscriptinfo({"sid" : v:val.sid})[0].name . "•" . v:val.lnum . "•" . v:val.mode . "•" . v:val.lhs . "•" . s:red(v:val.mode) . " " .v:val.lhs . repeat(" ", max_len - len(v:val.lhs) + 1) . v:val.rhs . "\t" . s:blue(fnamemodify(getscriptinfo({"sid" : v:val.sid})[0].name, ":t") . ":" . v:val.lnum)')
+  let sorted = sort(maps)
+  let colored = map(sorted, 's:highlight_keys(v:val)')
+  "let pcolor  = a:mode == 'x' ? 9 : a:mode == 'o' ? 10 : 12
+
+  let spec =  {
+  \ 'source':  colored,
+  \ 'sink*':    function('s:key_sink', [a:fullscreen]),
+  \ 'options': [
+    \ '--prompt', 'Maps ('.join(a:modes, '/').')> ',
+    \ '--delimiter', '•',
+    \ '--with-nth', '5..',
+    \ '--print-query',
+    \ '--ansi',
+    \ '--query', a:query,
+    \ '--bind', 'enter:ignore',
+    \ '--bind', 'esc:ignore',
+    \ '--bind', g:siefe_accept_key . ':accept',
+    \ '--bind', g:siefe_abort_key . ':abort',
+    \ '--expect',
+      \ g:siefe_maps_open_key . ','
+      \ . g:siefe_maps_modes_key,
+    \ '--header', s:prettify_header(g:siefe_accept_key, 'execute')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_maps_open_key, 'open location')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_maps_modes_key, 'modes')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort'),
+  \ ],
+  \ }
+
+  return fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+" ------------------------------------------------------------------
 " Registers
 " ------------------------------------------------------------------
-"
+
 function! s:get_all_registers() abort
   let regnames = map(range(char2nr('a'), char2nr('z')) + range(char2nr('0'), char2nr('9')), 'nr2char(v:val)') + ['"','-','*','%','/','.','#',':']
   return map(copy(regnames), '[v:val, getreginfo(v:val)]')
