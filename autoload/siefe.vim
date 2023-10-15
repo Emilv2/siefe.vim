@@ -2258,7 +2258,17 @@ function! SiefeModeSelect(fullscreen, query) abort
     \ ]
 
   call fzf#run(fzf#wrap({
-        \ 'source': ['i', 'n', 'v', 'x'],
+        \ 'source': [
+          \ s:red('n') . ' # Normal',
+          \ s:red('v') . ' # Visual and Select',
+          \ s:red('s') . ' # Select',
+          \ s:red('x') . ' # Visual',
+          \ s:red('o') . ' # Operator-pending',
+          \ s:red('i') . ' # Insert',
+          \ s:red('l') . ' # Insert, Command-line, Lang-Arg',
+          \ s:red('c') . ' # Command-line',
+          \ s:red('t') . ' # Terminal-Job',
+        \ ],
         \ 'options': options,
         \ 'sink*': function('siefe#maps', [a:fullscreen, a:query] + a:000)
       \ }, a:fullscreen))
@@ -2301,7 +2311,8 @@ endfunction
 
 function! siefe#maps(fullscreen, query, modes) abort
 
-  let maps = filter(maplist(), 'index(a:modes, v:val.mode) >= 0')
+  let l:modes = map(a:modes, 'split(v:val)[0]')
+  let maps = filter(maplist(), 'index(l:modes, v:val.mode) >= 0')
   let max_len = max(map(copy(maps), 'len(v:val.lhs)'))
   let maps = map(copy(maps), 'getscriptinfo({"sid" : v:val.sid})[0].name . "•" . v:val.lnum . "•" . v:val.mode . "•" . v:val.lhs . "•" . s:red(v:val.mode) . " " .v:val.lhs . repeat(" ", max_len - len(v:val.lhs) + 1) . v:val.rhs . "\t" . s:blue(fnamemodify(getscriptinfo({"sid" : v:val.sid})[0].name, ":t") . ":" . v:val.lnum)')
   let sorted = sort(maps)
@@ -2312,7 +2323,7 @@ function! siefe#maps(fullscreen, query, modes) abort
   \ 'source':  colored,
   \ 'sink*':    function('s:key_sink', [a:fullscreen]),
   \ 'options': [
-    \ '--prompt', 'Maps ('.join(a:modes, '/').')> ',
+    \ '--prompt', 'Maps ('.join(l:modes, '/').')> ',
     \ '--delimiter', '•',
     \ '--with-nth', '5..',
     \ '--print-query',
