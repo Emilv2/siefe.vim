@@ -1248,7 +1248,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
 
   let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git -C `git rev-parse --show-toplevel` show --color=always -O'.fzf#shellescape(orderfile).' {1} '
   let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
-  let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
+  let preview_command_1 = preview_all_command . ' --format=format: -- ' . suffix
 
   let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' -C `git rev-parse --show-toplevel` show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . '--color=always {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
@@ -1863,7 +1863,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
 
   let preview_all_command = 'echo -e "\033[0;35mgit show all\033[0m" && git -C `git rev-parse --show-toplevel` show --color=always -O'.fzf#shellescape(orderfile).' {1} '
   let preview_command_0 = preview_all_command . ' --patch --stat -- ' . suffix
-  let preview_command_1 = preview_all_command . ' --format=format: --patch --stat -- ' . suffix
+  let preview_command_1 = preview_all_command . ' --format=format: --patch -- ' . suffix
 
   let preview_command_2 = 'echo -e "\033[0;35mgit show matching files\033[0m" && ' . s:bin.git_SG . ' -C `git rev-parse --show-toplevel` show ' . G .'"`cat '.query_file.'`" -O'.fzf#shellescape(orderfile).' ' . regex . '--color=always {1} '
     \ . ' --format=format: --patch --stat -- ' . suffix
