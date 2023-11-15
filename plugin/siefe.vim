@@ -7,14 +7,6 @@ if exists('g:loaded_siefe')
 endif
 let g:loaded_siefe = 1
 
-let g:siefe_rg_default_word = get(g:, 'siefe_rg_default_word', 0)
-let g:siefe_rg_default_case_sensitive = get(g:, 'siefe_rg_default_case_sensitive', 0)
-let g:siefe_rg_default_hidden = get(g:, 'siefe_rg_default_hidden', 0)
-let g:siefe_rg_default_no_ignore = get(g:, 'siefe_rg_default_no_ignore', 0)
-let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings', 0)
-let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
-let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
-
 let g:siefe_map_keys = get(g:, 'siefe_map_keys', 1)
 
 command! -nargs=* -bang SiefeRg call siefe#ripgrepfzf(
