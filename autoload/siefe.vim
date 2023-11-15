@@ -414,7 +414,7 @@ let g:siefe_gitlog_default_follow = get(g:, 'siefe_gitlog_default_follow', 0)
 let g:siefe_gitlog_default_ignore_case = get(g:, 'siefe_gitlog_default_ignore_case', 0)
 
 let g:siefe_rg_default_word = get(g:, 'siefe_rg_default_word', 0)
-let g:siefe_rg_default_case_sensitive = get(g:, 'siefe_rg_default_case_sensitive', 0)
+let g:siefe_rg_default_case_sensitive = get(g:, 'siefe_rg_default_case_sensitive', 1)
 let g:siefe_rg_default_hidden = get(g:, 'siefe_rg_default_hidden', 0)
 let g:siefe_rg_default_no_ignore = get(g:, 'siefe_rg_default_no_ignore', 0)
 let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings', 0)
@@ -544,8 +544,12 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let hidden = a:kwargs.hidden ? '-. ' : ''
   let hidden_option = a:kwargs.hidden ? '--hidden ' : ''
   let hidden_toggle = a:kwargs.hidden ? 'off' : 'on'
-  let case_sensitive = a:kwargs.case_sensitive ? '--case-sensitive ' : '--smart-case '
-  let case_symbol = a:kwargs.case_sensitive ? '-s ' : ''
+  let case_sensitive = a:kwargs.case_sensitive == 1 ? '--smart-case ' :
+        \ a:kwargs.case_sensitive == 2 ? '--ignore-case ' : '--case-sensitive '
+  let case_symbol = a:kwargs.case_sensitive == 1 ? '-S ' :
+        \ a:kwargs.case_sensitive == 2 ? '-s ' : '-i '
+  let case_sensitive_toggle = a:kwargs.case_sensitive == 1 ? '-s ' :
+        \ a:kwargs.case_sensitive == 2 ? '-i ' : '-S '
   let no_ignore = a:kwargs.no_ignore == 1 ? '-u ' :
         \ a:kwargs.no_ignore == 2 ? '-uu ' :
         \ a:kwargs.no_ignore == 3 ? '-uuu ' : ' '
@@ -653,7 +657,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -675,7 +679,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_buffers_key, 'Buffers')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, '-s:' . hidden_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -905,7 +909,8 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_case_key
-    let a:kwargs.case_sensitive = a:kwargs.case_sensitive  ? 0 : 1
+    let a:kwargs.case_sensitive = a:kwargs.case_sensitive == 0 ? 1 :
+          \ a:kwargs.case_sensitive == 1 ? 2 : 0
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_hidden_key
