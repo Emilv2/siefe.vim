@@ -1154,7 +1154,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
 
   let authors = join(map(copy(a:kwargs.authors), '"--author=".shellescape(v:val)'))
 
-  if len(a:kwargs.paths)  == 1 && filereadable(a:kwargs.paths[0]) && a:kwargs.line_range == []
+  if len(a:kwargs.paths)  == 1 && (filereadable(a:kwargs.paths[0]) || isdirectory(a:kwargs.paths[0])) && a:kwargs.line_range == []
     let siefe_gitlog_follow_key = g:siefe_gitlog_follow_key . ','
     let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_header( g:siefe_gitlog_follow_key, 'follow')
     let follow = a:kwargs.follow ? '--follow ' : ''
@@ -1181,7 +1181,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let paths = join(map(copy(a:kwargs.type), 'shellescape(v:val)'))
 
   else
-    let paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val)'), 'shellescape(v:val)'))
+    let paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val) || isdirectory(v:val)'), 'shellescape(v:val)'))
   endif
 
   let G = a:kwargs.G ? '-G' : '-S'
@@ -1272,7 +1272,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   \ ]
 
   let authors_info = a:kwargs.authors ==# [] ? '' : "\nauthors: ".join(a:kwargs.authors)
-  let paths_info = paths ==# '' ? '' : "\npaths: " . join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
+  let paths_info = paths ==# '' ? '' : "\npaths: " . join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val) || isdirectory(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
