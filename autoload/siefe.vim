@@ -2452,7 +2452,11 @@ function! s:warn(message) abort
 endfunction
 
 function!  siefe#bufdir() abort
-  return substitute(split(expand('%:p:h'), '[/\\]\.git\([/\\]\|$\)')[0], '^fugitive://', '', '')
+  if &ft ==# 'git'
+    return FugitiveFind(':/')
+  else
+    return expand('%:p:h')
+  endif
 endfunction
 
 function! siefe#get_git_root() abort
