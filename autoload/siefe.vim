@@ -1091,10 +1091,12 @@ function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, line
 
   elseif key ==# g:siefe_fd_git_root_key
     let a:kwargs.prompt = siefe#get_git_basename_or_bufdir()
+    let a:kwargs.paths = []
     call siefe#ripgrepfzf(a:fullscreen, siefe#get_git_root(), a:kwargs)
 
   elseif key ==# g:siefe_fd_project_root_key
     let a:kwargs.prompt = g:siefe_fd_project_root_env
+    let a:kwargs.paths = []
     call siefe#ripgrepfzf(a:fullscreen, expand(g:siefe_fd_project_root_env), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
@@ -1105,6 +1107,7 @@ function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, line
 
   else
     let a:kwargs.prompt = siefe#get_relative_git_or_bufdir(new_dir)
+    let a:kwargs.paths = []
     call siefe#ripgrepfzf(a:fullscreen, trim(system('realpath '.new_dir)), a:kwargs)
   endif
 endfunction
