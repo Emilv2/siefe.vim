@@ -518,7 +518,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.search_zip = get(a:kwargs, 'search_zip', g:siefe_rg_default_search_zip)
   let a:kwargs.text = get(a:kwargs, 'text', g:siefe_rg_default_text)
   let a:kwargs.orig_dir = get(a:kwargs, 'orig_dir', a:dir)
-  let a:kwargs.paths = get(a:kwargs, 'paths', [])
+  let a:kwargs.paths = filter(get(a:kwargs, 'paths', []), 'len(split(v:val,"//"))')
   let a:kwargs.type = get(a:kwargs, 'type', '')
   let a:kwargs.files = get(a:kwargs, 'files', '')
   let a:kwargs.preview = get(a:kwargs, 'preview', g:siefe_rg_default_preview_command)

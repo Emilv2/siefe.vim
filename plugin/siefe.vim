@@ -295,6 +295,11 @@ nnoremap <silent> <Plug>SiefeProjectFilesWORD :SiefeProjectFilesWORD<CR>
 nnoremap <silent> <Plug>SiefeProjectFilesLine :SiefeProjectFilesLine<CR>
 xnoremap <silent> <Plug>SiefeProjectFilesVisual :SiefeProjectFilesVisual<CR>
 
+nnoremap <silent> <Plug>SiefeBuffersRG :SiefeBuffersRg<CR>
+nnoremap <silent> <Plug>SiefeBuffersRgWord :SiefeBuffersRgWord<CR>
+nnoremap <silent> <Plug>SiefeBuffersRgWORD :SiefeBuffersRgWORD<CR>
+nnoremap <silent> <Plug>SiefeBuffersRgLine :SiefeBuffersRgLine<CR>
+
 nnoremap <silent> <Plug>SiefeRgP :SiefeRg <c-r>+<CR>
 nnoremap <silent> <Plug>SiefeProjectRgP :SiefeProjectRg <c-r>+<CR>
 
@@ -302,7 +307,7 @@ nnoremap <silent> <Plug>SiefeMarks :SiefeMarks<CR>
 nnoremap <silent> <Plug>SiefeJumps :SiefeJumps<CR>
 nnoremap <silent> <Plug>SiefeHistory :SiefeHistory<CR>
 nnoremap <silent> <Plug>SiefeProjectHistory :SiefeProjectHistory<CR>
-nnoremap <silent> <Plug>SiefeBuffers :SiefeBuffers<CR>
+nnoremap <silent> <Plug>SiefeBufferS :SiefeBuffers<CR>
 nnoremap <silent> <Plug>SiefeToggleGitStatus :SiefeToggleGitStatus<CR>
 nnoremap <silent> <Plug>SiefeGitBufferLogg :SiefeGitBufferLog<CR>
 xnoremap <silent> <Plug>SiefeGitBufferLogVisual :<c-u>SiefeGitBufferLogVisual<CR>
@@ -422,6 +427,22 @@ if g:siefe_map_keys
     nmap <leader>Rp <Plug>SiefeProjectRgP
   endif
 
+  if !hasmapto('<Plug>SiefeBuffersRG') && maparg('<leader>Bg', 'n') ==# ''
+    nmap <leader>Bg <Plug>SiefeBuffersRG
+  endif
+
+  if !hasmapto('<Plug>SiefeBuffersRgWord') && maparg('<leader>Bw', 'n') ==# ''
+    nmap <leader>Bw <Plug>SiefeBuffersRgWord
+  endif
+
+  if !hasmapto('<Plug>SiefeBuffersRgWORD') && maparg('<leader>BW', 'n') ==# ''
+    nmap <leader>BW <Plug>SiefeBuffersRgWORD
+  endif
+
+  if !hasmapto('<Plug>SiefeBuffersRgLine') && maparg('<leader>Bl', 'n') ==# ''
+    nmap <leader>Bl <Plug>SiefeBuffersRgLine
+  endif
+
   if !hasmapto('<Plug>SiefeMarks') && maparg('<leader>m', 'n') ==# ''
     nmap <leader>m <Plug>SiefeMarks
   endif
@@ -438,8 +459,8 @@ if g:siefe_map_keys
     nmap <leader>hh <Plug>SiefeProjectHistory
   endif
 
-  if !hasmapto('<Plug>SiefeBuffers') && maparg('<leader>b', 'n') ==# ''
-    nmap <leader>b <Plug>SiefeBuffers
+  if !hasmapto('<Plug>SiefeBufferS') && maparg('<leader>b', 'n') ==# ''
+    nmap <leader>b <Plug>SiefeBufferS
   endif
 
   if !hasmapto('<Plug>SiefeToggleGitStatus') && maparg('<leader>gg', 'n') ==# ''
