@@ -258,6 +258,7 @@ let g:siefe_rg_dir_key = get(g:, 'siefe_rg_dir_key', 'ctrl-d')
 let g:siefe_rg_buffers_key = get(g:, 'siefe_rg_buffers_key', 'ctrl-b')
 let g:siefe_rg_yank_key = get(g:, 'siefe_rg_yank_key', 'ctrl-y')
 let g:siefe_rg_history_key = get(g:, 'siefe_rg_history_key', 'ctrl-h')
+let g:siefe_rg_depth1_key = get(g:, 'siefe_rg_depth1_key', 'ctrl-e')
 
 let g:siefe_rg_preview_key = get(g:, 'siefe_rg_preview_key', 'f1')
 let g:siefe_rg_fast_preview_key = get(g:, 'siefe_rg_fast_preview_key', 'f2')
@@ -310,6 +311,7 @@ let s:rg_keys = [
   \ g:siefe_rg_type_key,
   \ g:siefe_rg_type_not_key,
   \ g:siefe_rg_word_key,
+  \ g:siefe_rg_depth1_key,
   \ g:siefe_rg_case_key,
   \ g:siefe_rg_hidden_key,
   \ g:siefe_rg_no_ignore_key,
@@ -414,6 +416,7 @@ let g:siefe_gitlog_default_follow = get(g:, 'siefe_gitlog_default_follow', 0)
 let g:siefe_gitlog_default_ignore_case = get(g:, 'siefe_gitlog_default_ignore_case', 0)
 
 let g:siefe_rg_default_word = get(g:, 'siefe_rg_default_word', 0)
+let g:siefe_rg_default_depth1 = get(g:, 'siefe_rg_default_depth1', 0)
 let g:siefe_rg_default_case_sensitive = get(g:, 'siefe_rg_default_case_sensitive', 1)
 let g:siefe_rg_default_hidden = get(g:, 'siefe_rg_default_hidden', 0)
 let g:siefe_rg_default_no_ignore = get(g:, 'siefe_rg_default_no_ignore', 0)
@@ -510,6 +513,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.query = get(a:kwargs, 'query', '')
   let a:kwargs.prompt = get(a:kwargs, 'prompt', a:dir)
   let a:kwargs.word = get(a:kwargs, 'word', g:siefe_rg_default_word)
+  let a:kwargs.depth1 = get(a:kwargs, 'depth1', g:siefe_rg_default_depth1)
   let a:kwargs.case_sensitive = get(a:kwargs, 'case_sensitive', g:siefe_rg_default_case_sensitive)
   let a:kwargs.hidden = get(a:kwargs, 'hidden', g:siefe_rg_default_hidden)
   let a:kwargs.no_ignore = get(a:kwargs, 'no_ignore', g:siefe_rg_default_no_ignore)
@@ -541,6 +545,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
 
   let word = a:kwargs.word ? '-w ' : ''
   let word_toggle = a:kwargs.word ? 'off' : 'on'
+  let depth_toggle = a:kwargs.depth1 ? 'off' : 'on'
+  let depth1 = a:kwargs.depth1 ? '-d1 ' : ''
   let hidden = a:kwargs.hidden ? '-. ' : ''
   let hidden_option = a:kwargs.hidden ? '--hidden ' : ''
   let hidden_toggle = a:kwargs.hidden ? 'off' : 'on'
@@ -570,6 +576,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . case_sensitive
     \ . s:field_match_separator . ' '
     \ . word
+    \ . depth1
     \ . no_ignore
     \ . hidden_option
     \ . fixed_strings
@@ -607,13 +614,15 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . no_ignore
     \ . hidden_option
     \ . bufname_exclude
-    \ .  ' --color=always --files '.a:kwargs.type
+    \ . depth1
+    \ .  ' --color=always --files ' . a:kwargs.type
 
   let fzf_rg = a:kwargs.fzf ? 'fzf' : 'rg'
   let fzf_rg_help = a:kwargs.fzf ? 'rg' : 'fzf'
 
   let type_prompt = a:kwargs.type ==# '' ? '' : a:kwargs.type . ' '
   let rg_prompt = word
+    \ . depth1
     \ . no_ignore
     \ . hidden
     \ . case_symbol
@@ -658,6 +667,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, 'dept 1:' . depth_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -680,6 +690,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, 'dept 1:' . depth_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -722,6 +733,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . "\n" . s:prettify_help(g:siefe_rg_dir_key) . "\t" . 'change path to search'
         \ . "\n" . s:prettify_help(g:siefe_rg_yank_key) . "\t" . 'yank selected matches line'
         \ . "\n" . s:prettify_help(g:siefe_rg_history_key) . "\t" . 'search file history'
+        \ . "\n" . s:prettify_help(g:siefe_rg_depth1_key) . "\t" . 'only search files in current directory ' . depth_toggle
         \ . "\n" . s:prettify_help(g:siefe_rg_word_key) . "\t" . 'toggle only show matches surrounded by word boundaries ' . word_toggle
           \ . ".\n\t" . 'rg \`-w, --word-regexp\`'
         \ . "\n" . s:prettify_help(g:siefe_rg_fixed_strings_key) . "\t"
@@ -749,6 +761,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . g:siefe_rg_type_key . ','
         \ . g:siefe_rg_type_not_key . ','
         \ . g:siefe_rg_word_key . ','
+        \ . g:siefe_rg_depth1_key . ','
         \ . g:siefe_rg_case_key . ','
         \ . g:siefe_rg_hidden_key . ','
         \ . g:siefe_rg_no_ignore_key . ','
@@ -906,6 +919,10 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_word_key
     let a:kwargs.word = a:kwargs.word ? 0 : 1
+    call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
+
+  elseif key ==# g:siefe_rg_depth1_key
+    let a:kwargs.depth1 = a:kwargs.depth1 ? 0 : 1
     call siefe#ripgrepfzf(a:fullscreen, a:dir, a:kwargs)
 
   elseif key ==# g:siefe_rg_case_key
