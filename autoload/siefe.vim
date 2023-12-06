@@ -561,7 +561,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ a:kwargs.case_sensitive == 2 ? '-i ' : '-S '
   let no_ignore = a:kwargs.no_ignore == 1 ? '-u ' :
         \ a:kwargs.no_ignore == 2 ? '-uu ' :
-        \ a:kwargs.no_ignore == 3 ? '-uuu ' : ' '
+        \ a:kwargs.no_ignore == 3 ? '-uuu ' : ''
   let no_ignore_toggle = a:kwargs.no_ignore == 1 ? '-uu' :
         \ a:kwargs.no_ignore == 2 ? '-uuu' :
         \ a:kwargs.no_ignore == 3 ? 'off' : '-u'
