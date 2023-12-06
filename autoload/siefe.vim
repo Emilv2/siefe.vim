@@ -390,7 +390,9 @@ let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-u')
 let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
 let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_project_root_key', 'ctrl-o')
 let g:siefe_fd_search_git_root_key = get(g:, 'siefe_fd_search_git_root_key', 'ctrl-s')
-let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_project_root_key', 'ctrl-e')
+let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_project_root_key', 'alt-e')
+let g:siefe_fd_depth1_key = get(g:, 'siefe_rg_depth1_key', 'siefe_rg_depth1_key')
+
 
 let s:fd_keys = [
   \ g:siefe_fd_hidden_key,
@@ -399,6 +401,7 @@ let s:fd_keys = [
   \ g:siefe_fd_project_root_key,
   \ g:siefe_fd_search_git_root_key,
   \ g:siefe_fd_search_project_root_key,
+  \ g:siefe_fd_depth1_key,
 \ ]
   \ + s:common_keys
 
@@ -545,7 +548,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
 
   let word = a:kwargs.word ? '-w ' : ''
   let word_toggle = a:kwargs.word ? 'off' : 'on'
-  let depth_toggle = a:kwargs.depth1 ? 'off' : 'on'
+  let depth1_toggle = a:kwargs.depth1 ? 'off' : 'on'
   let depth1 = a:kwargs.depth1 ? '-d1 ' : ''
   let hidden = a:kwargs.hidden ? '-. ' : ''
   let hidden_option = a:kwargs.hidden ? '--hidden ' : ''
@@ -667,7 +670,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, 'dept 1:' . depth_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, '-d1:' . depth1_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -690,7 +693,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_no_ignore_key, no_ignore_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_hidden_key, '-.:' . hidden_toggle)
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_case_key, case_sensitive_toggle)
-        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, 'dept 1:' . depth_toggle)
+        \ . ' ╱ ' . s:prettify_header(g:siefe_rg_depth1_key, 'dept 1:' . depth1_toggle)
         \ . "\n" . s:prettify_header(g:siefe_help_key, 'help')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_dir_key, 'cd')
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_yank_key, 'yank')
@@ -733,7 +736,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . "\n" . s:prettify_help(g:siefe_rg_dir_key) . "\t" . 'change path to search'
         \ . "\n" . s:prettify_help(g:siefe_rg_yank_key) . "\t" . 'yank selected matches line'
         \ . "\n" . s:prettify_help(g:siefe_rg_history_key) . "\t" . 'search file history'
-        \ . "\n" . s:prettify_help(g:siefe_rg_depth1_key) . "\t" . 'only search files in current directory ' . depth_toggle
+        \ . "\n" . s:prettify_help(g:siefe_rg_depth1_key) . "\t" . 'only search files in current directory ' . depth1_toggle
         \ . "\n" . s:prettify_help(g:siefe_rg_word_key) . "\t" . 'toggle only show matches surrounded by word boundaries ' . word_toggle
           \ . ".\n\t" . 'rg \`-w, --word-regexp\`'
         \ . "\n" . s:prettify_help(g:siefe_rg_fixed_strings_key) . "\t"
@@ -976,7 +979,7 @@ function! s:ripgrep_sink(fullscreen, dir, kwargs, lines) abort
 
   elseif key ==# g:siefe_rg_dir_key
     let a:kwargs.fd_query = ''
-    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, 0, 0, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, 0, 0, 'd', 0, 0, '', a:kwargs)
 
   elseif key ==# g:siefe_rg_yank_key
     return s:yank_to_register(join(map(filelist, 'v:val.text'), "\n"))
@@ -1025,12 +1028,14 @@ function! SiefeTypeSelect(func, fullscreen, ...) abort
 endfunction
 
 
-function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, multi, base_dir, kwargs) abort
+function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, base_dir, kwargs) abort
   let fd_hidden = a:fd_hidden ? '-H ' : ''
   let fd_hidden_toggle = a:fd_hidden ? 'off' : 'on'
+  let fd_depth1 = a:fd_depth1 ? '-d1 ' : ''
+  let fd_depth1_toggle = a:fd_depth1 ? 'off' : 'on'
   let fd_no_ignore = a:fd_no_ignore ? '-u ' : ''
   let fd_no_ignore_toggle = a:fd_no_ignore ? 'off' : 'on'
-  let fd_type = a:fd_type !=# '' ? ' --type ' . a:fd_type : ''
+  let fd_type = a:fd_type !=# '' ? ' --type ' . a:fd_type . ' ' : ''
   let base_dir = a:base_dir !=# '' ? ' --strip-cwd-prefix --base-directory ' . a:base_dir : ' --search-path=`realpath --relative-to=. "'.a:dir.'"` --relative-path '
 
   let siefe_fd_project_root_key = g:siefe_fd_project_root_env ==# '' ? '' : g:siefe_fd_project_root_key . ','
@@ -1057,12 +1062,13 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
     \ '--bind', g:siefe_up_key . ':up',
     \ '--bind', g:siefe_next_history_key . ':next-history',
     \ '--bind', g:siefe_previous_history_key . ':previous-history',
-    \ '--prompt', fd_no_ignore.fd_hidden.'fd> ',
+    \ '--prompt', fd_no_ignore . fd_hidden . fd_depth1 . 'fd> ',
     \ '--expect='
     \ . g:siefe_fd_hidden_key . ','
     \ . g:siefe_fd_no_ignore_key . ','
     \ . g:siefe_fd_git_root_key . ','
     \ . g:siefe_fd_search_git_root_key . ','
+    \ . g:siefe_fd_depth1_key . ','
     \ . siefe_fd_project_root_key
     \ . siefe_fd_search_project_root_key
     \ . g:siefe_abort_key,
@@ -1073,6 +1079,7 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
       \ . siefe_fd_project_root_help
       \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort')
       \ . "\n" . s:prettify_header(g:siefe_fd_search_git_root_key, 'search √git')
+      \ . ' ╱ ' . s:prettify_header(g:siefe_fd_depth1_key, '-d1:' . fd_depth1_toggle)
       \ . siefe_fd_search_project_root_help
     \ ]
   if a:multi
@@ -1080,13 +1087,13 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
   endif
 
   call fzf#run(fzf#wrap({
-        \ 'source': s:logger . s:fd_command . ' --exclude ".git/" --color=always ' . fd_hidden . fd_no_ignore . fd_type . base_dir,
+        \ 'source': s:logger . s:fd_command . ' --exclude ".git/" --color=always ' . fd_hidden . fd_no_ignore . fd_type . fd_depth1 . base_dir,
         \ 'options': options,
-        \ 'sink*': function(a:func, [a:fullscreen, a:dir, a:fd_hidden, a:fd_no_ignore, a:kwargs])
+        \ 'sink*': function(a:func, [a:fullscreen, a:dir, a:fd_hidden, a:fd_no_ignore, a:fd_depth1, a:kwargs])
       \ }, a:fullscreen))
 endfunction
 
-function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines) abort
+function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, lines) abort
   let a:kwargs.fd_query = a:lines[0]
   let key = a:lines[1]
 
@@ -1102,11 +1109,15 @@ function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, line
 
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, fd_hidden, a:fd_no_ignore, 'd', 0, a:fd_depth1, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, a:fd_hidden, fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, a:fd_hidden, fd_no_ignore, 'd', 0, a:fd_depth1, '', a:kwargs)
+
+  elseif key ==# g:siefe_fd_depth1_key
+    let fd_depth1 = a:fd_depth1 ? 0 : 1
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, a:fd_hidden, a:fd_no_ignore, 'd', 0, fd_depth1, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_git_root_key
     let a:kwargs.prompt = siefe#get_git_basename_or_bufdir()
@@ -1119,10 +1130,10 @@ function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, line
     call siefe#ripgrepfzf(a:fullscreen, expand(g:siefe_fd_project_root_env), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
-    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, siefe#get_git_root(), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, siefe#get_git_root(), a:fd_hidden, a:fd_no_ignore, 'd', 0, a:fd_depth1, '', a:kwargs)
 
   elseif key ==# g:siefe_fd_search_project_root_key
-    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, expand(g:siefe_fd_project_root_env), a:fd_hidden, a:fd_no_ignore, 'd', 0, '', a:kwargs)
+    call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, expand(g:siefe_fd_project_root_env), a:fd_hidden, a:fd_no_ignore, 'd', 0, a:fd_depth1, '', a:kwargs)
 
   else
     let a:kwargs.prompt = siefe#get_relative_git_or_bufdir(new_dir)
@@ -1414,7 +1425,7 @@ function! s:gitpickaxe_sink(fullscreen, kwargs, lines) abort
 
   elseif key == g:siefe_gitlog_dir_key
     let a:kwargs.fd_query = ''
-    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), 0, 0, '', 1, siefe#get_git_root(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), 0, 0, '', 1, 0, siefe#get_git_root(), a:kwargs)
 
   elseif key == g:siefe_gitlog_type_key
     " git understands rg --type-list globs :)
@@ -1675,7 +1686,7 @@ function! SiefeGitPickaxeNotBranch(fullscreen, kwargs, ...) abort
   call siefe#gitlogfzf(a:fullscreen, a:kwargs)
 endfunction
 
-function! SiefeGitPickaxePath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, lines) abort
+function! SiefeGitPickaxePath(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, lines) abort
   let key = a:lines[1]
   let a:kwargs.fd_query = a:lines[0]
 
@@ -1685,14 +1696,18 @@ function! SiefeGitPickaxePath(fullscreen, dir, fd_hidden, fd_no_ignore, kwargs, 
 
   elseif key ==# g:siefe_fd_hidden_key
     let fd_hidden = a:fd_hidden ? 0 : 1
-    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), fd_hidden, a:fd_no_ignore, '', 1, a:fd_depth1, siefe#bufdir(), a:kwargs)
 
   elseif key ==# g:siefe_fd_no_ignore_key
     let fd_no_ignore = a:fd_no_ignore ? 0 : 1
-    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, fd_no_ignore, '', 1, siefe#bufdir(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, fd_no_ignore, '', 1, a:fd_depth1, siefe#bufdir(), a:kwargs)
+
+  elseif key ==# g:siefe_fd_depth1_key
+    let fd_depth1 = a:fd_depth1 ? 0 : 1
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, fd_depth1, siefe#get_git_root(), a:kwargs)
 
   elseif key ==# g:siefe_fd_search_git_root_key
-    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, siefe#get_git_root(), a:kwargs)
+    call SiefeDirSelect('SiefeGitPickaxePath', a:fullscreen, siefe#bufdir(), a:fd_hidden, a:fd_no_ignore, '', 1, a:fd_depth1, siefe#get_git_root(), a:kwargs)
 
   else
     let a:kwargs.paths = a:lines[2:]
