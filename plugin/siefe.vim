@@ -309,6 +309,7 @@ nnoremap <silent> <Plug>SiefeHistory :SiefeHistory<CR>
 nnoremap <silent> <Plug>SiefeProjectHistory :SiefeProjectHistory<CR>
 nnoremap <silent> <Plug>SiefeBufferS :SiefeBuffers<CR>
 nnoremap <silent> <Plug>SiefeToggleGitStatus :SiefeToggleGitStatus<CR>
+nnoremap <silent> <Plug>SiefeGitStash :SiefeGitStash<CR>
 nnoremap <silent> <Plug>SiefeGitBufferLogg :SiefeGitBufferLog<CR>
 xnoremap <silent> <Plug>SiefeGitBufferLogVisual :<c-u>SiefeGitBufferLogVisual<CR>
 xnoremap <silent> <Plug>SiefeGitLLog :<c-u>SiefeGitLLog<CR>
@@ -465,6 +466,10 @@ if g:siefe_map_keys
 
   if !hasmapto('<Plug>SiefeToggleGitStatus') && maparg('<leader>gg', 'n') ==# ''
     nmap <leader>gg <Plug>SiefeToggleGitStatus
+  endif
+
+  if !hasmapto('<Plug>SiefeGitStash') && maparg('<leader>gs', 'n') ==# ''
+    nmap <leader>gs <Plug>SiefeGitStash
   endif
 
   if !hasmapto('<Plug>SiefeGitBufferLogg') && maparg('<leader>gl', 'n') ==# ''

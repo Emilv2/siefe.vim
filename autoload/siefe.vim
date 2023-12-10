@@ -1898,7 +1898,7 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
 
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
   let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)) . fzf#shellescape(format) . ' -g --first-parent -m "$@" "stash" -- ' . remove_newlines
-  let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -- ' . remove_newlines
+  let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -g --first-parent -m "$@" "stash" -- ' . remove_newlines
 
   let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   let orderfile = tempname()
