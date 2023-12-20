@@ -2822,11 +2822,15 @@ function! siefe#oldfiles() abort
     elseif !name_found
       let filename_match = matchlist(line, '^> \(.*\)$')
       if len(filename_match) > 0
-        if len(matchlist(filename_match[1], '[\x16]\([0-9]\+\)')) > 0
+        if len(matchlist(filename_match[1], '^[\x16]\([0-9]\+\)$')) > 0
           let long_line = v:true
         else
           let name_found = v:true
-          let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
+          " '^V' and '\n' are encoded as '^V^V' and '^Vn' in .viminfo,
+          " if you like to put those in your filenames.
+          let name = substitute(filename_match[1], '[\x16][\x16]', "\x16", 'g')
+          let name = substitute(name, '[\x16]n', "\\\\\x0a", 'g')
+          let oldfile = [{'name' : name, 'line' : 0, 'column' : 0}]
         endif
       endif
     elseif !loc_found
