@@ -243,6 +243,8 @@ command! -nargs=* -bang SiefeGitBufferLogWORD call siefe#gitlogfzf(<bang>0, {'qu
 command! -nargs=* -bang SiefeGitBufferLogVisual call siefe#gitlogfzf(<bang>0, {'query': siefe#visual_selection(), 'paths' : [fnamemodify(expand('%'), ':p')] })
 command! -nargs=* -bang SiefeGitLLog    call siefe#gitlogfzf(<bang>0, {'query': trim(getline('.')), 'paths' : [fnamemodify(expand('%'), ':p')], 'line_range' : siefe#visual_line_nu()})
 
+command! -nargs=* -bang SiefeGitStatus  call siefe#gitstatus(<bang>0, {'query': <q-args> })
+
 command! -bang SiefeMarks               call siefe#marks(<bang>0, {'query': <q-args> })
 command! -bang SiefeJumps               call siefe#jumps(<bang>0, {'query': <q-args> })
 
@@ -319,6 +321,7 @@ nnoremap <silent> <Plug>SiefeGitLogg :SiefeGitLog<CR>
 xnoremap <silent> <Plug>SiefeGitLogVisual :<c-u>SiefeGitLogVisual<CR>
 nnoremap <silent> <Plug>SiefeGitLogWord :SiefeGitLogWord<CR>
 nnoremap <silent> <Plug>SiefeGitLogWORD :SiefeGitLogWORD<CR>
+nnoremap <silent> <Plug>SiefeGitStatus :SiefeGitStatus<CR>
 
 nnoremap <silent> <Plug>SiefeRegisters :<c-u>SiefeRegisters<CR>
 
@@ -332,7 +335,6 @@ endif
 
 if exists(':GFiles')
   nnoremap <silent> <Plug>GFiless :GFiles<CR>
-  nnoremap <silent> <Plug>GFilesStatus :GFiles?<CR>
 endif
 
 if g:siefe_map_keys
@@ -530,9 +532,9 @@ if g:siefe_map_keys
     if !hasmapto('<Plug>GFiless') && maparg('<leader>gf', 'n') ==# ''
       nmap <leader>gf <Plug>GFiless
     endif
+  endif
 
-    if !hasmapto('<Plug>GFilesStatus') && maparg('<leader>g?', 'n') ==# ''
-      nmap <leader>g? <Plug>GFilesStatus
-    endif
+  if !hasmapto('<Plug>SiefeGitStatus') && maparg('<leader>g?', 'n') ==# ''
+    nmap <leader>g? <Plug>SiefeGitStatus
   endif
 endif

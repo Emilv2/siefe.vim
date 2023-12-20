@@ -1,0 +1,62 @@
+#!/bin/bash
+
+color_added=$(git config --get-color color.status.added yellow)
+color_changed=$(git config --get-color color.status.changed green)
+color_untracked=$(git config --get-color color.status.untracked yellow)
+color_unmerged=$(git config --get-color color.status.unmerged red)
+color_none=$(tput sgr 0)
+
+rename=0
+# IFS= so leading spaces are not stripped
+while IFS= read -r -d $'\0' i; do
+	if [[ $rename -eq 0 ]]; then
+		status="${i::2}"
+		filename="${i:3}"
+		# TODO fix colors, 1 is always orange or red?
+		case ${status::1} in
+		"A")
+			color1=$color_added
+			;;
+		"U")
+			color1=$color_unmerged
+			;;
+		"?")
+			color1=$color_untracked
+			;;
+		" ")
+			color1=$color_none
+			;;
+		*)
+			color1=$color_changed
+			;;
+		esac
+		# TODO fix colors, 2 is always green or red?
+		case ${status:1:2} in
+		"A")
+			color2=$color_added
+			;;
+		"U")
+			color2=$color_unmerged
+			;;
+		"?")
+			color2=$color_untracked
+			;;
+		" ")
+			color2=$color_none
+			;;
+		*)
+			color2=$color_changed
+			;;
+		esac
+	fi
+	if [[ $rename -eq 1 ]]; then
+		printf "%s//%s//%s //%s%s%s%s%s %s -> %s\0" "$status" "$filename" "$prev_filename" "$color1" "${status::1}" "$color2" "${status:1:2}" "$color_none" "$filename" "$prev_filename"
+		rename=0
+	elif [[ ${status::1} == "R" ]] || [[ ${status::1} == "C" ]]; then
+		rename=1
+	else
+		rename=0
+		printf "%s// //%s //%s%s%s%s%s %s\0" "$status" "$filename" "$color1" "${status::1}" "$color2" "${status:1:2}" "$color_none" "$filename"
+	fi
+	prev_filename="$filename"
+done < <(git status --porcelain -z "$@")

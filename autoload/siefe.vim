@@ -8,6 +8,7 @@ let s:bin_dir = expand('<sfile>:p:h:h').'/bin/'
 let s:bin = {
 \ 'pickaxe_diff': s:bin_dir.'pickaxe-diff',
 \ 'git_SG': s:bin_dir.'git_SG',
+\ 'git_status': s:bin_dir.'git_status',
 \ 'preview': s:bin_dir.'preview',
 \ 'logger': s:bin_dir.'logger',
 \ }
@@ -380,6 +381,23 @@ let s:gitlog_keys = [
 \ ] + s:gitlog_preview_keys
   \ + s:common_keys
 
+let g:siefe_gitstatus_uno_key = get(g:, 'siefe_gitstatus_uno_key', 'ctrl-n')
+let g:siefe_gitstatus_add_key = get(g:, 'siefe_gitstatus_add_key', 'ctrl-a')
+let g:siefe_gitstatus_add_patch_key = get(g:, 'siefe_gitstatus_add_patch_key', 'alt-a')
+let g:siefe_gitstatus_restore_key = get(g:, 'siefe_gitstatus_restore_key', 'ctrl-r')
+let g:siefe_gitstatus_restore_patch_key = get(g:, 'siefe_gitstatus_restore_patch_key', 'alt-r')
+let g:siefe_gitstatus_unstage_key = get(g:, 'siefe_gitstatus_unstage_key', 'ctrl-u')
+let g:siefe_gitstatus_unstage_patch_key = get(g:, 'siefe_gitstatus_unstage_patch_key', 'alt-u')
+let g:siefe_gitstatus_stash_key = get(g:, 'siefe_gitstatus_stash_key', 'ctrl-s')
+let g:siefe_gitstatus_stash_patch_key = get(g:, 'siefe_gitstatus_stash_patch_key', 'alt-s')
+let g:siefe_gitstatus_preview_0_key = get(g:, 'siefe_gitstatus_preview_0_key', 'f1')
+let g:siefe_gitstatus_preview_1_key = get(g:, 'siefe_gitstatus_preview_1_key', 'f2')
+
+let s:gitstatus_preview_keys = [
+  \ g:siefe_gitstatus_preview_0_key,
+  \ g:siefe_gitstatus_preview_1_key,
+\ ]
+
 let g:siefe_gitbranch_preview_0_key = get(g:, 'siefe_gitbranch_preview_0_key', 'f1')
 let g:siefe_gitbranch_preview_1_key = get(g:, 'siefe_gitbranch_preview_1_key', 'f2')
 let g:siefe_gitbranch_preview_2_key = get(g:, 'siefe_gitbranch_preview_2_key', 'f3')
@@ -608,7 +626,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   if rel_path ==# siefe#bufdir()
     let bufname_exclude = ''
   else
-    let bufname_exclude = empty(expand('%:p:t')) ? '' :  ' -g ' . shellescape('!') . rel_path . '/' . expand('%:p:t')
+    let bufname_exclude = empty(expand('%:p:t')) ? '' :  ' -g ' . shellescape('!') . rel_path . '/' . expand('%:p:t') . ' '
   endif
 
   let files_command = 'echo 1 > ' . a:kwargs.files . '; rg '
@@ -638,6 +656,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     \ . ' ' . fzf_rg . '> '
 
   let files_prompt = no_ignore
+    \ . depth1
     \ . hidden
     \ . search_zip
     \ . text_symbol
@@ -1714,6 +1733,198 @@ function! SiefeGitPickaxePath(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth
     let a:kwargs.paths = a:lines[2:]
     call siefe#gitlogfzf(a:fullscreen, a:kwargs)
   endif
+endfunction
+
+function! siefe#gitstatus(fullscreen, kwargs) abort
+
+  " default values
+  let a:kwargs.query = get(a:kwargs, 'query', '')
+  let a:kwargs.regex = get(a:kwargs, 'regex', g:siefe_gitlog_default_regex)
+  let a:kwargs.paths = get(a:kwargs, 'paths', [])
+  let a:kwargs.uno = get(a:kwargs, 'uno', 0)
+
+  let uno = a:kwargs.uno ? ' -uno ' : ''
+
+  let rel_paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val) || isdirectory(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
+  let paths_info = rel_paths ==# '' ? '' : "\npaths: " . rel_paths
+
+  let command = s:bin.git_status
+      \ . uno
+      \ . ' -- '
+      \ . rel_paths
+
+  let preview_command_0 = 'git diff -- {3}'
+  let preview_command_1 = 'git diff --staged -- {3}'
+
+
+  let preview_commands = [
+    \ preview_command_0,
+    \ preview_command_1,
+  \ ]
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+  let spec = {
+    \ 'options': [
+      \ '--history', s:data_path . '/git_status_history',
+      \ '--preview', preview_commands[ g:siefe_gitlog_default_preview_command ],
+      \ '--bind', 'enter:ignore',
+      \ '--bind', 'esc:ignore',
+      \ '--bind', g:siefe_accept_key . ':accept',
+      \ '--bind', g:siefe_abort_key . ':abort',
+      \ '--bind', g:siefe_gitstatus_preview_0_key . ':change-preview:' . preview_command_0,
+      \ '--bind', g:siefe_gitstatus_preview_1_key . ':change-preview:' . preview_command_1,
+      \ '--bind', g:siefe_down_key . ':down',
+      \ '--bind', g:siefe_up_key . ':up',
+      \ '--bind', g:siefe_next_history_key . ':next-history',
+      \ '--bind', g:siefe_previous_history_key . ':previous-history',
+      \ '--print-query',
+      \ '--ansi',
+      \ '--read0',
+      \ '--with-nth', '4..',
+      \ '--multi',
+      \ '--expect='
+        \ . g:siefe_gitstatus_uno_key . ','
+        \ . g:siefe_gitstatus_add_key . ','
+        \ . g:siefe_gitstatus_add_patch_key . ','
+        \ . g:siefe_gitstatus_unstage_key . ','
+        \ . g:siefe_gitstatus_unstage_patch_key . ','
+        \ . g:siefe_gitstatus_stash_key . ','
+        \ . g:siefe_gitstatus_stash_patch_key . ','
+        \ . s:common_window_expect_keys,
+      \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+      \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+      \ '--delimiter', '//',
+      \ '--preview-window', default_preview_size,
+      \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+      \ '--header',
+        \ s:prettify_header(g:siefe_gitstatus_uno_key, '-uno')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_add_key, 'add')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_add_patch_key, 'add -p')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_unstage_key, 'unstage')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_unstage_patch_key, 'unstage -p')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_stash_key, 'stash')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_stash_patch_key, 'stash -p')
+        \ . ' ╱ ' . s:magenta(s:preview_help(s:gitstatus_preview_keys), 'Special') . ' change preview'
+        \ . "\n" . s:common_window_help
+        \ . paths_info,
+      \ '--prompt', uno . 'git status> ',
+      \ ],
+   \ 'dir': siefe#get_git_root(),
+   \ 'sink*': function('s:gitstatus_sink', [a:fullscreen, a:kwargs]),
+   \ 'source': command
+  \ }
+
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
+endfunction
+
+function! s:gitstatus_sink(fullscreen, kwargs, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let a:kwargs.query = a:lines[0]
+  let key = a:lines[1]
+
+  let filelist = []
+
+  let prev_line = ''
+
+  for line in a:lines[2:]
+    " reconstruct newlines
+    if prev_line !=# ''
+      let line = prev_line . "\n" . line
+    endif
+
+    if len(split(line, '//')) == 4
+      let [status, l:oldfile, l:filename, _] = split(line, '//')
+      let file = {}
+      let file.filename = l:filename[:-2]
+      let file.text = status
+      let filelist += [file]
+      let prev_line = ''
+    else
+      let prev_line = line
+    endif
+  endfor
+
+  if key ==# g:siefe_gitstatus_uno_key
+    let a:kwargs.uno = a:kwargs.uno ? 0 : 1
+    call siefe#gitstatus(a:fullscreen, a:kwargs)
+
+  elseif key ==# g:siefe_gitstatus_add_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git add -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_add_patch_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git add --patch -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_restore_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git restore -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_restore_patch_key
+    if len(filelist) == 0
+      return
+    endif
+   execute 'Git restore --patch -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_unstage_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git reset HEAD -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_unstage_patch_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git reset HEAD --patch -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_stash_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git stash -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# g:siefe_gitstatus_stash_patch_key
+    if len(filelist) == 0
+      return
+    endif
+    execute 'Git stash --patch -- ' . join(map(filelist, 'v:val.filename'))
+
+  elseif key ==# ''
+    if len(filelist) == 0
+      return
+    endif
+
+    execute 'e' fnameescape(filelist[0].filename)
+    normal! zvzz
+
+    if g:siefe_rg_loclist
+      call s:fill_loc(filelist)
+    else
+      call s:fill_quickfix(filelist)
+    endif
+
+  elseif has_key(s:common_window_actions, key)
+    let cmd = s:common_window_actions[key]
+    for file in filelist
+      echom file
+      execute 'silent' cmd fnameescape(file.filename)
+      normal! zvzz
+    endfor
+
+  endif
+
 endfunction
 
 function! siefe#history(fullscreen, kwargs) abort
