@@ -4,6 +4,10 @@
 
 ## Ripgrep
 
+
+https://github.com/Emilv2/siefe.vim/assets/15071778/c572ab6c-1be3-4ceb-9e88-0d5e3c9950ee
+
+
 Search with ripgrep.
 ### Commands
 
