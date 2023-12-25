@@ -11,8 +11,8 @@ https://github.com/Emilv2/siefe.vim/assets/15071778/c572ab6c-1be3-4ceb-9e88-0d5e
 Search with ripgrep.
 ### Commands
 
-| Command           | default map | List                                                                                  |
-| ---               | | ---                                                                                   |
+| Command           | default map | info                                                                                  |
+| ---               | ---         | ---                                                                                   |
 | `SiefeRg`         | <leader>rg | rg search                                                                             |
 | `SiefeRgVisual`   | <leader>rg | rg search of the visual selection                                                     |
 | `SiefeRgWord`     | <leader>rw | rg search of the word under the cursor                                                |
@@ -38,19 +38,19 @@ Search with ripgrep.
 | `SiefeBuffersRgWORD`    | | fzf list files
 
 ### Keys
-| action | default key |                                                                                    |
-| ---    |           | ---                                                                                   |
+| action | default key | info                                                                                  |
+| ---    | ---         | ---                                                                                |
 | `word` | `ctrl-w`  | Enable ripgrep's `-w` option to only show matches surrounded by word boundaries       |
 | `max1` | `ctrl-a`  | Show only 1 match per file |
 | `files` | `ctrl-f`  | Switch to files view
 | `type` | `ctrl-t`  | select file types to search
 | `type not` | `ctrl-^`  | select file types to exclude from search
 
-### Git
+## Git
 
-## log
+### log
 
-| Command           | List                                                                                  |
+| Command           | info                                                                                  |
 | ---               | ---                                                                                   |
 | SiefeGitLog       |                                                                                       |
 | SiefeGitLogWord   |                                                                                       |
@@ -60,4 +60,4 @@ Search with ripgrep.
 | SiefeGitBufferLogWORD   |                                                                                       |
 | SiefeGitLLog      |                                                                                       |
 
-### History
+## History
