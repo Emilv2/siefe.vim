@@ -1,0 +1,46 @@
+*siefe.txt*              A Vim plugin harnessing the power of fzf
+
+
+                           Siefe.vim
+
+
+Plugin Homepage:   <https://github.com/emilv2/siefe.vim>
+
+
+===============================================================================
+CONTENTS                                                    *siefe* *siefe-vim*
+
+  Introduction                          |siefe-introduction|
+  Commands                              |siefe-commands|
+
+===============================================================================
+INTRODUCTION                                               *siefe-introduction*
+
+Siefe is based on |fzf-vim|, but with more options and more configurable.
+
+===============================================================================
+COMMANDS                                                       *siefe-commands*
+
+Ripgrep (rg) commands
+
+                                                               *siefe-:SiefeRg*
+:SiefeRg [PATTERN]             Start a rg search with pattern.
+                               Run from the location of the current buffer or
+                               the current directory if it is unamed.
+
+                                                           *siefe-:SiefeRgWord*
+:SiefeRgWord                   start a rg search with the *word* under the
+                               cursor as pattern.
+
+                                                           *siefe-:SiefeRgWORD*
+:SiefeRgWORD                   start a rg search with the *WORD* under the
+                               cursor as pattern.
+
+                                                         *siefe-:SiefeProjectRg*
+:SiefeProjectRg [PATTERN]      Start a rg search with pattern.
+                               Run from the location of git root of the current
+                               buffer or the current directory if it is unamed
+                               or not in a git repository.
+git log commands
+
+TODO
