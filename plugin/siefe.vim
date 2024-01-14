@@ -50,6 +50,16 @@ command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(
   \  'prompt' : siefe#get_relative_git_or_bufdir(),
   \ })
 
+let git_conflict_regex = '^(<<<<<<< .*|=======$|\|\|\|\|\|\|\|$|>>>>>>> .*)'
+
+command! -nargs=* -bang SiefeRgConflict call siefe#ripgrepfzf(
+  \ <bang>0,
+  \ siefe#bufdir(),
+  \ {
+  \  'query' :git_conflict_regex,
+  \  'prompt' : siefe#get_relative_git_or_bufdir(),
+  \ })
+
 command! -nargs=* -bang SiefeProjectRg call siefe#ripgrepfzf(
   \ <bang>0,
   \ siefe#get_git_root(),
@@ -87,6 +97,14 @@ command! -nargs=* -bang SiefeProjectRgLine call siefe#ripgrepfzf(
   \ siefe#get_git_root(),
   \ {
   \  'query' : trim(getline('.')),
+  \  'prompt' : siefe#get_git_basename_or_bufdir(),
+  \ })
+
+command! -nargs=* -bang SiefeProjectRgConflict call siefe#ripgrepfzf(
+  \ <bang>0,
+  \ siefe#get_git_root(),
+  \ {
+  \  'query' : git_conflict_regex,
   \  'prompt' : siefe#get_git_basename_or_bufdir(),
   \ })
 
@@ -279,6 +297,7 @@ nnoremap <silent> <Plug>SiefeRG :SiefeRg<CR>
 nnoremap <silent> <Plug>SiefeRgWord :SiefeRgWord<CR>
 nnoremap <silent> <Plug>SiefeRgWORD :SiefeRgWORD<CR>
 nnoremap <silent> <Plug>SiefeRgLine :SiefeRgLine<CR>
+nnoremap <silent> <Plug>SiefeRgConflict :SiefeRgConflict<CR>
 xnoremap <silent> <Plug>SiefeRgVisual :<c-u>SiefeRgVisual<CR>
 nnoremap <silent> <Plug>SiefeFiless :SiefeFiles<CR>
 nnoremap <silent> <Plug>SiefeFilesWord :SiefeFilesWord<CR>
@@ -290,6 +309,7 @@ nnoremap <silent> <Plug>SiefeProjectRG :SiefeProjectRg<CR>
 nnoremap <silent> <Plug>SiefeProjectRgWord :SiefeProjectRgWord<CR>
 nnoremap <silent> <Plug>SiefeProjectRgWORD :SiefeProjectRgWORD<CR>
 nnoremap <silent> <Plug>SiefeProjectRgLine :SiefeProjectRgLine<CR>
+nnoremap <silent> <Plug>SiefeProjectRgConflict :SiefeProjectRgConflict<CR>
 nnoremap <silent> <Plug>SiefeProjectRgVisual :SiefeProjectRgVisual<CR>
 nnoremap <silent> <Plug>SiefeProjectFiless :SiefeProjectFiles<CR>
 nnoremap <silent> <Plug>SiefeProjectFilesWord :SiefeProjectFilesWord<CR>
@@ -358,6 +378,10 @@ if g:siefe_map_keys
     nmap <leader>rl <Plug>SiefeRgLine
   endif
 
+  if !hasmapto('<Plug>SiefeRgConflict') && maparg('<leader>rc', 'n') ==# ''
+    nmap <leader>rc <Plug>SiefeRgConflict
+  endif
+
   if !hasmapto('<Plug>SiefeRgVisual') && maparg('<leader>rg', 'x') ==# ''
     xmap <leader>rg <Plug>SiefeRgVisual
   endif
@@ -396,6 +420,10 @@ if g:siefe_map_keys
 
   if !hasmapto('<Plug>SiefeProjectRgLine') && maparg('<leader>Rl', 'n') ==# ''
     nmap <leader>Rl <Plug>SiefeProjectRgLine
+  endif
+
+  if !hasmapto('<Plug>SiefeProjectRgConflict') && maparg('<leader>Rc', 'n') ==# ''
+    nmap <leader>Rc <Plug>SiefeProjectRgConflict
   endif
 
   if !hasmapto('<Plug>SiefeProjectRgVisual') && maparg('<leader>Rg', 'x') ==# ''
