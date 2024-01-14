@@ -1789,6 +1789,8 @@ function! siefe#gitstatus(fullscreen, kwargs) abort
         \ . g:siefe_gitstatus_add_patch_key . ','
         \ . g:siefe_gitstatus_unstage_key . ','
         \ . g:siefe_gitstatus_unstage_patch_key . ','
+        \ . g:siefe_gitstatus_restore_key . ','
+        \ . g:siefe_gitstatus_restore_patch_key . ','
         \ . g:siefe_gitstatus_stash_key . ','
         \ . g:siefe_gitstatus_stash_patch_key . ','
         \ . s:common_window_expect_keys,
@@ -1803,6 +1805,8 @@ function! siefe#gitstatus(fullscreen, kwargs) abort
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_add_patch_key, 'add -p')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_unstage_key, 'unstage')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_unstage_patch_key, 'unstage -p')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_restore_key, 'restore')
+        \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_restore_patch_key, 'restore -p')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_stash_key, 'stash')
         \ . ' ╱ ' . s:prettify_header(g:siefe_gitstatus_stash_patch_key, 'stash -p')
         \ . ' ╱ ' . s:magenta(s:preview_help(s:gitstatus_preview_keys), 'Special') . ' change preview'
