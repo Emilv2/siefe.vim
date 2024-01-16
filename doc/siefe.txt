@@ -60,3 +60,16 @@ fixed-strings                                    *g:siefe_rg_fixed_strings_key*
                                Treat all patterns as literals instead of as
                                regular expressions.
                                default key: CTRL-X
+
+max-count-1                                              *g:siefe_rg_max_1_key*
+                               Only show one match per file.
+                               default key: CTRL-A
+
+search-zip                                          *g:siefe_rg_search_zip_key*
+                               Search in gzip, bzip2, xz, LZ4, LZMA, Brotli and
+                               Zstd compressed files.
+                               default key: ALT-Z
+
+text                                                        *siefe_rg_text_key*
+                               Search binary files as if they were text.
+                               default key: ALT-T
