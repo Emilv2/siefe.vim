@@ -804,7 +804,6 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
       \ '--query', a:kwargs.query,
       \ '--delimiter', s:delimiter,
       \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
-      \ '--bind', 'change:+first',
       \ '--bind', g:siefe_rg_files_key
         \ . ':unbind(change,' . g:siefe_rg_files_key . ',' . g:siefe_rg_rgfzf_key . ')'
         \ . '+change-prompt(' . files_prompt . ')'
@@ -822,7 +821,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   if files == 0 && a:kwargs.fzf == 0
     let spec.options += [
       \ '--disabled',
-      \ '--bind', 'change:reload:' . reload_command,
+      \ '--bind', 'change:first+reload:' . reload_command,
       \ '--bind',  g:siefe_rg_rgfzf_key
       \ . ':unbind(change,' . g:siefe_rg_rgfzf_key . ')'
       \ . '+change-prompt(' . no_ignore.hidden.a:kwargs.type . ' ' . a:kwargs.prompt . ' rg/fzf> )'
