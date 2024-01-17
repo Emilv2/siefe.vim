@@ -65,6 +65,10 @@ max-count-1                                              *g:siefe_rg_max_1_key*
                                Only show one match per file.
                                default key: CTRL-A
 
+depth-1                                                 *g:siefe_rg_depth1_key*
+                               Don't recursively search directories.
+                               default key: CTRL-E
+
 search-zip                                          *g:siefe_rg_search_zip_key*
                                Search in gzip, bzip2, xz, LZ4, LZMA, Brotli and
                                Zstd compressed files.
@@ -73,3 +77,13 @@ search-zip                                          *g:siefe_rg_search_zip_key*
 text                                                        *siefe_rg_text_key*
                                Search binary files as if they were text.
                                default key: ALT-T
+
+history                                                  *siefe_rg_history_key*
+                               Only search oldfiles (from the git repo of the
+                               open file or current dir, otherwise all
+                               oldfiles).
+                               default key: CTRL-H
+
+yank                                                        *siefe_rg_yank_key*
+                               Yank current selected line.
+                               default key: CTRL-Y
