@@ -2602,7 +2602,6 @@ function! siefe#maps(fullscreen, query, modes) abort
     \ '--query', a:query,
     \ '--bind', 'enter:ignore',
     \ '--bind', 'esc:ignore',
-    \ '--bind', 'change:first',
     \ '--bind', g:siefe_accept_key . ':accept',
     \ '--bind', g:siefe_abort_key . ':abort',
     \ '--expect',
