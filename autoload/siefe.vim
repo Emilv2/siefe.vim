@@ -312,7 +312,7 @@ let s:rg_keys = [
   \ + s:common_keys
   \ + s:common_window_keys
 
-let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-p')
+let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-g')
 let g:siefe_history_buffers_key = get(g:, 'siefe_history_buffers_key', 'ctrl-b')
 let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
 let g:siefe_history_rg_key = get(g:, 'siefe_history_rg_key', 'ctrl-s')
