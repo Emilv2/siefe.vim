@@ -172,6 +172,11 @@ function! s:check_requirements() abort
     throw 'duplicates found in `siefe_fd_*_key`s :'. fd_dups
   endif
 
+  let history_dups = s:detect_dups(s:history_keys)
+  if history_dups !=# ''
+    throw 'duplicates found in `siefe_history_*_key`s :'. history_dups
+  endif
+
 
   let s:checked = !empty(fzf#exec(s:min_version))
 endfunction
@@ -284,27 +289,6 @@ let s:rg_preview_commands = [
   \ s:rg_faster_preview_command,
 \ ]
 
-let g:siefe_history_preview_key = get(g:, 'siefe_history_preview_key', g:siefe_rg_preview_key)
-let g:siefe_history_fast_preview_key = get(g:, 'siefe_history_fast_preview_key', g:siefe_rg_fast_preview_key)
-let g:siefe_history_faster_preview_key = get(g:, 'siefe_history_faster_preview_key', g:siefe_rg_faster_preview_key)
-
-let s:history_preview_keys = [
-  \ g:siefe_history_preview_key,
-  \ g:siefe_history_fast_preview_key,
-  \ g:siefe_history_faster_preview_key,
-\ ]
-
-let s:history_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={1} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {2} cat'
-let s:history_fast_preview_command = s:bin.preview . ' {2} cat | awk ' . "'" . '{ if (NR == {1} ) { gsub ("/\xb1[[0-9 ; ]*m/", "& \x1b[7m" ) ; printf( "\x1b[7m%s\n\x1b[m", $0) ; } else printf("\x1b[m%s\n", $0) ; }' . "'"
-let s:history_faster_preview_command = s:bin.preview . ' {2} cat'
-
-let s:history_preview_commands = [
-  \ s:history_preview_command,
-  \ s:history_fast_preview_command,
-  \ s:history_faster_preview_command,
-\ ]
-
-
 let s:rg_keys = [
   \ g:siefe_rg_toggle_fzf_key,
   \ g:siefe_rg_rgfzf_key,
@@ -327,6 +311,42 @@ let s:rg_keys = [
 \ ] + s:rg_preview_commands
   \ + s:common_keys
   \ + s:common_window_keys
+
+let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-p')
+let g:siefe_history_buffers_key = get(g:, 'siefe_history_buffers_key', 'ctrl-b')
+let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
+let g:siefe_history_rg_key = get(g:, 'siefe_history_rg_key', 'ctrl-s')
+
+let g:siefe_history_preview_key = get(g:, 'siefe_history_preview_key', g:siefe_rg_preview_key)
+let g:siefe_history_fast_preview_key = get(g:, 'siefe_history_fast_preview_key', g:siefe_rg_fast_preview_key)
+let g:siefe_history_faster_preview_key = get(g:, 'siefe_history_faster_preview_key', g:siefe_rg_faster_preview_key)
+
+let s:history_preview_keys = [
+  \ g:siefe_history_preview_key,
+  \ g:siefe_history_fast_preview_key,
+  \ g:siefe_history_faster_preview_key,
+\ ]
+
+let s:history_preview_command = s:bat_command !=# '' ? s:bin.preview . ' {2} ' . s:bat_command . ' --color=always --highlight-line={1} --pager=never ' . g:siefe_bat_options . ' -- ' : s:bin.preview . ' {2} cat'
+let s:history_fast_preview_command = s:bin.preview . ' {2} cat | awk ' . "'" . '{ if (NR == {1} ) { gsub ("/\xb1[[0-9 ; ]*m/", "& \x1b[7m" ) ; printf( "\x1b[7m%s\n\x1b[m", $0) ; } else printf("\x1b[m%s\n", $0) ; }' . "'"
+let s:history_faster_preview_command = s:bin.preview . ' {2} cat'
+
+let s:history_preview_commands = [
+  \ s:history_preview_command,
+  \ s:history_fast_preview_command,
+  \ s:history_faster_preview_command,
+\ ]
+
+let s:history_keys = [
+  \ g:siefe_history_git_key,
+  \ g:siefe_history_buffers_key,
+  \ g:siefe_history_files_key,
+  \ g:siefe_history_rg_key,
+\ ]
+  \ + s:history_preview_keys
+  \ + s:common_keys
+  \ + s:common_window_keys
+
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
@@ -445,11 +465,6 @@ let g:siefe_rg_default_fixed_strings = get(g:, 'siefe_rg_default_fixed_strings',
 let g:siefe_rg_default_max_1 = get(g:, 'siefe_rg_default_max_1', 0)
 let g:siefe_rg_default_search_zip = get(g:, 'siefe_rg_default_search_zip', 0)
 let g:siefe_rg_default_text = get(g:, 'siefe_rg_default_text', 0)
-
-let g:siefe_history_git_key = get(g:, 'siefe_history_git_key', 'ctrl-p')
-let g:siefe_history_buffers_key = get(g:, 'siefe_history_buffers_key', 'ctrl-b')
-let g:siefe_history_files_key = get(g:, 'siefe_history_files_key', 'ctrl-l')
-let g:siefe_history_rg_key = get(g:, 'siefe_history_rg_key', 'ctrl-s')
 
 let g:siefe_stash_apply_key = get(g:, 'siefe_stash_apply_key', 'ctrl-a')
 let g:siefe_stash_pop_key = get(g:, 'siefe_stash_pop_key', 'ctrl-p')
