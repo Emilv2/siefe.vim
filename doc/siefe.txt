@@ -14,6 +14,11 @@ CONTENTS                                                    *siefe* *siefe-vim*
   Commands                              |siefe-commands|
     ripgrep                             |siefe-ripgrep|
       actions                           |siefe-ripgrep-actions|
+    git log                             |siefe-gitlog|
+      actions                           |siefe-gitlog-actions|
+    history                             |siefe-history|
+  Functions                             |siefe-functions|
+    SiefeDirSelect                      |SiefeDirSelect|
 
 ===============================================================================
 INTRODUCTION                                               *siefe-introduction*
@@ -29,21 +34,65 @@ Ripgrep (rg) commands                                           *siefe-ripgrep*
 :SiefeRg [PATTERN]             Start a rg search with pattern.
                                Run from the location of the current buffer or
                                the current directory if it is unamed.
+                               default map: <leader>rg
 
                                                            *siefe-:SiefeRgWord*
-:SiefeRgWord                   Start a rg search with the *word* under the
+:SiefeRgWord                   Start a rg search with the |word| under the
                                cursor as pattern.
+                               default map: <leader>rw
 
                                                            *siefe-:SiefeRgWORD*
-:SiefeRgWORD                   Start a rg search with the *WORD* under the
+:SiefeRgWORD                   Start a rg search with the |WORD| under the
                                cursor as pattern.
+                               default map: <leader>rW
+
+                                                           *siefe-:SiefeRgLine*
+:SiefeRgLine                   Start a rg search with the current line as
+                               pattern.
+                               default map: <leader>rl
+
+:SiefeRgConflict               Start a rg search with the pattern:
+                               ^(<{7} .*|={7}$|\|{7}$|>{7} .*)
+                               default map: <leader>rc
 
                                                         *siefe-:SiefeProjectRg*
 :SiefeProjectRg [PATTERN]      Start a rg search with pattern.
                                Run from the location of git root of the current
                                buffer or the current directory if it is unamed
                                or not in a git repository.
-git log commands
+                               default map: <leader>Rg
+
+                                                    *siefe-:SiefeProjectRgWord*
+:SiefeProjectRgWord            Start a rg search with the |word| under the
+                               cursor as pattern.
+                               Run from the location of git root of the current
+                               buffer or the current directory if it is unamed
+                               or not in a git repository.
+                               default map: <leader>Rw
+
+                                                    *siefe-:SiefeProjectRgWORD*
+:SiefeProjectRgWORD            Start a rg search with the |WORD| under the
+                               cursor as pattern.
+                               Run from the location of git root of the current
+                               buffer or the current directory if it is unamed
+                               or not in a git repository.
+                               default map: <leader>RW
+
+                                                    *siefe-:SiefeProjectRgLine*
+:SiefeProjectRgLine            Start a rg search with the current line as
+                               pattern.
+                               Run from the location of git root of the current
+                               buffer or the current directory if it is unamed
+                               or not in a git repository.
+                               default map: <leader>RW
+
+:SiefeProjectRgConflict        Start a rg search with the pattern:
+                               `^(<{7} .*|={7}$|\|{7}$|>{7} .*)`
+                               default map: <leader>Rc
+                               Run from the location of git root of the current
+                               buffer or the current directory if it is unamed
+                               or not in a git repository.
+                               default map: <leader>RW
 
 Ripgrep (rg) actions                                    *siefe-ripgrep-actions*
 
@@ -84,6 +133,23 @@ history                                                  *siefe_rg_history_key*
                                oldfiles).
                                default key: CTRL-H
 
+buffers                                                  *siefe_rg_buffers_key*
+                               Only search in open buffers.
+                               default key: CTRL-B
+
 yank                                                        *siefe_rg_yank_key*
                                Yank current selected line.
                                default key: CTRL-Y
+
+dir                                                          *siefe_rg_dir_key*
+                               Change the search directory. calls the function
+                               |SiefeDirSelect|
+                               default key: CTRL-D
+
+Git log commands                                                 *siefe-gitlog*
+
+Git log (rg) actions                                     *siefe-gitlog-actions*
+
+FUNCTIONS                                                     *siefe-functions*
+
+SiefeDirSelect                                                 *SiefeDirSelect*
