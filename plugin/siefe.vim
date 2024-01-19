@@ -50,7 +50,7 @@ command! -nargs=* -bang SiefeRgLine call siefe#ripgrepfzf(
   \  'prompt' : siefe#get_relative_git_or_bufdir(),
   \ })
 
-let git_conflict_regex = '^(<<<<<<< .*|=======$|\|\|\|\|\|\|\|$|>>>>>>> .*)'
+let git_conflict_regex = '^(<{7} .*|={7}$|\|{7}$|>{7} .*)'
 
 command! -nargs=* -bang SiefeRgConflict call siefe#ripgrepfzf(
   \ <bang>0,
