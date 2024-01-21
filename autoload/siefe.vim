@@ -2835,7 +2835,8 @@ endfunction
 
 function! siefe#oldfiles() abort
   let viminfo_setting_match = matchlist(&viminfo, ',n\(.*\)')
-  let viminfo = readfile(len(viminfo_setting_match) ? viminfo_setting_match[1] : $HOME . '/.viminfo')
+  let viminfo_file = len(viminfo_setting_match) ? viminfo_setting_match[1] : $HOME . '/.viminfo'
+  let viminfo = filereadable(expand(viminfo_file)) ? readfile(expand(viminfo_file)) : []
   let oldfiles = []
   let name_found = v:false
   let long_line = v:false
