@@ -226,13 +226,13 @@ command! -nargs=* -bang SiefeProjectFilesLine call siefe#ripgrepfzf(
   \  'files' : '//',
   \ })
 
-command! -nargs=* -bang SiefeHistory call siefe#history(
+command! -nargs=* -bang SiefeHistory call siefe#historyoldfiles(
   \ <bang>0,
   \ {
   \  'query' : <q-args>,
   \ })
 
-command! -nargs=* -bang SiefeProjectHistory call siefe#history(
+command! -nargs=* -bang SiefeProjectHistory call siefe#historyoldfiles(
   \ <bang>0,
   \ {
   \  'query' : <q-args>,

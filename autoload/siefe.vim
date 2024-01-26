@@ -1953,7 +1953,7 @@ function! s:gitstatus_sink(fullscreen, kwargs, lines) abort
 
 endfunction
 
-function! siefe#history(fullscreen, kwargs) abort
+function! siefe#historyoldfiles(fullscreen, kwargs) abort
   call s:check_requirements()
 
   " default values
@@ -2029,7 +2029,7 @@ function! siefe#history(fullscreen, kwargs) abort
             \ . ' ╱ ' . s:magenta(s:preview_help(s:history_preview_keys), 'Special') . ' change preview'
             \ . "\n" . s:common_window_help
           \ ],
-        \ 'sink*': function('s:history_sink', [a:fullscreen, a:kwargs]),
+        \ 'sink*': function('s:history_oldfiles_sink', [a:fullscreen, a:kwargs]),
    \ }
 
   if a:kwargs.project
@@ -2039,7 +2039,7 @@ function! siefe#history(fullscreen, kwargs) abort
   call fzf#run(fzf#wrap(spec, a:fullscreen))
 endfunction
 
-function! s:history_sink(fullscreen, kwargs, lines) abort
+function! s:history_oldfiles_sink(fullscreen, kwargs, lines) abort
   " required when using fullscreen and abort, not sure why
   if len(a:lines) == 0
     return
