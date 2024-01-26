@@ -347,6 +347,8 @@ let s:history_keys = [
   \ + s:common_keys
   \ + s:common_window_keys
 
+let g:siefe_history_delete_key = get(g:, 'siefe_history_delete_key', 'del')
+let g:siefe_history_edit_key = get(g:, 'siefe_history_edit_key', 'ctrl-e')
 
 let g:siefe_toggle_preview_key = get(g:, 'siefe_toggle_preview_key', 'ctrl-/')
 
@@ -2101,6 +2103,92 @@ function! s:history_oldfiles_sink(fullscreen, kwargs, lines) abort
   endif
 
 endfunction
+
+function! siefe#history_source(type) abort
+  let max = histnr(a:type)
+  if max <= 0
+    return ['No entries']
+  endif
+  let fmt = s:yellow(' %'.len(string(max)).'d ', 'Number')
+  let list = filter(map(range(1, max), 'histget("cmd", - v:val)'), '!empty(v:val)')
+  return map(list, 'len(list) - v:key . ":" . printf(fmt, len(list) - v:key) . " " . v:val')
+endfunction
+
+function! siefe#history(fullscreen, kwargs, ...) abort
+
+  let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
+  let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+
+  let a:kwargs.query = ''
+  let a:kwargs.preview = ''
+  let a:kwargs.source = 'cmd'
+
+
+  let spec = {
+        \ 'source' : siefe#history_source(a:kwargs.source),
+        \ 'options' : [
+          \ '-m',
+          \ '--ansi',
+          \ '--with-nth', '2..',
+          \ '--history', s:data_path . '/rg_history_' . a:kwargs.source,
+          \ '--bind', g:siefe_toggle_preview_key . ':change-preview-window(' . other_preview_size . '|' . g:siefe_2nd_preview_size . '%|)',
+          \ '--preview-window', '+{1}-/2,' . default_preview_size,
+          \ '--bind', 'enter:ignore',
+          \ '--bind', 'esc:ignore',
+          \ '--bind', 'change:first',
+          \ '--bind', g:siefe_accept_key . ':accept',
+          \ '--bind', g:siefe_abort_key . ':abort',
+          \ '--bind', g:siefe_down_key . ':down',
+          \ '--bind', g:siefe_up_key . ':up',
+          \ '--bind', g:siefe_next_history_key . ':next-history',
+          \ '--bind', g:siefe_previous_history_key . ':previous-history',
+          \ '--bind', g:siefe_toggle_up_key . ':toggle+up',
+          \ '--bind', g:siefe_toggle_down_key . ':toggle+down',
+          \ '--bind', g:siefe_history_preview_key . ':change-preview:' . s:history_preview_command,
+          \ '--bind', g:siefe_history_fast_preview_key . ':change-preview:' . s:history_fast_preview_command,
+          \ '--bind', g:siefe_history_faster_preview_key . ':change-preview:' . s:history_faster_preview_command,
+          \ '--preview', s:history_preview_commands[a:kwargs.preview],
+          \ '--delimiter', ':',
+          \ '--expect='
+            \ . g:siefe_history_edit_key . ','
+            \ . g:siefe_history_delete_key . ','
+            \ . s:common_window_expect_keys,
+          \ '--print-query',
+          \ '--query', a:kwargs.query,
+          \ '--prompt', 'History '. a:kwargs.source . ' > ',
+          \ '--header',
+            \ s:prettify_header(g:siefe_history_edit_key, 'edit')
+            \ . ' ╱ ' . s:prettify_header(g:siefe_history_delete_key, 'delete')
+            \ . "\n" . s:common_window_help
+          \ ],
+        \ 'sink*': function('s:history_sink', [a:fullscreen, a:kwargs]),
+   \ }
+
+  call fzf#run(fzf#wrap(spec, a:fullscreen))
+
+endfunction
+
+function! s:history_sink(fullscreen, kwargs, lines) abort
+  " required when using fullscreen and abort, not sure why
+  if len(a:lines) == 0
+    return
+  endif
+
+  let a:kwargs.query = a:lines[0]
+  let key = a:lines[1]
+
+  let history_lines = map(a:lines[2:], 'split(v:val, ":")[0]')
+  let histories = map(copy(history_lines), 'histget("' . a:kwargs.source . '", v:val)')
+  "
+  if key ==# g:siefe_history_edit_key
+
+  elseif key ==# g:siefe_history_edit_key
+
+  elseif key ==# g:siefe_accept_key
+
+  endif
+endfunction
+
 
 function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
