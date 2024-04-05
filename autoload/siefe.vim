@@ -8,6 +8,7 @@ let s:bin_dir = expand('<sfile>:p:h:h').'/bin/'
 let s:bin = {
 \ 'pickaxe_diff': s:bin_dir.'pickaxe-diff',
 \ 'git_SG': s:bin_dir.'git_SG',
+\ 'git_stashes': s:bin_dir.'git_stashes',
 \ 'git_status': s:bin_dir.'git_status',
 \ 'preview': s:bin_dir.'preview',
 \ 'logger': s:bin_dir.'logger',
@@ -2214,17 +2215,16 @@ function! siefe#gitstash(fullscreen, kwargs, ...) abort
   let write_query_initial = 'echo '. shellescape(a:kwargs.query) .' > '.query_file.' ;'
   let write_query_reload = 'echo {q} > '.query_file.' ;'
   let format = '--format=%C(blue)%gd • %C(auto)%h • %s %C(green)%cr %C(reset)'
-  let command_fmt = s:bin.git_SG
-      \ . ' log '
-      \ . G
+  let command_fmt = s:bin.git_stashes
+      \ . ' ' . G
       \ . '%s -z '
       \ . ' --color=always '
       \ . ' ' . regex
       \ . ' ' . ignore_case
 
   let remove_newlines = '| sed -z -E "s/\r?\n/↵/g"'
-  let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)) . fzf#shellescape(format) . ' -g --first-parent -m "$@" "stash" -- ' . remove_newlines
-  let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format).' -g --first-parent -m "$@" "stash" -- ' . remove_newlines
+  let initial_command = s:logger . write_query_initial . s:logger . printf(command_fmt, shellescape(a:kwargs.query)) . fzf#shellescape(format) . remove_newlines
+  let reload_command = s:logger . write_query_reload . s:logger . printf(command_fmt, '{q}').fzf#shellescape(format) . remove_newlines
 
   let current = substitute(fnamemodify(expand('%'), ':p'), FugitiveFind(':/') . '/', '', '')
   let orderfile = tempname()

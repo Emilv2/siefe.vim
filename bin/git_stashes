@@ -1,0 +1,28 @@
+#!/bin/bash
+# workaround for git erroring on no argument with -S
+# and tcsh `@` handling
+
+# Exit on error. Append "|| true" if you expect an error.
+set -o errexit
+
+# Exit on error inside any functions or subshells.
+set -o errtrace
+
+# Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+set -o nounset
+
+# Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+set -o pipefail
+
+# Turn on tracesif run with TRACE=1 for debugging
+if [[ ${TRACE-0} == "1" ]]; then
+	set -o xtrace
+fi
+
+if [[ $1 == "-G" ]] || [[ $1 == "-S" ]]; then
+	args=("${@:2}")
+else
+	args=("${@}")
+fi
+
+git log -g --first-parent -m "${args[@]}" "stash" "${args[@]}"
