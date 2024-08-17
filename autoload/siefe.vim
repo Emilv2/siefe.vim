@@ -592,7 +592,7 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let case_sensitive = a:kwargs.case_sensitive == 1 ? '--smart-case ' :
         \ a:kwargs.case_sensitive == 2 ? '--ignore-case ' : '--case-sensitive '
   let case_symbol = a:kwargs.case_sensitive == 1 ? '-S ' :
-        \ a:kwargs.case_sensitive == 2 ? '-s ' : '-i '
+        \ a:kwargs.case_sensitive == 2 ? '-i ' : '-s '
   let case_sensitive_toggle = a:kwargs.case_sensitive == 1 ? '-s ' :
         \ a:kwargs.case_sensitive == 2 ? '-i ' : '-S '
   let no_ignore = a:kwargs.no_ignore == 1 ? '-u ' :
