@@ -2053,7 +2053,7 @@ function! s:history_oldfiles_sink(fullscreen, kwargs, lines) abort
 
   if key ==# g:siefe_history_git_key
     let a:kwargs.project = a:kwargs.project ? 0 : 1
-    call siefe#history(a:fullscreen, a:kwargs)
+    call siefe#historyoldfiles(a:fullscreen, a:kwargs)
 
   elseif key ==# g:siefe_history_buffers_key
     call siefe#buffers(a:fullscreen, a:kwargs)
