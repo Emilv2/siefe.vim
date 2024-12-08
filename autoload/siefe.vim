@@ -2922,52 +2922,59 @@ endfunction
 
 
 function! siefe#oldfiles() abort
-  let viminfo_setting_match = matchlist(&viminfo, ',n\(.*\)')
-  let viminfo_file = len(viminfo_setting_match) ? viminfo_setting_match[1] : $HOME . '/.viminfo'
-  let viminfo = filereadable(expand(viminfo_file)) ? readfile(expand(viminfo_file)) : []
-  let oldfiles = []
-  let name_found = v:false
-  let long_line = v:false
-  let loc_found = v:false
-  let start = v:false
-  for line in viminfo
-    if !start
-      if line ==# '# History of marks within files (newest to oldest):'
-        let start = v:true
-      endif
-    elseif long_line
-      let filename_match = matchlist(line, '^<\(.*\)$')
-      let name_found = v:true
-      let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
-      let long_line = v:false
-    elseif !name_found
-      let filename_match = matchlist(line, '^> \(.*\)$')
-      if len(filename_match) > 0
-        if len(matchlist(filename_match[1], '^[\x16]\([0-9]\+\)$')) > 0
-          let long_line = v:true
-        else
-          let name_found = v:true
-          " '^V' and '\n' are encoded as '^V^V' and '^Vn' in .viminfo,
-          " if you like to put those in your filenames.
-          let name = substitute(filename_match[1], '[\x16][\x16]', "\x16", 'g')
-          let name = substitute(name, '[\x16]n', "\\\\\x0a", 'g')
-          let oldfile = [{'name' : name, 'line' : 0, 'column' : 0}]
+  if !has('nvim')
+    let viminfo_setting_match = matchlist(&viminfo, ',n\(.*\)')
+    let viminfo_file = len(viminfo_setting_match) ? viminfo_setting_match[1] : $HOME . '/.viminfo'
+    let viminfo = filereadable(expand(viminfo_file)) ? readfile(expand(viminfo_file)) : []
+    let oldfiles = []
+    let name_found = v:false
+    let long_line = v:false
+    let loc_found = v:false
+    let start = v:false
+    for line in viminfo
+      if !start
+        if line ==# '# History of marks within files (newest to oldest):'
+          let start = v:true
         endif
-      endif
-    elseif !loc_found
-        let mark_match = matchlist(line, '^\t\(.\)\t\([0-9]\+\)\t\([0-9]\+\)$')
-        if mark_match[1] ==# '"'
-          let oldfile[0].line   = mark_match[2]
-          let oldfile[0].column = mark_match[3]
-          let loc_found = v:true
+      elseif long_line
+        let filename_match = matchlist(line, '^<\(.*\)$')
+        let name_found = v:true
+        let oldfile = [{'name' : filename_match[1], 'line' : 0, 'column' : 0}]
+        let long_line = v:false
+      elseif !name_found
+        let filename_match = matchlist(line, '^> \(.*\)$')
+        if len(filename_match) > 0
+          if len(matchlist(filename_match[1], '^[\x16]\([0-9]\+\)$')) > 0
+            let long_line = v:true
+          else
+            let name_found = v:true
+            " '^V' and '\n' are encoded as '^V^V' and '^Vn' in .viminfo,
+            " if you like to put those in your filenames.
+            let name = substitute(filename_match[1], '[\x16][\x16]', "\x16", 'g')
+            let name = substitute(name, '[\x16]n', "\\\\\x0a", 'g')
+            let oldfile = [{'name' : name, 'line' : 0, 'column' : 0}]
+          endif
         endif
-    elseif line ==# ''
-      let name_found = v:false
-      let loc_found = v:false
-      let oldfiles += oldfile
-    endif
-  endfor
-  return oldfiles
+      elseif !loc_found
+          let mark_match = matchlist(line, '^\t\(.\)\t\([0-9]\+\)\t\([0-9]\+\)$')
+          if mark_match[1] ==# '"'
+            let oldfile[0].line   = mark_match[2]
+            let oldfile[0].column = mark_match[3]
+            let loc_found = v:true
+          endif
+      elseif line ==# ''
+        let name_found = v:false
+        let loc_found = v:false
+        let oldfiles += oldfile
+      endif
+    endfor
+    return oldfiles
+  else
+    " neovim
+    " we could use shada#get_strings(readfile(expand('~/.local/share/nvim/shada/main.shada'),'b'))
+    " to get line and column, but that takes several seconds :(
+    return  map(copy(v:oldfiles), '{"name" : v:val, "line" : 0, "column" : 0}')
+  endif
 endfunction
 
 " ------------------------------------------------------------------
