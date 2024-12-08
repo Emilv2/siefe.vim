@@ -2688,7 +2688,10 @@ function! siefe#maps(fullscreen, query, modes) abort
   let l:modes = map(a:modes, 'split(v:val)[0]')
   let maps = filter(maplist(), 'index(l:modes, v:val.mode) >= 0')
   let max_len = max(map(copy(maps), 'len(v:val.lhs)'))
-  let maps = map(copy(maps), 'getscriptinfo({"sid" : v:val.sid})[0].name . "•" . v:val.lnum . "•" . v:val.mode . "•" . v:val.lhs . "•" . s:red(v:val.mode) . " " .v:val.lhs . repeat(" ", max_len - len(v:val.lhs) + 1) . v:val.rhs . "\t" . s:blue(fnamemodify(getscriptinfo({"sid" : v:val.sid})[0].name, ":t") . ":" . v:val.lnum)')
+  let ordinary_maps = filter(copy(maps), 'v:val.sid >= 0')
+  let special_maps = filter(maps, 'v:val.sid < 0')
+  let maps = map(ordinary_maps, 'getscriptinfo({"sid" : v:val.sid})[0].name . "•" . v:val.lnum . "•" . v:val.mode . "•" . v:val.lhs . "•" . s:red(v:val.mode) . " " .v:val.lhs . repeat(" ", max_len - len(v:val.lhs) + 1) . v:val.rhs . "\t" . s:blue(fnamemodify(getscriptinfo({"sid" : v:val.sid})[0].name, ":t") . ":" . v:val.lnum)')
+  let maps += map(special_maps, 'v:val.desc . "•" . v:val.lnum . "•" . v:val.mode . "•" . v:val.lhs . "•" . s:red(v:val.mode) . " " .v:val.lhs . repeat(" ", max_len - len(v:val.lhs) + 1) . get({"v:val": "rhs"}, "") . "\t" . s:blue(v:val.desc . ":" . v:val.lnum)')
   let sorted = sort(maps)
   let colored = map(sorted, 's:highlight_keys(v:val)')
   "let pcolor  = a:mode == 'x' ? 9 : a:mode == 'o' ? 10 : 12
