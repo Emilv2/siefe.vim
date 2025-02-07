@@ -429,10 +429,11 @@ let g:siefe_gitbranch_preview_3_key = get(g:, 'siefe_gitbranch_preview_3_key', '
 let g:siefe_fd_hidden_key = get(g:, 'siefe_fd_hidden_key', 'ctrl-h')
 let g:siefe_fd_no_ignore_key = get(g:, 'siefe_fd_no_ignore_key', 'ctrl-u')
 let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
-let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_project_root_key', 'ctrl-o')
+let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_project_root_key', 'alt-o')
 let g:siefe_fd_search_git_root_key = get(g:, 'siefe_fd_search_git_root_key', 'ctrl-s')
 let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_project_root_key', 'alt-e')
 let g:siefe_fd_depth1_key = get(g:, 'siefe_fd_depth1_key', g:siefe_rg_depth1_key)
+let g:siefe_fd_open_dir_key = get(g:, 'siefe_fd_open_dir_key', 'ctrl-o')
 
 
 let s:fd_keys = [
@@ -443,6 +444,7 @@ let s:fd_keys = [
   \ g:siefe_fd_search_git_root_key,
   \ g:siefe_fd_search_project_root_key,
   \ g:siefe_fd_depth1_key,
+  \ g:siefe_fd_open_dir_key,
 \ ]
   \ + s:common_keys
 
@@ -1107,6 +1109,7 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
     \ . g:siefe_fd_git_root_key . ','
     \ . g:siefe_fd_search_git_root_key . ','
     \ . g:siefe_fd_depth1_key . ','
+    \ . g:siefe_fd_open_dir_key . ','
     \ . siefe_fd_project_root_key
     \ . siefe_fd_search_project_root_key
     \ . g:siefe_abort_key,
@@ -1118,6 +1121,7 @@ function! SiefeDirSelect(func, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type
       \ . ' ╱ ' . s:prettify_header(g:siefe_abort_key, 'abort')
       \ . "\n" . s:prettify_header(g:siefe_fd_search_git_root_key, 'search √git')
       \ . ' ╱ ' . s:prettify_header(g:siefe_fd_depth1_key, '-d1:' . fd_depth1_toggle)
+      \ . ' ╱ ' . s:prettify_header(g:siefe_fd_open_dir_key, 'open dir')
       \ . siefe_fd_search_project_root_help
     \ ]
   if a:multi
@@ -1156,6 +1160,9 @@ function! SiefeRipgrepDir(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, k
   elseif key ==# g:siefe_fd_depth1_key
     let fd_depth1 = a:fd_depth1 ? 0 : 1
     call SiefeDirSelect('SiefeRipgrepDir', a:fullscreen, a:dir, a:fd_hidden, a:fd_no_ignore, 'd', 0, fd_depth1, '', a:kwargs)
+
+  elseif key ==# g:siefe_fd_open_dir_key
+    execute 'edit ' . a:dir
 
   elseif key ==# g:siefe_fd_git_root_key
     let a:kwargs.prompt = siefe#get_git_basename_or_bufdir()
