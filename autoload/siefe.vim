@@ -1222,6 +1222,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   let a:kwargs.line_range = get(a:kwargs, 'line_range', [])
   let a:kwargs.fixup = get(a:kwargs, 'fixup', 0)
 
+  let a:kwargs.paths = map(a:kwargs.paths, 'siefe#fugitive_strip_header(v:val)')
+
   if a:kwargs.branches ==# '--all'
     let branches = '--all '
     let notbranches = ''
@@ -1232,7 +1234,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
 
   let authors = join(map(copy(a:kwargs.authors), '"--author=".shellescape(v:val)'))
 
-  if len(a:kwargs.paths)  == 1 && (filereadable(a:kwargs.paths[0]) || isdirectory(a:kwargs.paths[0])) && a:kwargs.line_range == []
+  if len(a:kwargs.paths)  == 1 && (siefe#git_file_existed(a:kwargs.paths[0]) || isdirectory(a:kwargs.paths[0])) && a:kwargs.line_range == []
     let siefe_gitlog_follow_key = g:siefe_gitlog_follow_key . ','
     let siefe_gitlog_follow_help = ' ╱ ' . s:prettify_header( g:siefe_gitlog_follow_key, 'follow')
     let follow = a:kwargs.follow ? '--follow ' : ''
@@ -1259,7 +1261,7 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
     let paths = join(map(copy(a:kwargs.type), 'shellescape(v:val)'))
 
   else
-    let paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val) || isdirectory(v:val)'), 'shellescape(v:val)'))
+    let paths = join(map(filter(copy(a:kwargs.paths), 'siefe#git_file_existed(v:val) || isdirectory(v:val)'), 'shellescape(v:val)'))
   endif
 
   let G = a:kwargs.G ? '-G' : '-S'
@@ -1350,7 +1352,8 @@ function! siefe#gitlogfzf(fullscreen, kwargs) abort
   \ ]
 
   let authors_info = a:kwargs.authors ==# [] ? '' : "\nauthors: ".join(a:kwargs.authors)
-  let rel_paths = join(map(filter(copy(a:kwargs.paths), 'filereadable(v:val) || isdirectory(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
+  let rel_paths = join(map(filter(copy(a:kwargs.paths), 'siefe#git_file_existed(v:val) || isdirectory(v:val)'), 'siefe#get_relative_git_or_buf(v:val)'))
+  echom a:kwargs.paths
   let paths_info = rel_paths ==# '' ? '' : "\npaths: " . rel_paths
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
@@ -3279,6 +3282,23 @@ function! siefe#visual_line_nu() abort
     end
     return sort([line_start, line_end], 'n')
 
+endfunction
+
+function! siefe#git_file_existed(file) abort
+  return system('git -C `git rev-parse --show-toplevel` log --pretty=format: --name-only --diff-filter=A -- ' . a:file) !=# ''
+endfunction
+
+function! siefe#fugitive_strip_header(file) abort
+  let splitted = split(a:file, '//')
+  if splitted[0][0:7] ==# 'fugitive'
+      if len(splitted[-1][40:]) > 0
+          return  FugitiveFind(':/') . '/' . splitted[-1][41:]
+      else
+          return a:file
+      endif
+  else
+      return a:file
+  endif
 endfunction
 
 " workaround for https://github.com/junegunn/fzf/issues/2895
