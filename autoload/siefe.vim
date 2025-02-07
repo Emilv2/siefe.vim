@@ -2834,6 +2834,8 @@ endfunction
 function!  siefe#bufdir() abort
   if &ft ==# 'git'
     return FugitiveFind(':/')
+  elseif &ft ==# 'oil'
+    return luaeval('require("oil").get_current_dir()')
   else
     return expand('%:p:h')
   endif
