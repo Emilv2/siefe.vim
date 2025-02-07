@@ -692,12 +692,12 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     let preview = s:rg_preview_commands[a:kwargs.preview]
   endif
 
-  let name_info = empty(bufname()) ? '[No Name]' : bufname()
+  let name_info = empty(bufname()) ? '[No Name]' : fnameescape(fnamemodify(expand(bufname()), ':t'))
   let paths_info = a:kwargs.paths ==# [] ? '' : "\npaths: " . join(map(copy(a:kwargs.paths), 'split(v:val,"//")[-1]'), ' ')
 
   let rg_fzf_help_line = a:kwargs.fzf ? '' : ' ╱ ' . s:prettify_header(g:siefe_rg_rgfzf_key, 'rg/fzf')
 
-  let header = name_info
+  let header = s:blue(l:name_info)
         \ . "\n" . s:prettify_header(g:siefe_rg_toggle_fzf_key, fzf_rg_help)
         \ . rg_fzf_help_line
         \ . ' ╱ ' . s:prettify_header(g:siefe_rg_files_key, 'Files')
