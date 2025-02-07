@@ -432,7 +432,7 @@ let g:siefe_fd_git_root_key = get(g:, 'siefe_fd_git_root_key', 'ctrl-r')
 let g:siefe_fd_project_root_key = get(g:, 'siefe_fd_project_root_key', 'ctrl-o')
 let g:siefe_fd_search_git_root_key = get(g:, 'siefe_fd_search_git_root_key', 'ctrl-s')
 let g:siefe_fd_search_project_root_key = get(g:, 'siefe_fd_search_project_root_key', 'alt-e')
-let g:siefe_fd_depth1_key = get(g:, 'siefe_rg_depth1_key', 'siefe_rg_depth1_key')
+let g:siefe_fd_depth1_key = get(g:, 'siefe_fd_depth1_key', g:siefe_rg_depth1_key)
 
 
 let s:fd_keys = [
