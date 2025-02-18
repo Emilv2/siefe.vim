@@ -2392,6 +2392,7 @@ function! siefe#marks(fullscreen, kwargs) abort
   \ 'source':  source,
   \ 'sink*':   function('s:marks_sink'),
   \ 'options': [
+    \ '--tiebreak', 'begin',
     \ '--ansi',
     \ '--multi',
     \ '--query', a:kwargs.query,
