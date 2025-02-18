@@ -2540,9 +2540,14 @@ function! s:printjump(git_dir, current, jump_max, lnum_max, index, jump) abort
     \ . '//://' . abs(a:index - a:current) . repeat(' ', a:jump_max - len(abs(a:index - a:current)) + 1)
     \ . a:jump.lnum . repeat(' ', a:lnum_max - len(a:jump.lnum) + 1)
   if bufnr() == a:jump.bufnr
-    return result . s:green(join(getbufline(a:jump.bufnr, a:jump.lnum)))
+    return result . (a:jump.col > 0 ? s:green(join(getbufline(a:jump.bufnr, a:jump.lnum))[:a:jump.col - 1]) : '')
+          \ . s:red(join(getbufline(a:jump.bufnr, a:jump.lnum))[a:jump.col])
+          \ . s:green(join(getbufline(a:jump.bufnr, a:jump.lnum))[a:jump.col + 1:])
   else
-    return result . s:get_relative_git_or_bufdir(bufname(a:jump.bufnr), a:git_dir) . ': ' . s:blue(s:readbuf_or_file_line(a:jump.bufnr, bufname(a:jump.bufnr), a:jump.lnum))
+    return result . s:get_relative_git_or_bufdir(bufname(a:jump.bufnr), a:git_dir) . ': '
+          \ . (a:jump.col > 0 ? s:blue(s:readbuf_or_file_line(a:jump.bufnr, bufname(a:jump.bufnr), a:jump.lnum)[:a:jump.col - 1]) : '')
+          \ . s:red(s:readbuf_or_file_line(a:jump.bufnr, bufname(a:jump.bufnr), a:jump.lnum)[a:jump.col])
+          \ . s:blue(s:readbuf_or_file_line(a:jump.bufnr, bufname(a:jump.bufnr), a:jump.lnum)[a:jump.col + 1:])
   endif
 endfunction
 
