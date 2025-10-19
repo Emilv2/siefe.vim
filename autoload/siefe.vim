@@ -568,6 +568,16 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
   let a:kwargs.files = get(a:kwargs, 'files', '')
   let a:kwargs.preview = get(a:kwargs, 'preview', g:siefe_rg_default_preview_command)
   let a:kwargs.fzf = get(a:kwargs, 'fzf', g:siefe_rg_fzf_default)
+  let a:kwargs.fzf_query_file = get(a:kwargs, 'fzf_query_file', '')
+  let a:kwargs.rg_query_file = get(a:kwargs, 'rg_query_file', '')
+
+
+  if empty(a:kwargs.fzf_query_file)
+    let a:kwargs.fzf_query_file = tempname()
+  endif
+  if empty(a:kwargs.rg_query_file)
+    let a:kwargs.rg_query_file = tempname()
+  endif
 
   if empty(a:kwargs.files)
     let a:kwargs.files = tempname()
@@ -831,6 +841,9 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . '+enable-search'
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
+      \ '--bind', g:siefe_rg_rgfzf_key . ':transform:[[ ! $FZF_PROMPT =~ fzf ]] && '
+        \  . 'echo "rebind(change)+change-prompt(' . a:kwargs.prompt . ' rg/fzf> )+disable-search+transform-query:echo \{q} > ' . a:kwargs.fzf_query_file .  '; cat ' . a:kwargs.rg_query_file . '" || '
+        \  . 'echo "unbind(change)+change-prompt(' . initial_prompt . ')+enable-search+transform-query:echo \{q} > ' . a:kwargs.rg_query_file . '; cat ' . a:kwargs.fzf_query_file . '"',
       \ '--header', header,
       \ '--prompt', initial_prompt,
       \ ],
@@ -842,11 +855,6 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
     let spec.options += [
       \ '--disabled',
       \ '--bind', 'change:first+reload:' . reload_command,
-      \ '--bind',  g:siefe_rg_rgfzf_key
-      \ . ':unbind(change,' . g:siefe_rg_rgfzf_key . ')'
-      \ . '+change-prompt(' . no_ignore.hidden.a:kwargs.type . ' ' . a:kwargs.prompt . ' rg/fzf> )'
-      \ . '+enable-search+rebind(' . g:siefe_rg_files_key . ')'
-      \ . '+change-preview(' . s:rg_preview_commands[g:siefe_rg_default_preview_command] . ')'
     \ ]
   elseif files == 1 && a:kwargs.fzf == 0
     let spec.options += ['--bind', 'start:unbind(change)']
