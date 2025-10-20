@@ -842,8 +842,8 @@ function! siefe#ripgrepfzf(fullscreen, dir, kwargs) abort
         \ . '+reload('.files_command.')'
         \ . '+change-preview('.s:files_preview_command.')',
       \ '--bind', g:siefe_rg_rgfzf_key . ':transform:[[ ! $FZF_PROMPT =~ fzf ]] && '
-        \  . 'echo "rebind(change)+change-prompt(' . a:kwargs.prompt . ' rg/fzf> )+disable-search+transform-query:echo \{q} > ' . a:kwargs.fzf_query_file .  '; cat ' . a:kwargs.rg_query_file . '" || '
-        \  . 'echo "unbind(change)+change-prompt(' . initial_prompt . ')+enable-search+transform-query:echo \{q} > ' . a:kwargs.rg_query_file . '; cat ' . a:kwargs.fzf_query_file . '"',
+        \  . 'echo "unbind(change)+change-prompt(' . a:kwargs.prompt . ' rg/fzf> )+enable-search+transform-query:echo \{q} > ' . a:kwargs.fzf_query_file .  '; cat ' . a:kwargs.rg_query_file . '" || '
+        \  . 'echo "rebind(change)+change-prompt(' . initial_prompt . ')+disable-search+transform-query:echo \{q} > ' . a:kwargs.rg_query_file . '; cat ' . a:kwargs.fzf_query_file . '"',
       \ '--header', header,
       \ '--prompt', initial_prompt,
       \ ],
