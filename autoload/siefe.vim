@@ -2392,10 +2392,16 @@ function! siefe#marks(fullscreen, kwargs) abort
 
   let default_preview_size = &columns < g:siefe_preview_hide_threshold ? '0%' : g:siefe_default_preview_size . '%'
   let other_preview_size = &columns < g:siefe_preview_hide_threshold ? g:siefe_default_preview_size . '%' : 'hidden'
+  let pretty_mark_1 = '(v:val.pos[1] > 0 ? s:blue(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])[:v:val.pos[2] - 2]) : "") . '
+        \ . ' (v:val.pos[2] < len(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])) - 2 ? s:blue(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])[v:val.pos[2]:]) : "")'
+"        \ . ' s:yellow(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])[v:val.pos[2] - 3]) . '
+  let pretty_mark_2 = '(v:val.pos[1] > 0 ? s:green(getline(v:val.pos[1])[:v:val.pos[1] - 2]) : "") . '
+        \ . ' s:red(getline(v:val.pos[1])[v:val.pos[1] - 1]) . '
+        \ . ' s:green(getline(v:val.pos[1])[v:val.pos[1]:])'
   let source = map(getmarklist(),
-        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":". s:blue(s:readbuf_or_file_line(v:val.pos[0], v:val.file, v:val.pos[1])))')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(v:val.file), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:get_relative_git_or_bufdir(v:val.file, l:git_dir) . ":" . ' . pretty_mark_1 . ')')
            \ + map(getmarklist(bufnr()),
-        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], s:green(getline(v:val.pos[1])))')
+        \ 'printf("%s//://%s//://%s//://%s//://%s//://%s\t%s\t%s\t%s", v:val.mark[1:], fnameescape(bufname()), v:val.pos[1], v:val.pos[2], v:val.pos[0], s:red(v:val.mark[1:]), v:val.pos[1], v:val.pos[2], ' . pretty_mark_2 . ')')
   let spec = {
   \ 'source':  source,
   \ 'sink*':   function('s:marks_sink'),
