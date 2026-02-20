@@ -463,29 +463,10 @@ function M.fd_command()
   return _fd_cmd
 end
 
-local _has_separator = nil
-local _delimiter = nil
-local _field_match_sep = nil
-
+-- Always use ':' — the standard rg output delimiter, required by fzf-lua's
+-- builtin previewer and native path.entry_to_file() parser.
 function M.rg_delimiter()
-  if _delimiter == nil then
-    vim.fn.system('rg --help | grep -- "--field-match-separator"')
-    if vim.v.shell_error == 0 then
-      _has_separator = true
-      _delimiter = '//'
-      _field_match_sep = '--field-match-separator="\x1b[9;31;31m//\x1b[0m"'
-    else
-      _has_separator = false
-      _delimiter = ':'
-      _field_match_sep = ''
-    end
-  end
-  return _delimiter
-end
-
-function M.rg_field_match_separator()
-  M.rg_delimiter()  -- ensure initialised
-  return _field_match_sep
+  return ':'
 end
 
 -- Build preview commands for rg / files / buffers / marks / jumps / history
