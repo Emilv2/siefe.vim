@@ -48,9 +48,9 @@ function M.marks(fullscreen, kwargs)
     local col   = m.pos[3]
     local bnr   = m.pos[1]
     local line_text = lnum > 0 and (vim.fn.getline(lnum) or '') or ''
-    local display = (lnum > 0 and utils.green(line_text:sub(1, lnum - 1)) or '')
-      .. utils.red(line_text:sub(lnum, lnum))
-      .. utils.green(line_text:sub(lnum + 1))
+    local display = (col > 1 and utils.green(line_text:sub(1, col - 1)) or '')
+      .. utils.red(line_text:sub(col, col))
+      .. utils.green(line_text:sub(col + 1))
     table.insert(source, string.format('%s//:///%s//:///%s//:///%s//:///%s//:///%s\t%s\t%s\t%s',
       mark, vim.fn.fnameescape(vim.fn.bufname()), lnum, col, bnr,
       utils.red(mark), lnum, col, display))

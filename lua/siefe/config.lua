@@ -202,7 +202,7 @@ function M.load()
   cfg.fd_search_project_root_key= g('siefe_fd_search_project_root_key', 'alt-e')
   cfg.fd_depth1_key             = g('siefe_fd_depth1_key', g('siefe_rg_depth1_key', 'ctrl-e'))
   cfg.fd_open_dir_key           = g('siefe_fd_open_dir_key', 'ctrl-o')
-  cfg.fd_project_root_env       = g('siefe_fd_git_root_env', '')
+  cfg.fd_project_root_env       = g('siefe_fd_project_root_env', g('siefe_fd_git_root_env', ''))
 
   -- Window action map
   cfg.common_window_actions = {
