@@ -138,23 +138,6 @@ function M.warn(msg)
   vim.api.nvim_echo({{ msg, 'WarningMsg' }}, true, {})
 end
 
--- ── Swap file handling ───────────────────────────────────────────────────────
-
-function M.swapchoice(swapname)
-  local info     = vim.fn.swapinfo(swapname)
-  local modified = info.dirty == 1 and 'yes' or 'no'
-  local choice   = ''
-  while choice ~= 'o' and choice ~= 'e' and choice ~= 'r' and choice ~= 'q' and choice ~= 'a' do
-    choice = vim.fn.input(
-      'found a swap file by the name "' .. swapname .. '"\n'
-      .. 'user: ' .. (info.user or '') .. '@' .. (info.host or '') .. '\n'
-      .. 'pid: ' .. (info.pid or '') .. '\n'
-      .. 'modified: ' .. modified .. '\n'
-      .. '[O]pen Read-Only (default), (E)dit anyway, (R)ecover, (Q)uit, (A)bort: ', 'o')
-  end
-  vim.v.swapchoice = choice
-end
-
 -- ── Duplicate key detection ──────────────────────────────────────────────────
 
 function M.detect_dups(lst)
@@ -548,15 +531,9 @@ end
 
 -- ── Misc ─────────────────────────────────────────────────────────────────────
 
--- Open a file (with swap-choice guard), then move cursor
+-- Open a file, then move cursor
 function M.open_file(cmd, filename, lnum, col)
-  local au_id = vim.api.nvim_create_autocmd('SwapExists', {
-    callback = function(args) M.swapchoice(vim.v.swapname) end,
-    once = false,
-    group = vim.api.nvim_create_augroup('siefe_swap_guard', { clear = true }),
-  })
   local ok, err = pcall(vim.cmd, (cmd or 'edit') .. ' ' .. vim.fn.fnameescape(filename))
-  pcall(vim.api.nvim_del_autocmd, au_id)
   if not ok then M.warn(err) return end
   if lnum and lnum > 0 then
     vim.fn.cursor(lnum, col or 1)
