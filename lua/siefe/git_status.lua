@@ -1,0 +1,210 @@
+-- lua/siefe/git_status.lua
+-- Git status picker
+local M = {}
+
+local config = require('siefe.config')
+local utils  = require('siefe.utils')
+
+function M.gitstatus(fullscreen, kwargs)
+  local ok, fzf_lua = pcall(require, 'fzf-lua')
+  if not ok then utils.warn('siefe: fzf-lua not found') return end
+
+  kwargs.query  = kwargs.query  or ''
+  kwargs.paths  = kwargs.paths  or {}
+  kwargs.uno    = kwargs.uno    ~= nil and kwargs.uno or false
+
+  local uno_flag   = kwargs.uno and ' -uno ' or ''
+  local rel_paths  = table.concat(vim.tbl_map(function(p)
+    return utils.get_relative_git_or_bufdir(p)
+  end, vim.tbl_filter(function(p)
+    return vim.fn.filereadable(p) == 1 or vim.fn.isdirectory(p) == 1
+  end, kwargs.paths)), ' ')
+  local paths_info = rel_paths == '' and '' or ('\npaths: ' .. rel_paths)
+
+  local source = utils.bin_path('git_status') .. uno_flag .. ' -- ' .. rel_paths
+
+  local p0 = 'git diff -- {3}'
+  local p1 = 'git diff --staged -- {3}'
+
+  local default_size, other_size = utils.preview_window_size()
+  local default_preview = ({ p0, p1 })[config.gitlog_default_preview_command + 1] or p0
+
+  local header = utils.prettify_header(config.gitstatus_uno_key, '-uno')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_add_key, 'add')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_add_patch_key, 'add -p')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_unstage_key, 'unstage')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_unstage_patch_key, 'unstage -p')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_restore_key, 'restore')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_restore_patch_key, 'restore -p')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_stash_key, 'stash')
+    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_stash_patch_key, 'stash -p')
+    .. ' ╱ ' .. utils.magenta(utils.preview_help({ config.gitstatus_preview_0_key, config.gitstatus_preview_1_key }), 'Special') .. ' change preview'
+    .. '\n' .. utils.common_window_help()
+    .. paths_info
+
+  local binds = {
+    'enter:ignore',
+    'esc:ignore',
+    'change:first',
+    config.accept_key           .. ':accept',
+    config.up_key               .. ':up',
+    config.down_key             .. ':down',
+    config.next_history_key     .. ':next-history',
+    config.previous_history_key .. ':previous-history',
+    config.toggle_up_key        .. ':toggle+up',
+    config.toggle_down_key      .. ':toggle+down',
+    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+    config.gitstatus_preview_0_key .. ':change-preview(' .. p0 .. ')',
+    config.gitstatus_preview_1_key .. ':change-preview(' .. p1 .. ')',
+  }
+
+  -- Parse selected lines into file entries
+  local function parse_files(items)
+    local filelist = {}
+    for _, line in ipairs(items) do
+      local parts = vim.split(line, '//', { plain = true })
+      if #parts >= 4 then
+        -- format: status//oldfile//filename//\0
+        local filename = parts[3]:gsub('%z$', '')  -- strip trailing null
+        table.insert(filelist, { filename = filename, text = parts[1] })
+      end
+    end
+    return filelist
+  end
+
+  local function get_items(selected, opts)
+    if opts and opts.last_query then return selected end
+    if selected and #selected > 0 and not selected[1]:match('//') then
+      return vim.list_slice(selected, 2)
+    end
+    return selected or {}
+  end
+
+  local actions = {}
+
+  actions['default'] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    utils.open_file('edit', filelist[1].filename)
+    if config.rg_loclist then utils.fill_loc(filelist) else utils.fill_quickfix(filelist) end
+  end
+
+  for key, cmd in pairs(config.common_window_actions) do
+    local k, c = key, cmd
+    actions[k] = function(selected, opts)
+      local items = get_items(selected, opts)
+      local filelist = parse_files(items)
+      for _, f in ipairs(filelist) do
+        utils.open_file(c, f.filename)
+      end
+    end
+  end
+
+  actions[config.gitstatus_uno_key] = function(selected, opts)
+    kwargs.uno = not kwargs.uno
+    M.gitstatus(fullscreen, kwargs)
+  end
+
+  actions[config.gitstatus_add_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git add -- ' .. files)
+  end
+
+  actions[config.gitstatus_add_patch_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git add --patch -- ' .. files)
+  end
+
+  actions[config.gitstatus_restore_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git restore -- ' .. files)
+  end
+
+  actions[config.gitstatus_restore_patch_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git restore --patch -- ' .. files)
+  end
+
+  actions[config.gitstatus_unstage_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git reset HEAD -- ' .. files)
+  end
+
+  actions[config.gitstatus_unstage_patch_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git reset HEAD --patch -- ' .. files)
+  end
+
+  actions[config.gitstatus_stash_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git stash -- ' .. files)
+  end
+
+  actions[config.gitstatus_stash_patch_key] = function(selected, opts)
+    local items = get_items(selected, opts)
+    local filelist = parse_files(items)
+    if #filelist == 0 then return end
+    local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
+    vim.cmd('Git stash --patch -- ' .. files)
+  end
+
+  fzf_lua.fzf_exec(source, {
+    prompt    = uno_flag .. 'git status> ',
+    query     = kwargs.query,
+    cwd       = utils.get_git_root(),
+    winopts   = utils.winopts(fullscreen),
+    previewer = false,
+    preview   = default_preview,
+    fzf_opts  = {
+      ['--history']        = utils.data_path() .. '/git_status_history',
+      ['--ansi']           = '',
+      ['--multi']          = '',
+      ['--read0']          = '',
+      ['--print-query']    = '',
+      ['--with-nth']       = '4..',
+      ['--delimiter']      = '//',
+      ['--preview-window'] = default_size,
+      ['--header']         = header,
+      ['--bind']           = binds,
+    },
+    actions = actions,
+  })
+end
+
+-- Toggle git status window (fugitive)
+function M.toggle_git_status()
+  local closed = false
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[b].filetype == 'fugitive' then
+      vim.cmd('bdelete ' .. b)
+      closed = true
+    end
+  end
+  if not closed then
+    vim.cmd('keepalt Git')
+  end
+end
+
+return M
