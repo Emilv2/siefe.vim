@@ -2,234 +2,245 @@
 -- Default configuration and key bindings for siefe.vim
 local M = {}
 
--- Helper: read from vim.g with fallback to default
-local function g(name, default)
-  local v = vim.g[name]
-  if v == nil then return default end
-  return v
-end
-
--- Returns the full config table (reads vim.g.* for user overrides)
-function M.load()
-  local cfg = {}
+-- Pure Lua defaults — no vim.g reads
+local function make_defaults()
+  local d = {}
 
   -- General behaviour
-  cfg.loclist               = g('siefe_loclist', false)
-  cfg.rg_loclist            = g('siefe_rg_loclist', cfg.loclist)
-  cfg.gitlog_loclist        = g('siefe_gitlog_loclist', cfg.loclist)
-  cfg.history_loclist       = g('siefe_history_loclist', cfg.loclist)
-  cfg.marks_loclist         = g('siefe_marks_loclist', cfg.loclist)
+  d.loclist                        = false
+  d.rg_loclist                     = false
+  d.gitlog_loclist                 = false
+  d.history_loclist                = false
+  d.marks_loclist                  = false
 
-  cfg.delta_options         = g('siefe_delta_options', '--keep-plus-minus-markers') .. ' ' .. g('siefe_delta_extra_options', '')
-  cfg.bat_options           = g('siefe_bat_options', '--style=numbers,changes') .. ' ' .. g('siefe_bat_extra_options', '')
+  d.delta_options                  = '--keep-plus-minus-markers'
+  d.bat_options                    = '--style=numbers,changes'
 
   -- Navigation / accept / help keys (common to all pickers)
-  cfg.abort_key             = g('siefe_abort_key', 'esc')
-  cfg.next_history_key      = g('siefe_next_history_key', 'ctrl-n')
-  cfg.previous_history_key  = g('siefe_previous_history_key', 'ctrl-p')
-  cfg.up_key                = g('siefe_up_key', 'ctrl-k')
-  cfg.down_key              = g('siefe_down_key', 'ctrl-j')
-  cfg.accept_key            = g('siefe_accept_key', 'ctrl-m')
-  cfg.toggle_up_key         = g('siefe_toggle_up_key', 'tab')
-  cfg.toggle_down_key       = g('siefe_toggle_down_key', 'shift-tab')
-  cfg.help_key              = g('siefe_help_key', 'f9')
-  cfg.toggle_preview_key    = g('siefe_toggle_preview_key', 'ctrl-/')
+  d.abort_key                      = 'esc'
+  d.next_history_key               = 'ctrl-n'
+  d.previous_history_key           = 'ctrl-p'
+  d.up_key                         = 'ctrl-k'
+  d.down_key                       = 'ctrl-j'
+  d.accept_key                     = 'ctrl-m'
+  d.toggle_up_key                  = 'tab'
+  d.toggle_down_key                = 'shift-tab'
+  d.help_key                       = 'f9'
+  d.toggle_preview_key             = 'ctrl-/'
 
   -- Window-open actions
-  cfg.split_key             = g('siefe_split_key', 'ctrl-]')
-  cfg.vsplit_key            = g('siefe_vsplit_key', 'ctrl-\\')
-  cfg.tab_key               = g('siefe_tab_key', 'alt-enter')
-  cfg.vdiffsplit_key        = g('siefe_vdiffsplit_key', 'alt-d')
+  d.split_key                      = 'ctrl-]'
+  d.vsplit_key                     = 'ctrl-\\'
+  d.tab_key                        = 'alt-enter'
+  d.vdiffsplit_key                 = 'alt-d'
 
   -- Preview size
-  cfg.preview_hide_threshold   = tonumber(g('siefe_preview_hide_threshold', 80))
-  cfg.default_preview_size     = tonumber(g('siefe_default_preview_size', 50))
-  cfg.second_preview_size      = tonumber(g('siefe_2nd_preview_size', 80))
+  d.preview_hide_threshold         = 80
+  d.default_preview_size           = 50
+  d.second_preview_size            = 80
 
   -- Ripgrep keys
-  cfg.rg_toggle_fzf_key     = g('siefe_rg_toggle_fzf_key', 'ctrl-r')
-  cfg.rg_rgfzf_key          = g('siefe_rg_rgfzf_key', 'alt-f')
-  cfg.rg_files_key          = g('siefe_rg_files_key', 'ctrl-f')
-  cfg.rg_type_key           = g('siefe_rg_type_key', 'ctrl-t')
-  cfg.rg_type_not_key       = g('siefe_rg_type_not_key', 'ctrl-^')
-  cfg.rg_word_key           = g('siefe_rg_word_key', 'ctrl-w')
-  cfg.rg_case_key           = g('siefe_rg_case_key', 'ctrl-s')
-  cfg.rg_hidden_key         = g('siefe_rg_hidden_key', 'alt-.')
-  cfg.rg_no_ignore_key      = g('siefe_rg_no_ignore_key', 'ctrl-u')
-  cfg.rg_fixed_strings_key  = g('siefe_rg_fixed_strings_key', 'ctrl-x')
-  cfg.rg_max_1_key          = g('siefe_rg_max_1_key', 'ctrl-a')
-  cfg.rg_search_zip_key     = g('siefe_rg_search_zip_key', 'alt-z')
-  cfg.rg_text_key           = g('siefe_rg_text_key', 'alt-t')
-  cfg.rg_dir_key            = g('siefe_rg_dir_key', 'ctrl-d')
-  cfg.rg_buffers_key        = g('siefe_rg_buffers_key', 'ctrl-b')
-  cfg.rg_yank_key           = g('siefe_rg_yank_key', 'ctrl-y')
-  cfg.rg_history_key        = g('siefe_rg_history_key', 'ctrl-h')
-  cfg.rg_depth1_key         = g('siefe_rg_depth1_key', 'ctrl-e')
-
-  cfg.rg_preview_key        = g('siefe_rg_preview_key', 'f1')
-  cfg.rg_fast_preview_key   = g('siefe_rg_fast_preview_key', 'f2')
-  cfg.rg_faster_preview_key = g('siefe_rg_faster_preview_key', 'f3')
+  d.rg_toggle_fzf_key              = 'ctrl-r'
+  d.rg_rgfzf_key                   = 'alt-f'
+  d.rg_files_key                   = 'ctrl-f'
+  d.rg_type_key                    = 'ctrl-t'
+  d.rg_type_not_key                = 'ctrl-^'
+  d.rg_word_key                    = 'ctrl-w'
+  d.rg_case_key                    = 'ctrl-s'
+  d.rg_hidden_key                  = 'alt-.'
+  d.rg_no_ignore_key               = 'ctrl-u'
+  d.rg_fixed_strings_key           = 'ctrl-x'
+  d.rg_max_1_key                   = 'ctrl-a'
+  d.rg_search_zip_key              = 'alt-z'
+  d.rg_text_key                    = 'alt-t'
+  d.rg_dir_key                     = 'ctrl-d'
+  d.rg_buffers_key                 = 'ctrl-b'
+  d.rg_yank_key                    = 'ctrl-y'
+  d.rg_history_key                 = 'ctrl-h'
+  d.rg_depth1_key                  = 'ctrl-e'
+  d.rg_preview_key                 = 'f1'
+  d.rg_fast_preview_key            = 'f2'
+  d.rg_faster_preview_key          = 'f3'
 
   -- Ripgrep defaults
-  cfg.rg_fzf_default            = g('siefe_rg_fzf_default', false)
-  cfg.rg_default_preview_command = tonumber(g('siefe_rg_default_preview_command', 0))
-  cfg.rg_default_word           = g('siefe_rg_default_word', false)
-  cfg.rg_default_depth1         = g('siefe_rg_default_depth1', false)
-  cfg.rg_default_case_sensitive = tonumber(g('siefe_rg_default_case_sensitive', 1))
-  cfg.rg_default_hidden         = g('siefe_rg_default_hidden', false)
-  cfg.rg_default_no_ignore      = tonumber(g('siefe_rg_default_no_ignore', 0))
-  cfg.rg_default_fixed_strings  = g('siefe_rg_default_fixed_strings', false)
-  cfg.rg_default_max_1          = g('siefe_rg_default_max_1', false)
-  cfg.rg_default_search_zip     = g('siefe_rg_default_search_zip', false)
-  cfg.rg_default_text           = g('siefe_rg_default_text', false)
+  d.rg_fzf_default                 = false
+  d.rg_default_preview_command     = 0
+  d.rg_default_word                = false
+  d.rg_default_depth1              = false
+  d.rg_default_case_sensitive      = 1
+  d.rg_default_hidden              = false
+  d.rg_default_no_ignore           = 0
+  d.rg_default_fixed_strings       = false
+  d.rg_default_max_1               = false
+  d.rg_default_search_zip          = false
+  d.rg_default_text                = false
 
   -- History keys
-  cfg.history_git_key           = g('siefe_history_git_key', 'ctrl-g')
-  cfg.history_buffers_key       = g('siefe_history_buffers_key', 'ctrl-b')
-  cfg.history_files_key         = g('siefe_history_files_key', 'ctrl-l')
-  cfg.history_rg_key            = g('siefe_history_rg_key', 'ctrl-s')
-  cfg.history_delete_key        = g('siefe_history_delete_key', 'del')
-  cfg.history_edit_key          = g('siefe_history_edit_key', 'ctrl-e')
-  cfg.history_preview_key       = g('siefe_history_preview_key', g('siefe_rg_preview_key', 'f1'))
-  cfg.history_fast_preview_key  = g('siefe_history_fast_preview_key', g('siefe_rg_fast_preview_key', 'f2'))
-  cfg.history_faster_preview_key= g('siefe_history_faster_preview_key', g('siefe_rg_faster_preview_key', 'f3'))
-  cfg.history_default_preview_command = tonumber(g('siefe_history_default_preview_command', g('siefe_rg_default_preview_command', 0)))
+  d.history_git_key                = 'ctrl-g'
+  d.history_buffers_key            = 'ctrl-b'
+  d.history_files_key              = 'ctrl-l'
+  d.history_rg_key                 = 'ctrl-s'
+  d.history_delete_key             = 'del'
+  d.history_edit_key               = 'ctrl-e'
+  d.history_preview_key            = d.rg_preview_key
+  d.history_fast_preview_key       = d.rg_fast_preview_key
+  d.history_faster_preview_key     = d.rg_faster_preview_key
+  d.history_default_preview_command = d.rg_default_preview_command
 
   -- Git log keys
-  cfg.gitlog_ignore_case_key    = g('siefe_gitlog_ignore_case_key', 'alt-i')
-  cfg.gitlog_vdiffsplit_key     = g('siefe_gitlog_vdiffsplit_key', 'ctrl-v')
-  cfg.gitlog_type_key           = g('siefe_gitlog_type_key', 'ctrl-t')
-  cfg.gitlog_author_key         = g('siefe_gitlog_author_key', 'ctrl-a')
-  cfg.gitlog_branch_key         = g('siefe_gitlog_branch_key', 'ctrl-b')
-  cfg.gitlog_not_branch_key     = g('siefe_gitlog_not_branch_key', 'ctrl-^')
-  cfg.gitlog_sg_key             = g('siefe_gitlog_sg_key', 'ctrl-e')
-  cfg.gitlog_fzf_key            = g('siefe_gitlog_fzf_key', 'ctrl-f')
-  cfg.gitlog_s_key              = g('siefe_gitlog_s_key', 'ctrl-s')
-  cfg.gitlog_pickaxe_regex_key  = g('siefe_gitlog_pickaxe_regex_key', 'ctrl-x')
-  cfg.gitlog_dir_key            = g('siefe_gitlog_dir_key', 'ctrl-d')
-  cfg.gitlog_follow_key         = g('siefe_gitlog_follow_key', 'ctrl-o')
-  cfg.gitlog_switch_key         = g('siefe_gitlog_switch_key', 'ctrl-s')
-  cfg.gitlog_preview_0_key      = g('siefe_gitlog_preview_0_key', 'f1')
-  cfg.gitlog_preview_1_key      = g('siefe_gitlog_preview_1_key', 'f2')
-  cfg.gitlog_preview_2_key      = g('siefe_gitlog_preview_2_key', 'f3')
-  cfg.gitlog_preview_3_key      = g('siefe_gitlog_preview_3_key', 'f4')
-  cfg.gitlog_preview_4_key      = g('siefe_gitlog_preview_4_key', 'f5')
-  cfg.gitlog_default_preview_command = tonumber(g('siefe_gitlog_default_preview_command', 0))
-  cfg.gitlog_default_G          = g('siefe_gitlog_default_G', false)
-  cfg.gitlog_default_regex      = g('siefe_gitlog_default_regex', false)
-  cfg.gitlog_default_follow     = g('siefe_gitlog_default_follow', false)
-  cfg.gitlog_default_ignore_case= g('siefe_gitlog_default_ignore_case', false)
+  d.gitlog_ignore_case_key         = 'alt-i'
+  d.gitlog_vdiffsplit_key          = 'ctrl-v'
+  d.gitlog_type_key                = 'ctrl-t'
+  d.gitlog_author_key              = 'ctrl-a'
+  d.gitlog_branch_key              = 'ctrl-b'
+  d.gitlog_not_branch_key          = 'ctrl-^'
+  d.gitlog_sg_key                  = 'ctrl-e'
+  d.gitlog_fzf_key                 = 'ctrl-f'
+  d.gitlog_s_key                   = 'ctrl-s'
+  d.gitlog_pickaxe_regex_key       = 'ctrl-x'
+  d.gitlog_dir_key                 = 'ctrl-d'
+  d.gitlog_follow_key              = 'ctrl-o'
+  d.gitlog_switch_key              = 'ctrl-s'
+  d.gitlog_preview_0_key           = 'f1'
+  d.gitlog_preview_1_key           = 'f2'
+  d.gitlog_preview_2_key           = 'f3'
+  d.gitlog_preview_3_key           = 'f4'
+  d.gitlog_preview_4_key           = 'f5'
+  d.gitlog_default_preview_command = 0
+  d.gitlog_default_G               = false
+  d.gitlog_default_regex           = false
+  d.gitlog_default_follow          = false
+  d.gitlog_default_ignore_case     = false
 
   -- Git status keys
-  cfg.gitstatus_uno_key           = g('siefe_gitstatus_uno_key', 'ctrl-n')
-  cfg.gitstatus_add_key           = g('siefe_gitstatus_add_key', 'ctrl-a')
-  cfg.gitstatus_add_patch_key     = g('siefe_gitstatus_add_patch_key', 'alt-a')
-  cfg.gitstatus_restore_key       = g('siefe_gitstatus_restore_key', 'ctrl-r')
-  cfg.gitstatus_restore_patch_key = g('siefe_gitstatus_restore_patch_key', 'alt-r')
-  cfg.gitstatus_unstage_key       = g('siefe_gitstatus_unstage_key', 'ctrl-u')
-  cfg.gitstatus_unstage_patch_key = g('siefe_gitstatus_unstage_patch_key', 'alt-u')
-  cfg.gitstatus_stash_key         = g('siefe_gitstatus_stash_key', 'ctrl-s')
-  cfg.gitstatus_stash_patch_key   = g('siefe_gitstatus_stash_patch_key', 'alt-s')
-  cfg.gitstatus_preview_0_key     = g('siefe_gitstatus_preview_0_key', 'f1')
-  cfg.gitstatus_preview_1_key     = g('siefe_gitstatus_preview_1_key', 'f2')
+  d.gitstatus_uno_key              = 'ctrl-n'
+  d.gitstatus_add_key              = 'ctrl-a'
+  d.gitstatus_add_patch_key        = 'alt-a'
+  d.gitstatus_restore_key          = 'ctrl-r'
+  d.gitstatus_restore_patch_key    = 'alt-r'
+  d.gitstatus_unstage_key          = 'ctrl-u'
+  d.gitstatus_unstage_patch_key    = 'alt-u'
+  d.gitstatus_stash_key            = 'ctrl-s'
+  d.gitstatus_stash_patch_key      = 'alt-s'
+  d.gitstatus_preview_0_key        = 'f1'
+  d.gitstatus_preview_1_key        = 'f2'
 
   -- Git branch keys
-  cfg.gitbranch_preview_0_key   = g('siefe_gitbranch_preview_0_key', 'f1')
-  cfg.gitbranch_preview_1_key   = g('siefe_gitbranch_preview_1_key', 'f2')
-  cfg.gitbranch_preview_2_key   = g('siefe_gitbranch_preview_2_key', 'f3')
-  cfg.gitbranch_preview_3_key   = g('siefe_gitbranch_preview_3_key', 'f4')
-  cfg.branches_all_key          = g('siefe_branches_all_key', 'ctrl-a')
-  cfg.branches_switch_key       = g('siefe_branches_switch_key', 'ctrl-o')
-  cfg.branches_merge_key        = g('siefe_branches_merge_key', 'ctrl-e')
-  cfg.branches_rebase_interactive_key = g('siefe_branches_rebase_interactive_key', 'ctrl-r')
+  d.gitbranch_preview_0_key        = 'f1'
+  d.gitbranch_preview_1_key        = 'f2'
+  d.gitbranch_preview_2_key        = 'f3'
+  d.gitbranch_preview_3_key        = 'f4'
+  d.branches_all_key               = 'ctrl-a'
+  d.branches_switch_key            = 'ctrl-o'
+  d.branches_merge_key             = 'ctrl-e'
+  d.branches_rebase_interactive_key = 'ctrl-r'
 
   -- Git stash keys
-  cfg.stash_apply_key           = g('siefe_stash_apply_key', 'ctrl-a')
-  cfg.stash_pop_key             = g('siefe_stash_pop_key', 'ctrl-p')
-  cfg.stash_drop_key            = g('siefe_stash_drop_key', 'del')
-  cfg.stash_ignore_case_key     = g('siefe_stash_ignore_case_key', 'alt-i')
-  cfg.stash_sg_key              = g('siefe_stash_sg_key', 'ctrl-e')
-  cfg.stash_fzf_key             = g('siefe_stash_fzf_key', 'ctrl-f')
-  cfg.stash_s_key               = g('siefe_stash_s_key', 'ctrl-s')
-  cfg.stash_pickaxe_regex_key   = g('siefe_stash_pickaxe_regex_key', 'ctrl-x')
-  cfg.stash_preview_0_key       = g('siefe_stash_preview_0_key', 'f1')
-  cfg.stash_preview_1_key       = g('siefe_stash_preview_1_key', 'f2')
-  cfg.stash_preview_2_key       = g('siefe_stash_preview_2_key', 'f3')
-  cfg.stash_preview_3_key       = g('siefe_stash_preview_3_key', 'f4')
-  cfg.stash_preview_4_key       = g('siefe_stash_preview_4_key', 'f5')
-  cfg.stash_default_preview_command = tonumber(g('siefe_stash_default_preview_command', 0))
+  d.stash_apply_key                = 'ctrl-a'
+  d.stash_pop_key                  = 'ctrl-p'
+  d.stash_drop_key                 = 'del'
+  d.stash_ignore_case_key          = 'alt-i'
+  d.stash_sg_key                   = 'ctrl-e'
+  d.stash_fzf_key                  = 'ctrl-f'
+  d.stash_s_key                    = 'ctrl-s'
+  d.stash_pickaxe_regex_key        = 'ctrl-x'
+  d.stash_preview_0_key            = 'f1'
+  d.stash_preview_1_key            = 'f2'
+  d.stash_preview_2_key            = 'f3'
+  d.stash_preview_3_key            = 'f4'
+  d.stash_preview_4_key            = 'f5'
+  d.stash_default_preview_command  = 0
 
   -- Buffer keys
-  cfg.buffers_delete_key        = g('siefe_buffers_delete_key', 'del')
-  cfg.buffers_git_key           = g('siefe_buffers_git_key', 'ctrl-p')
-  cfg.buffers_history_key       = g('siefe_buffers_history_key', 'ctrl-h')
-  cfg.buffers_default_preview_command = tonumber(g('siefe_buffers_default_preview_command', g('siefe_rg_default_preview_command', 0)))
-  cfg.buffers_preview_key       = g('siefe_buffers_preview_key', g('siefe_rg_preview_key', 'f1'))
-  cfg.buffers_fast_preview_key  = g('siefe_buffers_fast_preview_key', g('siefe_rg_fast_preview_key', 'f2'))
-  cfg.buffers_jump              = g('siefe_buffers_jump', false)
+  d.buffers_delete_key             = 'del'
+  d.buffers_git_key                = 'ctrl-p'
+  d.buffers_history_key            = 'ctrl-h'
+  d.buffers_default_preview_command = d.rg_default_preview_command
+  d.buffers_preview_key            = d.rg_preview_key
+  d.buffers_fast_preview_key       = d.rg_fast_preview_key
+  d.buffers_jump                   = false
 
   -- Mark keys
-  cfg.marks_delete_key          = g('siefe_marks_delete_key', 'del')
-  cfg.marks_yank_key            = g('siefe_marks_yank_key', 'ctrl-y')
-  cfg.marks_default_preview_command = tonumber(g('siefe_marks_default_preview_command', g('siefe_rg_default_preview_command', 0)))
-  cfg.marks_preview_key         = g('siefe_marks_preview_key', g('siefe_rg_preview_key', 'f1'))
-  cfg.marks_fast_preview_key    = g('siefe_marks_fast_preview_key', g('siefe_rg_fast_preview_key', 'f2'))
+  d.marks_delete_key               = 'del'
+  d.marks_yank_key                 = 'ctrl-y'
+  d.marks_default_preview_command  = d.rg_default_preview_command
+  d.marks_preview_key              = d.rg_preview_key
+  d.marks_fast_preview_key         = d.rg_fast_preview_key
 
   -- Jump keys
-  cfg.jumps_yank_key            = g('siefe_jumps_yank_key', 'ctrl-y')
-  cfg.jumps_clear_key           = g('siefe_jumps_clear_key', 'del')
-  cfg.jumps_preview_key         = g('siefe_jumps_preview_key', g('siefe_rg_preview_key', 'f1'))
-  cfg.jumps_fast_preview_key    = g('siefe_jumps_fast_preview_key', g('siefe_rg_fast_preview_key', 'f2'))
-  cfg.jumps_default_preview_command = tonumber(g('siefe_jumps_default_preview_command', g('siefe_rg_default_preview_command', 0)))
+  d.jumps_yank_key                 = 'ctrl-y'
+  d.jumps_clear_key                = 'del'
+  d.jumps_preview_key              = d.rg_preview_key
+  d.jumps_fast_preview_key         = d.rg_fast_preview_key
+  d.jumps_default_preview_command  = d.rg_default_preview_command
 
   -- Register keys
-  cfg.registers_paste_key       = g('siefe_registers_paste_key', 'ctrl-p')
-  cfg.registers_edit_key        = g('siefe_registers_edit_key', 'ctrl-e')
-  cfg.registers_execute_key     = g('siefe_registers_execute_key', 'ctrl-x')
-  cfg.registers_clear_key       = g('siefe_registers_clear_key', 'del')
+  d.registers_paste_key            = 'ctrl-p'
+  d.registers_edit_key             = 'ctrl-e'
+  d.registers_execute_key          = 'ctrl-x'
+  d.registers_clear_key            = 'del'
 
   -- Maps keys
-  cfg.maps_open_key             = g('siefe_maps_open_key', 'ctrl-o')
-  cfg.maps_modes_key            = g('siefe_maps_modes_key', 'ctrl-d')
-  cfg.modes_select_all_key      = g('siefe_modes_select_all_key', 'ctrl-a')
+  d.maps_open_key                  = 'ctrl-o'
+  d.maps_modes_key                 = 'ctrl-d'
+  d.modes_select_all_key           = 'ctrl-a'
 
   -- fd / dir select keys
-  cfg.fd_hidden_key             = g('siefe_fd_hidden_key', 'ctrl-h')
-  cfg.fd_no_ignore_key          = g('siefe_fd_no_ignore_key', 'ctrl-u')
-  cfg.fd_git_root_key           = g('siefe_fd_git_root_key', 'ctrl-r')
-  cfg.fd_project_root_key       = g('siefe_fd_project_root_key', 'alt-o')
-  cfg.fd_search_git_root_key    = g('siefe_fd_search_git_root_key', 'ctrl-s')
-  cfg.fd_search_project_root_key= g('siefe_fd_search_project_root_key', 'alt-e')
-  cfg.fd_depth1_key             = g('siefe_fd_depth1_key', g('siefe_rg_depth1_key', 'ctrl-e'))
-  cfg.fd_open_dir_key           = g('siefe_fd_open_dir_key', 'ctrl-o')
-  cfg.fd_project_root_env       = g('siefe_fd_project_root_env', g('siefe_fd_git_root_env', ''))
+  d.fd_hidden_key                  = 'ctrl-h'
+  d.fd_no_ignore_key               = 'ctrl-u'
+  d.fd_git_root_key                = 'ctrl-r'
+  d.fd_project_root_key            = 'alt-o'
+  d.fd_search_git_root_key         = 'ctrl-s'
+  d.fd_search_project_root_key     = 'alt-e'
+  d.fd_depth1_key                  = d.rg_depth1_key
+  d.fd_open_dir_key                = 'ctrl-o'
+  d.fd_project_root_env            = ''
 
-  -- Window action map
-  cfg.common_window_actions = {
-    [cfg.vdiffsplit_key] = 'vert diffsplit',
-    [cfg.tab_key]        = 'tab split',
-    [cfg.split_key]      = 'split',
-    [cfg.vsplit_key]     = 'vsplit',
+  -- Window action maps (built from key fields above)
+  d.common_window_actions = {
+    [d.vdiffsplit_key] = 'vert diffsplit',
+    [d.tab_key]        = 'tab split',
+    [d.split_key]      = 'split',
+    [d.vsplit_key]     = 'vsplit',
   }
-  cfg.fugitive_window_actions = {
-    ['tab split']        = 'Gtabedit',
-    ['split']            = 'Gsplit',
-    ['vsplit']           = 'Gvsplit',
+  d.fugitive_window_actions = {
+    ['tab split'] = 'Gtabedit',
+    ['split']     = 'Gsplit',
+    ['vsplit']    = 'Gvsplit',
   }
 
-  return cfg
+  return d
 end
 
--- Singleton config (loaded once)
+-- Active config (nil until setup() or first access)
 local _cfg = nil
-local mt = {
-  __index = function(t, k)
-    if _cfg == nil then _cfg = M.load() end
+
+-- Merge user opts over defaults and rebuild derived tables
+function M.setup(opts)
+  _cfg = vim.tbl_deep_extend('force', make_defaults(), opts or {})
+  -- Rebuild window-action maps in case the user overrode any key fields
+  _cfg.common_window_actions = {
+    [_cfg.vdiffsplit_key] = 'vert diffsplit',
+    [_cfg.tab_key]        = 'tab split',
+    [_cfg.split_key]      = 'split',
+    [_cfg.vsplit_key]     = 'vsplit',
+  }
+  _cfg.fugitive_window_actions = {
+    ['tab split'] = 'Gtabedit',
+    ['split']     = 'Gsplit',
+    ['vsplit']    = 'Gvsplit',
+  }
+end
+
+-- Proxy: lazily initialise from defaults if setup() was never called
+return setmetatable(M, {
+  __index = function(_, k)
+    if k == 'setup' then return M.setup end
+    if _cfg == nil then M.setup() end
     return _cfg[k]
   end,
-  __newindex = function(t, k, v)
-    if _cfg == nil then _cfg = M.load() end
+  __newindex = function(_, k, v)
+    if _cfg == nil then M.setup() end
     _cfg[k] = v
   end,
-}
-return setmetatable({}, mt)
+})

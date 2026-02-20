@@ -11,16 +11,8 @@ M.config = nil
 -- ── Setup ────────────────────────────────────────────────────────────────────
 
 function M.setup(opts)
-  opts = opts or {}
-
-  -- Merge user opts into vim.g.* so that config.lua picks them up
-  for k, v in pairs(opts) do
-    vim.g['siefe_' .. k] = v
-  end
-
-  -- Force reload of config singleton
-  package.loaded['siefe.config'] = nil
-  M.config = require('siefe.config')
+  -- Pass the Lua table directly into the config module
+  require('siefe.config').setup(opts)
 
   -- Set up buffer tracking autocmd
   vim.api.nvim_create_augroup('siefe_buffer_tracker', { clear = true })
