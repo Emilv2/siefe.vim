@@ -25,11 +25,76 @@ function M.historyoldfiles(fullscreen, kwargs)
     git_help   = ' ╱ ' .. utils.prettify_header(config.history_git_key, 'project history:' .. toggle)
   end
 
+  -- Detect shada2fzf binary (used only for non-project mode to stream MRU positions)
+  local shada2fzf_bin = utils.bin_path('shada2fzf')
+  local has_shada2fzf = (not kwargs.project) and vim.fn.executable(shada2fzf_bin) == 1
+
   local source
   local project_prefix = ''
   if kwargs.project and in_git then
     source         = utils.recent_git_files_info()
     project_prefix = utils.get_git_basename_or_bufdir() .. ' '
+  elseif has_shada2fzf then
+    -- Streaming source: emit current buffer + listed buffers immediately, then
+    -- pipe shada2fzf for all historically-visited files with saved positions.
+    -- Uses a coroutine so fzf sees entries as they arrive (responsive on large
+    -- shada files) and no filereadable() NFS calls are made for old files.
+    source = (function()
+      -- Build the prefix entries (current buf + listed buffers) synchronously
+      local prefix = {}
+      local visited = {}
+
+      local cur = vim.fn.expand('%')
+      if cur ~= '' then
+        local fname = vim.fn.fnamemodify(cur, ':~:.')
+        local lnum  = vim.fn.line('.')
+        table.insert(prefix, lnum .. '//0//' .. fname)
+        visited[fname] = true
+      end
+      for _, b in ipairs(utils.buflisted_sorted()) do
+        local name = vim.fn.bufname(b)
+        if name ~= '' then
+          local fname = vim.fn.fnamemodify(vim.fn.expand(name), ':~:.')
+          if not visited[fname] then
+            local lnum = (vim.fn.getbufinfo(b)[1] or {}).lnum or 0
+            table.insert(prefix, tostring(lnum) .. '//0//' .. fname)
+            visited[fname] = true
+          end
+        end
+      end
+
+      local shada_path = utils.shada_path()
+      local s2f        = shada2fzf_bin
+      local vis        = visited  -- capture for the coroutine closure
+
+      return function(fzf_cb)
+        -- Emit current buf + listed buffers immediately
+        for _, e in ipairs(prefix) do fzf_cb(e) end
+
+        -- Stream shada2fzf output: `line//col//filename\n`
+        -- shada2fzf has already sorted by timestamp desc (MRU order) and
+        -- deduplicated, so we just skip files already in the prefix list.
+        -- Note: filenames containing '//' are handled correctly — parse_entry
+        -- uses table.concat(parts[3..], '//') to reconstruct them faithfully.
+        -- io.popen is used for broad Neovim version compatibility; vim.system
+        -- (0.10+) could replace this if a minimum version requirement is set.
+        local f = io.popen(vim.fn.shellescape(s2f) .. ' ' .. vim.fn.shellescape(shada_path))
+        if f then
+          for line in f:lines() do
+            -- Extract the filename (third //-field)
+            local parts = vim.split(line, '//', { plain = true })
+            local fname = #parts >= 3 and parts[3] or nil
+            if fname and fname ~= '' and not vis[fname] then
+              fzf_cb(line)
+              vis[fname] = true
+            end
+          end
+          f:close()
+        end
+
+        fzf_cb(nil) -- signal EOF to fzf-lua
+      end
+    end)()
   else
     source = utils.recent_files_info()
   end
@@ -74,7 +139,9 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--ansi']        = '',
     ['--multi']       = '',
     ['--print-query'] = '',
-    ['--with-nth']    = '2..',
+    -- Entry format: line//col//filename
+    -- {1}=line, {2}=col, {3}=filename (shown to user)
+    ['--with-nth']    = '3..',
     ['--delimiter']   = '//',
     ['--preview-window'] = '+{1}-/2,' .. default_size,
     ['--header-lines'] = tostring(header_lines),
@@ -99,9 +166,18 @@ function M.historyoldfiles(fullscreen, kwargs)
     return selected or {}
   end
 
-  local function filename_from_line(line)
+  -- Parse an entry in `line//col//filename` format.
+  -- Returns: lnum (int), col (int), filename (string)
+  local function parse_entry(line)
     local parts = vim.split(line, '//', { plain = true })
-    return #parts >= 2 and parts[2] or line
+    if #parts >= 3 then
+      return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
+             table.concat(vim.list_slice(parts, 3), '//')
+    elseif #parts == 2 then
+      -- Legacy `line//filename` (e.g. from recent_git_files_info edge case)
+      return tonumber(parts[1]) or 0, 0, parts[2]
+    end
+    return 0, 0, line
   end
 
   -- ── Actions ─────────────────────────────────────────────────────────────────
@@ -111,11 +187,12 @@ function M.historyoldfiles(fullscreen, kwargs)
   actions['default'] = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
-    local filename = filename_from_line(items[1])
-    utils.open_file('edit', filename)
+    local lnum, col, filename = parse_entry(items[1])
+    utils.open_file('edit', filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
     if #items > 1 then
       local qf = vim.tbl_map(function(l)
-        return { filename = filename_from_line(l) }
+        local _, _, fname = parse_entry(l)
+        return { filename = fname }
       end, items)
       if config.history_loclist then utils.fill_loc(qf) else utils.fill_quickfix(qf) end
     end
@@ -126,7 +203,8 @@ function M.historyoldfiles(fullscreen, kwargs)
     actions[k] = function(selected, opts)
       local items = get_items(selected, opts)
       for _, line in ipairs(items) do
-        utils.open_file(c, filename_from_line(line))
+        local lnum, col, filename = parse_entry(line)
+        utils.open_file(c, filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
       end
     end
   end

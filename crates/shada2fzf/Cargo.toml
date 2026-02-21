@@ -1,0 +1,8 @@
+[package]
+name    = "shada2fzf"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "shada2fzf"
+path = "src/main.rs"

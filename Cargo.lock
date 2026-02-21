@@ -5,3 +5,7 @@ version = 4
 [[package]]
 name = "rg2fzf"
 version = "0.1.0"
+
+[[package]]
+name = "shada2fzf"
+version = "0.1.0"

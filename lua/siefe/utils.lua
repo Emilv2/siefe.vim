@@ -281,7 +281,7 @@ function M.recent_files_info()
 
   -- Current buffer
   if cur ~= '' then
-    table.insert(items, cur_line .. '//' .. vim.fn.fnamemodify(cur, ':~:.'))
+    table.insert(items, cur_line .. '//0//' .. vim.fn.fnamemodify(cur, ':~:.'))
   end
 
   -- Listed buffers sorted by access time
@@ -289,14 +289,15 @@ function M.recent_files_info()
     local name = vim.fn.bufname(b)
     if name ~= '' then
       local lnum = (vim.fn.getbufinfo(b)[1] or {}).lnum or 0
-      table.insert(items, tostring(lnum) .. '//' .. vim.fn.fnamemodify(vim.fn.expand(name), ':~:.'))
+      table.insert(items, tostring(lnum) .. '//0//' .. vim.fn.fnamemodify(vim.fn.expand(name), ':~:.'))
     end
   end
 
-  -- v:oldfiles
+  -- v:oldfiles (line=0, col=0 — v:oldfiles carries no position info;
+  -- when shada2fzf is present the streaming path provides real positions)
   for _, of in ipairs(M.oldfiles()) do
     if vim.fn.filereadable(vim.fn.fnamemodify(vim.fn.expand(of.name), ':p')) == 1 then
-      table.insert(items, tostring(of.line) .. '//' .. vim.fn.fnamemodify(vim.fn.expand(of.name), ':~:.'))
+      table.insert(items, '0//0//' .. vim.fn.fnamemodify(vim.fn.expand(of.name), ':~:.'))
     end
   end
 
@@ -314,7 +315,7 @@ function M.recent_git_files_info()
   local cur = vim.fn.expand('%')
   if cur ~= '' then
     local real = vim.fn.FugitiveReal and vim.fn.FugitiveReal() or vim.fn.expand('%:p')
-    table.insert(items, vim.fn.line('.') .. '//' .. real:gsub(git_dir:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1))
+    table.insert(items, vim.fn.line('.') .. '//0//' .. real:gsub(git_dir:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1))
   end
 
   for _, b in ipairs(M.buflisted_sorted()) do
@@ -323,7 +324,7 @@ function M.recent_git_files_info()
       local full = vim.fn.fnamemodify(vim.fn.expand(name), ':p')
       if full:sub(1, #git_dir) == git_dir then
         local lnum = (vim.fn.getbufinfo(b)[1] or {}).lnum or 0
-        table.insert(items, tostring(lnum) .. '//' .. full:sub(#git_dir + 2))
+        table.insert(items, tostring(lnum) .. '//0//' .. full:sub(#git_dir + 2))
       end
     end
   end
@@ -331,7 +332,9 @@ function M.recent_git_files_info()
   for _, of in ipairs(M.oldfiles()) do
     local full = vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(of.name)), ':p')
     if vim.fn.filereadable(full) == 1 and full:sub(1, #git_dir) == git_dir then
-      table.insert(items, tostring(of.line) .. '//' .. full:sub(#git_dir + 2))
+      -- line=0, col=0: v:oldfiles carries no position info; shada2fzf streaming
+      -- path provides real positions when the binary is present
+      table.insert(items, '0//0//' .. full:sub(#git_dir + 2))
     end
   end
 
@@ -419,7 +422,18 @@ function M.bin_path(name)
   return M.bin_dir() .. name
 end
 
--- ── Data path ────────────────────────────────────────────────────────────────
+-- ── Shada path ───────────────────────────────────────────────────────────────
+
+-- Return the path to Neovim's active shada file.
+-- Respects the 'shadafile' option; falls back to the XDG default.
+function M.shada_path()
+  local sf = vim.o.shadafile
+  if sf and sf ~= '' and sf ~= 'NONE' then
+    return sf
+  end
+  return vim.fn.stdpath('state') .. '/shada/main.shada'
+end
+
 
 local _data_path = nil
 function M.data_path()
@@ -485,10 +499,10 @@ function M.make_preview_commands(preview_slot, bat_opts)
   -- files: {} = file
   local files_preview = bat_args and (preview .. ' {} ' .. bat_args) or (preview .. ' {} cat')
 
-  -- history: {1}=line, {2}=file
-  local hist_preview  = bat_args and (preview .. ' {2} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={1} ')) or (preview .. ' {2} cat')
-  local hist_fast     = preview .. ' {2} cat | awk \'' .. '{ if (NR == {1}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }' .. '\''
-  local hist_faster   = preview .. ' {2} cat'
+  -- history: {1}=line, {2}=col, {3}=file
+  local hist_preview  = bat_args and (preview .. ' {3} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={1} ')) or (preview .. ' {3} cat')
+  local hist_fast     = preview .. ' {3} cat | awk \'' .. '{ if (NR == {1}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }' .. '\''
+  local hist_faster   = preview .. ' {3} cat'
 
   -- buffers: {1}=file, {2}=line
   local buf_preview   = bat_args and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} ')) or (preview .. ' {1} cat')

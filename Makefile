@@ -6,6 +6,7 @@ CARGO ?= cargo
 build:
 	$(CARGO) build --release
 	cp target/release/rg2fzf bin/rg2fzf
+	cp target/release/shada2fzf bin/shada2fzf
 
 test-rust:
 	$(CARGO) test
