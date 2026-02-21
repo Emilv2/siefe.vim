@@ -58,7 +58,7 @@ end
 -- piped through rg2fzf, which converts each `file\0line:col:text\n` record to
 -- the NUL-terminated `file:line:col:text\0` format required by fzf --read0.
 local function build_rg_command(kwargs, rg2fzf_path)
-  local logger      = utils.bin_path('logger') .. ' '
+  local logger      = utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' '
   local null_flag   = rg2fzf_path and '--null ' or ''
   local rg2fzf_pipe = rg2fzf_path and (' | ' .. vim.fn.shellescape(rg2fzf_path)) or ''
   local case      = kwargs.case_sensitive == 1 and '--smart-case '

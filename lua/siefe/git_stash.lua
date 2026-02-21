@@ -24,7 +24,7 @@ function M.gitstash(fullscreen, kwargs)
   local format       = '--format=%C(blue)%gd • %C(auto)%h • %s %C(green)%cr %C(reset)'
   local git_stashes  = utils.bin_path('git_stashes')
   local git_SG       = utils.bin_path('git_SG')
-  local logger       = utils.bin_path('logger') .. ' '
+  local logger       = utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' '
   local remove_nl    = '| sed -z -E "s/\\r?\\n/↵/g"'
 
   local cmd_fmt = git_stashes

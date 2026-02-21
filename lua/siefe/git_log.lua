@@ -118,7 +118,7 @@ function M.gitlogfzf(fullscreen, kwargs)
 
     local write_init   = 'echo ' .. vim.fn.shellescape(kwargs.query) .. ' > ' .. query_file .. ' ;'
     local write_reload = 'echo {q} > ' .. query_file .. ' ;'
-    local logger = utils.bin_path('logger') .. ' '
+    local logger = utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' '
 
     initial_command = logger .. write_init .. logger
       .. string.format(cmd_fmt, vim.fn.shellescape(kwargs.query))

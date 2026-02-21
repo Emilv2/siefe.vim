@@ -445,6 +445,11 @@ function M.data_path()
   return _data_path
 end
 
+-- Return the path to the siefe error log (used as $1 when invoking bin/logger).
+function M.log_path()
+  return M.data_path() .. '/siefe.log'
+end
+
 -- ── Preview commands ──────────────────────────────────────────────────────────
 
 local _bat_cmd = nil

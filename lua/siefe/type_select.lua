@@ -59,7 +59,7 @@ function M.type_select(func, fullscreen, ...)
 
   local default_size, _ = utils.preview_window_size()
   fzf_lua.fzf_exec(
-    utils.bin_path('logger') .. ' rg --color=always --type-list',
+    utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' rg --color=always --type-list',
     {
       prompt    = 'Choose type> ',
       winopts   = utils.winopts(fullscreen),
