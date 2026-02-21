@@ -11,45 +11,48 @@
 //! rather than one.
 //!
 //! This binary reads those newline-terminated records from stdin and re-emits
-//! them as NUL-terminated records:
+//! them as NUL-terminated records using U+0001 (ASCII SOH, `\x01`) as the
+//! unambiguous separator between the filename and the `line:col:text` tail:
 //!
-//!     filename:line:col:matched_text\0
+//!     filename\x01line:col:matched_text\0
 //!
 //! The transformation is:
 //!   1. Find the first `\0` byte in each `\n`-terminated line (always the
 //!      filename/rest separator in `rg --null` output).
-//!   2. Replace it with `:`.
+//!   2. Replace it with `\x01` (SOH — a byte that is invalid in POSIX
+//!      filenames and therefore never present in the filename itself).
 //!   3. Replace the trailing `\n` (record terminator) with `\0`.
 //!
-//! The result is the standard `file:line:col:text` format consumed by fzf-lua's
-//! `path.entry_to_file()` parser, with each record NUL-terminated so fzf
-//! `--read0` can safely split the stream.
+//! ## Why SOH (`\x01`) instead of `:`
 //!
-//! ## Colon ambiguity
+//! Using `:` as the separator produces `file:line:col:text`, the standard
+//! format parsed by fzf-lua's `path.entry_to_file()`.  However, that function
+//! resolves colon-in-filename ambiguity by calling `uv.fs_stat()` in a loop —
+//! once per `:` boundary in the entire entry string.  On NFS or other
+//! high-latency file systems, even the ENOENT round-trips for a normal
+//! `src/main.rs:42:5:text` entry (3 calls) add measurable latency per file
+//! open.
 //!
-//! Filenames may contain `:` (e.g. `server:8080/handler.go`) and match text
-//! may also contain `:` (e.g. `http://redirect.to:9090/api`).  The output
-//! format `file:line:col:text` therefore does not uniquely identify field
-//! boundaries by the `:` character alone.
+//! SOH (`\x01`) is invalid in POSIX filenames.  The Lua parser in siefe.vim
+//! can therefore find the exact filename boundary with a single `find('\1')`
+//! call — no `fs_stat` needed, regardless of how many colons appear in the
+//! filename or in the match text.
 //!
-//! fzf-lua's `path.entry_to_file()` resolves this by splitting the entry on
-//! `:` and then iterating, calling `uv.fs_stat()` on progressively longer
-//! colon-joined candidates until one is confirmed to exist on disk.  Since rg
-//! only matches files that exist, this always finds the correct boundary —
-//! regardless of how many colons appear in the filename or the match text.
-//! Using `:` as the output field separator is therefore correct.
+//! ## Lines without `\0`
 //!
 //! Lines that contain no `\0` (e.g. output from the `logger` wrapper, or rg
 //! used without `--null`) are passed through with only the terminator changed
 //! (`\n` → `\0`).
 //!
-//! Limitation: rg's multiline mode (`-U`) can produce match text that
-//! contains literal `\n` bytes.  This binary splits on `\n` to find record
-//! boundaries, so a match whose text spans multiple lines will be split into
-//! separate output records — the first record will have the correct
-//! `file:line:col:first_line\0` form, but subsequent lines of the same match
-//! will appear as standalone (no-NUL passthrough) records and will be ignored
-//! by fzf-lua's entry parser.  To avoid this, do not combine rg2fzf with
+//! ## Multiline mode limitation
+//!
+//! rg's multiline mode (`-U`) can produce match text that contains literal
+//! `\n` bytes.  This binary splits on `\n` to find record boundaries, so a
+//! match whose text spans multiple lines will be split into separate output
+//! records — the first record will have the correct
+//! `file\x01line:col:first_line\0` form, but subsequent lines of the same
+//! match will appear as standalone (no-SOH passthrough) records and will be
+//! ignored by the Lua parser.  To avoid this, do not combine rg2fzf with
 //! rg's `-U` flag.  Without rg2fzf the fallback (`\n`-terminated, no
 //! `--read0`) is used, which has the same limitation.
 
@@ -63,7 +66,9 @@ fn main() -> io::Result<()> {
 }
 
 /// Core translation: reads `\n`-terminated rg `--null` records and writes
-/// NUL-terminated `file:line:col:text` records.  Factored out so that the
+/// NUL-terminated `file\x01line:col:text` records.  The SOH byte (`\x01`)
+/// marks the exact filename/rest boundary without ambiguity and without
+/// requiring any file-system calls to resolve.  Factored out so that the
 /// unit tests can call it directly without spawning a process.
 fn translate(reader: impl BufRead, out: &mut impl Write) -> io::Result<()> {
     for record in reader.split(b'\n') {
@@ -73,9 +78,9 @@ fn translate(reader: impl BufRead, out: &mut impl Write) -> io::Result<()> {
         }
         // Find the NUL byte that `rg --null` inserts after the filename.
         if let Some(nul) = record.iter().position(|&b| b == 0) {
-            // Write: filename `:` line:col:text `\0`
+            // Write: filename `\x01` line:col:text `\0`
             out.write_all(&record[..nul])?;
-            out.write_all(b":")?;
+            out.write_all(b"\x01")?;
             out.write_all(&record[nul + 1..])?;
         } else {
             // No NUL: rg wasn't called with --null, or this is a wrapper
@@ -99,17 +104,16 @@ mod tests {
 
     #[test]
     fn basic_record() {
-        assert_eq!(run(b"file.lua\x001:5:hello world\n"), b"file.lua:1:5:hello world\0");
+        assert_eq!(run(b"file.lua\x001:5:hello world\n"), b"file.lua\x011:5:hello world\0");
     }
 
     #[test]
     fn colon_in_filename_and_text() {
-        // Both filename and match text contain colons simultaneously.
-        // entry_to_file() disambiguates via uv.fs_stat(); rg2fzf's job is only
-        // to preserve the NUL-to-colon substitution faithfully.
+        // Both filename and match text contain colons.  The Lua parser splits
+        // on \x01 (not ':') to find the filename — no fs_stat needed.
         assert_eq!(
             run(b"server:8080/handler.go\x001:1:http://redirect.to:9090/api\n"),
-            b"server:8080/handler.go:1:1:http://redirect.to:9090/api\0"
+            b"server:8080/handler.go\x011:1:http://redirect.to:9090/api\0"
         );
     }
 
@@ -117,7 +121,7 @@ mod tests {
     fn colon_in_filename() {
         assert_eq!(
             run(b"/path/to/file:with:colons.rs\x001:1:fn main\n"),
-            b"/path/to/file:with:colons.rs:1:1:fn main\0"
+            b"/path/to/file:with:colons.rs\x011:1:fn main\0"
         );
     }
 
@@ -125,7 +129,7 @@ mod tests {
     fn colon_in_match_text() {
         assert_eq!(
             run(b"file.lua\x001:1:foo:bar:baz\n"),
-            b"file.lua:1:1:foo:bar:baz\0"
+            b"file.lua\x011:1:foo:bar:baz\0"
         );
     }
 
@@ -133,7 +137,7 @@ mod tests {
     fn multiple_records() {
         assert_eq!(
             run(b"a.lua\x001:1:foo\nb.lua\x002:3:bar\n"),
-            b"a.lua:1:1:foo\0b.lua:2:3:bar\0"
+            b"a.lua\x011:1:foo\0b.lua\x012:3:bar\0"
         );
     }
 
@@ -141,7 +145,7 @@ mod tests {
     fn empty_lines_skipped() {
         assert_eq!(
             run(b"a.lua\x001:1:foo\n\nb.lua\x002:3:bar\n"),
-            b"a.lua:1:1:foo\0b.lua:2:3:bar\0"
+            b"a.lua\x011:1:foo\0b.lua\x012:3:bar\0"
         );
     }
 
@@ -153,9 +157,11 @@ mod tests {
 
     #[test]
     fn ansi_colors_in_output() {
-        // ANSI escape sequences (from rg --color=always) must not affect NUL detection.
+        // ANSI escape sequences (from rg --color=always) must not affect NUL
+        // detection.  The SOH ends up between the last ANSI reset and the
+        // line-number field.
         let input = b"\x1b[32mfile.lua\x1b[0m\x001:1:text\n";
-        let expected = b"\x1b[32mfile.lua\x1b[0m:1:1:text\0";
+        let expected = b"\x1b[32mfile.lua\x1b[0m\x011:1:text\0";
         assert_eq!(run(input), expected);
     }
 

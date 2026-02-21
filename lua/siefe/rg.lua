@@ -9,6 +9,46 @@ local utils  = require('siefe.utils')
 
 local function bool_to_flag(b, flag) return b and flag or '' end
 
+-- Parse an rg2fzf-format entry: `filename\x01line:col:text`
+-- rg2fzf uses SOH (\x01) as the unambiguous filename/rest separator — it is
+-- invalid in POSIX filenames, so a single find() locates the exact boundary
+-- with zero fs_stat calls regardless of colons in the filename or match text.
+-- The tail is always `\d+:\d+:text` — rg guarantees numeric line and col
+-- fields with `--column --line-number`.
+-- ANSI CSI sequences (from rg --color=always) are stripped before parsing.
+local function parse_rg2fzf_entry(entry)
+  -- Strip ANSI/VT100 CSI sequences: ESC [ <params> <final-byte>
+  -- Final bytes are in the range 0x40-0x7E (@A-Z[\]^_`a-z{|}~).
+  local clean = entry:gsub('\27%[[\32-\63]*[\64-\126]', '')
+  local sep = clean:find('\1', 1, true)   -- SOH = \x01
+  if not sep then return nil end
+  local filename = clean:sub(1, sep - 1)
+  local rest     = clean:sub(sep + 1)    -- always "line:col:text" from rg2fzf
+  local lnum, col, text = rest:match('^(%d+):(%d+):(.*)')
+  if not lnum then return nil end
+  return { filename = filename, lnum = tonumber(lnum) or 1, col = tonumber(col) or 1, text = text or '' }
+end
+
+-- Open multiple parsed entries in the given window command; populate qf/ll for
+-- multi-select.  Used by file-open actions when rg2fzf is active (avoids the
+-- fs_stat loop inside fzl_actions / entry_to_file).
+local function open_rg2fzf_entries(entries, win_cmd, use_loclist)
+  if not entries or #entries == 0 then return end
+  local parsed_list = {}
+  for _, e in ipairs(entries) do
+    local p = parse_rg2fzf_entry(e)
+    if p then table.insert(parsed_list, p) end
+  end
+  if #parsed_list == 0 then return end
+  utils.open_file(win_cmd, parsed_list[1].filename, parsed_list[1].lnum, parsed_list[1].col)
+  if #parsed_list > 1 then
+    local qf = vim.tbl_map(function(p)
+      return { filename = p.filename, lnum = p.lnum, col = p.col, text = p.text or '' }
+    end, parsed_list)
+    if use_loclist then utils.fill_loc(qf) else utils.fill_quickfix(qf) end
+  end
+end
+
 -- Build the rg command format string.
 -- Returns a Lua format string where '%s' is the query placeholder.
 -- Callers use string.format() to substitute either:
@@ -258,46 +298,62 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     vim.schedule(function() M.ripgrepfzf(fullscreen, dir, kwargs) end)
   end
 
-  -- Wrap a native fzl_action to strip the --print-query line from selected.
-  -- Returns early if there are no actual entries after stripping the query.
-  local function wrap(action)
-    return function(selected, opts)
-      local entries = get_entries(selected)
-      if #entries == 0 then return end
-      action(entries, opts)
-    end
-  end
-
   -- ── Actions ──────────────────────────────────────────────────────────────────
 
   local actions = {}
 
-  -- Open: first entry in current window; send all to qf/ll when multi-selected.
-  -- Native fzl_actions parse standard `file:line:col:text` entries directly.
+  -- Open: first entry in current window; populate qf/ll for multi-select.
+  -- When rg2fzf is active entries are `filename\x01line:col:text` — parsed
+  -- without fs_stat.  Fallback entries are `file:line:col:text` — parsed via
+  -- fzl_actions which calls entry_to_file() / fs_stat internally.
   actions['default'] = function(selected, opts)
     local entries = get_entries(selected)
     if #entries == 0 then return end
-    fzl_actions.file_edit({ entries[1] }, opts)
-    if #entries > 1 then
-      if config.rg_loclist then
-        fzl_actions.file_sel_to_ll(entries, opts)
-      else
-        fzl_actions.file_sel_to_qf(entries, opts)
+    if rg2fzf then
+      open_rg2fzf_entries(entries, 'edit', config.rg_loclist)
+    else
+      fzl_actions.file_edit({ entries[1] }, opts)
+      if #entries > 1 then
+        if config.rg_loclist then
+          fzl_actions.file_sel_to_ll(entries, opts)
+        else
+          fzl_actions.file_sel_to_qf(entries, opts)
+        end
       end
     end
   end
 
-  -- Window open actions (native fzf-lua, wrapped to strip query prefix)
-  actions[config.split_key]      = wrap(fzl_actions.file_split)
-  actions[config.vsplit_key]     = wrap(fzl_actions.file_vsplit)
-  actions[config.tab_key]        = wrap(fzl_actions.file_tabedit)
-  actions[config.vdiffsplit_key] = function(selected, opts)
+  -- Window open actions.
+  -- rg2fzf path: parse \x01 format directly (no fs_stat).
+  -- Fallback path: native fzl_actions (uses entry_to_file / fs_stat).
+  local function make_open_action(win_cmd)
+    return function(selected, opts)
+      local entries = get_entries(selected)
+      if #entries == 0 then return end
+      if rg2fzf then
+        open_rg2fzf_entries(entries, win_cmd, false)
+      else
+        if win_cmd == 'split'       then fzl_actions.file_split(entries, opts)
+        elseif win_cmd == 'vsplit'  then fzl_actions.file_vsplit(entries, opts)
+        elseif win_cmd == 'tabedit' then fzl_actions.file_tabedit(entries, opts)
+        end
+      end
+    end
+  end
+
+  actions[config.split_key]      = make_open_action('split')
+  actions[config.vsplit_key]     = make_open_action('vsplit')
+  actions[config.tab_key]        = make_open_action('tabedit')
+  actions[config.vdiffsplit_key] = function(selected, _opts)
     -- fzl_actions has no diffsplit equivalent; keep custom parsing.
     local entries = get_entries(selected)
     if #entries == 0 then return end
-    local parsed = utils.parse_rg_line(entries[1])
-    if parsed then
-      utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col)
+    if rg2fzf then
+      local parsed = parse_rg2fzf_entry(entries[1])
+      if parsed then utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col) end
+    else
+      local parsed = utils.parse_rg_line(entries[1])
+      if parsed then utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col) end
     end
   end
 
@@ -402,11 +458,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     reopen(selected, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
   end
 
-  -- Yank matched text to default register
+  -- Yank matched text to default register.
+  -- rg2fzf path: parse \x01 format directly.
+  -- Fallback path: parse standard file:line:col:text format.
   actions[config.rg_yank_key] = function(selected, _opts)
     local texts = {}
     for _, line in ipairs(get_entries(selected)) do
-      local parsed = utils.parse_rg_line(line)
+      local parsed = rg2fzf and parse_rg2fzf_entry(line) or utils.parse_rg_line(line)
       if parsed then table.insert(texts, parsed.text) end
     end
     utils.yank_to_register(table.concat(texts, '\n'))
