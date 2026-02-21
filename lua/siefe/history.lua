@@ -5,6 +5,23 @@ local M = {}
 local config = require('siefe.config')
 local utils  = require('siefe.utils')
 
+-- Parse an entry in `line//col//filename` format.
+-- Returns: lnum (int), col (int), filename (string).
+-- Handles filenames that themselves contain "//" by rejoining all parts from
+-- index 3 onwards with "//", making the round-trip lossless.
+-- Legacy two-field format `line//filename` (no col) is also accepted.
+local function parse_entry(line)
+  local parts = vim.split(line, '//', { plain = true })
+  if #parts >= 3 then
+    return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
+           table.concat(vim.list_slice(parts, 3), '//')
+  elseif #parts == 2 then
+    -- Legacy `line//filename` (e.g. from recent_git_files_info edge case)
+    return tonumber(parts[1]) or 0, 0, parts[2]
+  end
+  return 0, 0, line
+end
+
 function M.historyoldfiles(fullscreen, kwargs)
   local ok, fzf_lua = pcall(require, 'fzf-lua')
   if not ok then utils.warn('siefe: fzf-lua not found') return end
@@ -166,20 +183,6 @@ function M.historyoldfiles(fullscreen, kwargs)
     return selected or {}
   end
 
-  -- Parse an entry in `line//col//filename` format.
-  -- Returns: lnum (int), col (int), filename (string)
-  local function parse_entry(line)
-    local parts = vim.split(line, '//', { plain = true })
-    if #parts >= 3 then
-      return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
-             table.concat(vim.list_slice(parts, 3), '//')
-    elseif #parts == 2 then
-      -- Legacy `line//filename` (e.g. from recent_git_files_info edge case)
-      return tonumber(parts[1]) or 0, 0, parts[2]
-    end
-    return 0, 0, line
-  end
-
   -- ── Actions ─────────────────────────────────────────────────────────────────
 
   local actions = {}
@@ -254,5 +257,11 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   fzf_lua.fzf_exec(source, launch_opts)
 end
+
+-- Test-only exports (not part of the public API).
+-- Used by test/test_history.lua to exercise pure logic without launching fzf.
+M._test = {
+  parse_entry = parse_entry,
+}
 
 return M

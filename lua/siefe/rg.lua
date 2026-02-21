@@ -519,4 +519,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   end
 end
 
+-- Test-only exports (not part of the public API).
+-- Used by test/test_rg.lua to exercise pure logic without launching fzf.
+M._test = {
+  parse_rg2fzf_entry  = parse_rg2fzf_entry,
+  build_rg_command    = build_rg_command,
+  build_files_command = build_files_command,
+  build_prompt        = build_prompt,
+}
+
 return M

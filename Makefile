@@ -1,4 +1,4 @@
-.PHONY: build test test-lua test-rust
+.PHONY: build test test-lua test-rust test-integration
 
 NVIM  ?= nvim
 CARGO ?= cargo
@@ -16,5 +16,11 @@ test-rust:
 test-lua:
 	$(NVIM) --headless -u NONE -l test/test_config.lua
 	$(NVIM) --headless -u NONE -l test/test_utils.lua
+	$(NVIM) --headless -u NONE -l test/test_rg.lua
+	$(NVIM) --headless -u NONE -l test/test_history.lua
+
+# Integration tests call real external binaries; requires `make build` first.
+test-integration: build
+	$(NVIM) --headless -u NONE -l test/test_integration.lua
 
 test: test-rust test-lua

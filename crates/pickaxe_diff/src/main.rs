@@ -193,7 +193,107 @@ fn emit_output(
     out.flush()
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
+// ── Unit tests ────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `Colors` value with all fields empty — makes assertions simple because
+    /// no ANSI bytes appear in the expected strings.
+    fn no_colors() -> Colors {
+        Colors {
+            frag:  String::new(),
+            func:  String::new(),
+            meta:  String::new(),
+            new:   String::new(),
+            old:   String::new(),
+            reset: String::new(),
+        }
+    }
+
+    // ── format_hunk_header ────────────────────────────────────────────────────
+
+    #[test]
+    fn hunk_header_with_func_context() {
+        // With empty colors the output equals the input unchanged.
+        let r = format_hunk_header("@@ -1,3 +1,3 @@ fn main()", &no_colors());
+        assert_eq!(r, "@@ -1,3 +1,3 @@ fn main()");
+    }
+
+    #[test]
+    fn hunk_header_without_func_context() {
+        let r = format_hunk_header("@@ -1,3 +1,3 @@", &no_colors());
+        assert_eq!(r, "@@ -1,3 +1,3 @@");
+    }
+
+    #[test]
+    fn hunk_header_applies_colors() {
+        let c = Colors {
+            frag:  "\x1b[36m".to_owned(),
+            func:  "\x1b[90m".to_owned(),
+            meta:  String::new(),
+            new:   String::new(),
+            old:   String::new(),
+            reset: "\x1b[m".to_owned(),
+        };
+        let r = format_hunk_header("@@ -1,1 +1,1 @@ fn foo()", &c);
+        assert!(r.contains("\x1b[36m@@ -1,1 +1,1 @@\x1b[m"), "frag should be colored");
+        assert!(r.contains("\x1b[90m fn foo()\x1b[m"), "func should be colored");
+    }
+
+    // ── highlight_matches ─────────────────────────────────────────────────────
+
+    #[test]
+    fn highlight_no_match_unchanged() {
+        let re = Regex::new("needle").unwrap();
+        assert_eq!(highlight_matches("no match here", &re), "no match here");
+    }
+
+    #[test]
+    fn highlight_single_match() {
+        let re = Regex::new("needle").unwrap();
+        assert_eq!(
+            highlight_matches("before needle after", &re),
+            "before \x1b[7mneedle\x1b[27m after"
+        );
+    }
+
+    #[test]
+    fn highlight_multiple_matches() {
+        let re = Regex::new("x").unwrap();
+        assert_eq!(
+            highlight_matches("axbxc", &re),
+            "a\x1b[7mx\x1b[27mb\x1b[7mx\x1b[27mc"
+        );
+    }
+
+    // ── format_content_line ───────────────────────────────────────────────────
+
+    #[test]
+    fn content_line_added_highlighted() {
+        // With empty colors: result is "+" prefix + highlighted content
+        let re = Regex::new("foo").unwrap();
+        let r = format_content_line("+added foo line", &re, &no_colors());
+        assert_eq!(r, "+added \x1b[7mfoo\x1b[27m line");
+    }
+
+    #[test]
+    fn content_line_removed_highlighted() {
+        let re = Regex::new("bar").unwrap();
+        let r = format_content_line("-removed bar line", &re, &no_colors());
+        assert_eq!(r, "-removed \x1b[7mbar\x1b[27m line");
+    }
+
+    #[test]
+    fn content_line_context_unchanged() {
+        // Context lines (space prefix) are not coloured or highlighted.
+        let re = Regex::new("context").unwrap();
+        let r = format_content_line(" context line", &re, &no_colors());
+        assert_eq!(r, " context line");
+    }
+}
+
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
