@@ -21,9 +21,23 @@
 //!   2. Replace it with `:`.
 //!   3. Replace the trailing `\n` (record terminator) with `\0`.
 //!
-//! The result is the standard `file:line:col:text` format that fzf-lua's
-//! `path.entry_to_file()` already parses, but with each record NUL-terminated
-//! so fzf `--read0` can safely split the stream.
+//! The result is the standard `file:line:col:text` format consumed by fzf-lua's
+//! `path.entry_to_file()` parser, with each record NUL-terminated so fzf
+//! `--read0` can safely split the stream.
+//!
+//! ## Colon ambiguity
+//!
+//! Filenames may contain `:` (e.g. `server:8080/handler.go`) and match text
+//! may also contain `:` (e.g. `http://redirect.to:9090/api`).  The output
+//! format `file:line:col:text` therefore does not uniquely identify field
+//! boundaries by the `:` character alone.
+//!
+//! fzf-lua's `path.entry_to_file()` resolves this by splitting the entry on
+//! `:` and then iterating, calling `uv.fs_stat()` on progressively longer
+//! colon-joined candidates until one is confirmed to exist on disk.  Since rg
+//! only matches files that exist, this always finds the correct boundary —
+//! regardless of how many colons appear in the filename or the match text.
+//! Using `:` as the output field separator is therefore correct.
 //!
 //! Lines that contain no `\0` (e.g. output from the `logger` wrapper, or rg
 //! used without `--null`) are passed through with only the terminator changed
@@ -86,6 +100,17 @@ mod tests {
     #[test]
     fn basic_record() {
         assert_eq!(run(b"file.lua\x001:5:hello world\n"), b"file.lua:1:5:hello world\0");
+    }
+
+    #[test]
+    fn colon_in_filename_and_text() {
+        // Both filename and match text contain colons simultaneously.
+        // entry_to_file() disambiguates via uv.fs_stat(); rg2fzf's job is only
+        // to preserve the NUL-to-colon substitution faithfully.
+        assert_eq!(
+            run(b"server:8080/handler.go\x001:1:http://redirect.to:9090/api\n"),
+            b"server:8080/handler.go:1:1:http://redirect.to:9090/api\0"
+        );
     }
 
     #[test]

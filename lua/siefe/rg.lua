@@ -197,13 +197,21 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- newline, so multiline match text or special characters in entries are
     -- never confused with record boundaries.
     ['--print0']      = '',
-    -- Set ':' as the fzf field delimiter for search/fzf modes so that field
-    -- references like {2} (line number) in --preview-window work correctly.
-    ['--delimiter']   = mode ~= 'files' and ':' or nil,
+    -- No --delimiter is set here.  fzf's field-index syntax ({N}) only works
+    -- reliably with a delimiter that never appears in filenames; ':' fails when
+    -- filenames contain colons.  The builtin previewer calls
+    -- path.entry_to_file() on the Lua side, which uses uv.fs_stat() to
+    -- progressively extend the filename candidate across each ':' boundary
+    -- until an existing file is found — handling colons in both filenames and
+    -- match text without any fzf-side field index.
     ['--header']      = header,
     ['--prompt']      = build_prompt(kwargs, mode),
+    -- For files mode, '+{}' tells fzf to scroll the preview to the selected
+    -- file's position (a no-op for file lists, but harmless).  For search/fzf
+    -- modes the builtin previewer scrolls to the matched line via
+    -- entry_to_file() — no fzf-side '+{N}' scroll hint is needed or reliable.
     ['--preview-window'] = (mode == 'files') and ('+{},' .. default_size)
-                        or ('+{2}-/2,' .. default_size),
+                        or default_size,
     ['--bind'] = {
       config.up_key               .. ':up',
       config.down_key             .. ':down',
