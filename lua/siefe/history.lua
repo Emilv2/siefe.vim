@@ -5,19 +5,22 @@ local M = {}
 local config = require('siefe.config')
 local utils  = require('siefe.utils')
 
--- Parse an entry in `lnum//col//fname//display` or `lnum//col//fname` format.
--- Returns: lnum (int), col (int), filename (string).
--- Handles filenames that themselves contain "//" by joining parts correctly.
--- Legacy two-field format `line//filename` (no col) is also accepted.
+-- Parse an entry returned by fzf.
+--
+-- New format (produced by make_history_entry): lnum\tcol\tfname[\tdisplay]
+--   Tab-separated so the display field can never collide with a filename.
+-- Legacy formats (from older entries / utils.recent_*_info):
+--   lnum//col//fname  (fname may itself contain "//")
+--   lnum//fname       (no col)
 local function parse_entry(line)
+  if line:find('\t', 1, true) then
+    -- New tab-separated format
+    local parts = vim.split(line, '\t', { plain = true })
+    return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0, parts[3] or ''
+  end
+  -- Legacy //-separated format
   local parts = vim.split(line, '//', { plain = true })
-  if #parts >= 4 then
-    -- New format: lnum//col//fname//display  (field 4 is display-only; fname may itself
-    -- contain '//' so we join parts 3..#parts-1, excluding the last display field)
-    return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
-           table.concat(vim.list_slice(parts, 3, #parts - 1), '//')
-  elseif #parts >= 3 then
-    -- Older format: lnum//col//fname
+  if #parts >= 3 then
     return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
            table.concat(vim.list_slice(parts, 3), '//')
   elseif #parts == 2 then
@@ -26,14 +29,16 @@ local function parse_entry(line)
   return 0, 0, line
 end
 
--- Build a history source entry with a 4th display field for fzf --with-nth=4..
--- Format: lnum//col//fname//DISPLAY
--- where DISPLAY = "lnum:col fname" (with lnum colored if > 0).
+-- Build a history source entry for fzf --with-nth=4..
+-- Format: lnum\tcol\tfname\tDISPLAY
+-- where DISPLAY = "lnum[:col] fname" (lnum colored green when > 0).
+-- Tab is used as separator so it never clashes with path characters,
+-- avoiding the "//" ambiguity with filenames that contain "//".
 local function make_history_entry(lnum, col, fname)
   local pos = (lnum > 0) and (utils.green(tostring(lnum))
     .. (col > 0 and utils.green(':' .. tostring(col)) or '')) or ''
   local display = pos ~= '' and (pos .. ' ' .. fname) or fname
-  return tostring(lnum) .. '//' .. tostring(col) .. '//' .. fname .. '//' .. display
+  return tostring(lnum) .. '\t' .. tostring(col) .. '\t' .. fname .. '\t' .. display
 end
 
 function M.historyoldfiles(fullscreen, kwargs)
@@ -172,10 +177,10 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--ansi']        = '',
     ['--multi']       = '',
     ['--print-query'] = '',
-    -- Entry format: lnum//col//fname//display
-    -- {1}=lnum, {2}=col, {3}=fname, {4}=display (shown to user)
+    -- Entry format: lnum\tcol\tfname\tdisplay  (tab-separated)
+    -- {1}=lnum, {2}=col, {3}=fname, {4}=display (shown to user via --with-nth=4..)
     ['--with-nth']    = '4..',
-    ['--delimiter']   = '//',
+    ['--delimiter']   = '\t',
     ['--preview-window'] = '+{1}-/2,' .. default_size,
     ['--header-lines'] = tostring(header_lines),
     ['--header']      = header,
@@ -186,13 +191,13 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   local function get_query(selected, opts)
     if opts and opts.last_query then return opts.last_query end
-    if selected and #selected > 0 and not selected[1]:match('//') then return selected[1] end
+    if selected and #selected > 0 and not selected[1]:match('\t') then return selected[1] end
     return kwargs.query or ''
   end
 
   local function get_items(selected, opts)
     if opts and opts.last_query then return selected end
-    if selected and #selected > 0 and not selected[1]:match('//') then
+    if selected and #selected > 0 and not selected[1]:match('\t') then
       return vim.list_slice(selected, 2)
     end
     return selected or {}

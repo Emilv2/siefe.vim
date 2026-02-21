@@ -156,7 +156,7 @@ function M.author_select(callback, fullscreen)
       ['--history']     = utils.data_path() .. '/rg_author_history',
       ['--multi']       = '',
       ['--ansi']        = '',
-      ['--header']      = utils.prettify_header(config.abort_key, 'abort'),
+      ['--header']      = 'authors',
     },
     keymap        = au_km,
     _fzf_cli_args = au_cli,
