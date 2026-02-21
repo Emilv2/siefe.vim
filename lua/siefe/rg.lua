@@ -14,8 +14,13 @@ local function bool_to_flag(b, flag) return b and flag or '' end
 -- Callers use string.format() to substitute either:
 --   '{q}'  — fzf's live-query marker (for fzf_live mode), or
 --   a shellescape'd query string (for fzf_exec static mode).
-local function build_rg_command(kwargs)
-  local logger    = utils.bin_path('logger') .. ' '
+-- When rg2fzf_path is provided, rg is called with --null and the output is
+-- piped through rg2fzf, which converts each `file\0line:col:text\n` record to
+-- the NUL-terminated `file:line:col:text\0` format required by fzf --read0.
+local function build_rg_command(kwargs, rg2fzf_path)
+  local logger      = utils.bin_path('logger') .. ' '
+  local null_flag   = rg2fzf_path and '--null ' or ''
+  local rg2fzf_pipe = rg2fzf_path and (' | ' .. vim.fn.shellescape(rg2fzf_path)) or ''
   local case      = kwargs.case_sensitive == 1 and '--smart-case '
                  or kwargs.case_sensitive == 2 and '--ignore-case '
                  or '--case-sensitive '
@@ -42,7 +47,7 @@ local function build_rg_command(kwargs)
   end
 
   return logger
-    .. 'rg --column --auto-hybrid-regex -U --glob \\!.git/objects '
+    .. 'rg ' .. null_flag .. '--column --auto-hybrid-regex -U --glob \\!.git/objects '
     .. '--line-number --no-heading --color=always '
     .. '--colors "column:fg:green" --with-filename '
     .. case
@@ -50,6 +55,7 @@ local function build_rg_command(kwargs)
     .. type_flag .. ' '
     .. '-- %s'
     .. paths
+    .. rg2fzf_pipe
 end
 
 local function build_files_command(kwargs)
@@ -131,13 +137,19 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   end
   kwargs.paths = clean_paths
 
+  -- Detect rg2fzf (optional Rust binary that converts rg --null output to
+  -- NUL-terminated records for fzf --read0).  If absent, fall back to plain
+  -- rg output without --null; search mode then works without --read0.
+  local rg2fzf = utils.bin_path('rg2fzf')
+  rg2fzf = vim.fn.executable(rg2fzf) == 1 and rg2fzf or nil
+
   local default_size, other_size = utils.preview_window_size()
 
   -- Determine mode
   local mode = kwargs.files and 'files' or (kwargs.fzf and 'fzf' or 'rg')
 
   -- Commands
-  local cmd_fmt   = build_rg_command(kwargs)
+  local cmd_fmt   = build_rg_command(kwargs, rg2fzf)
   local files_cmd = build_files_command(kwargs)
 
   -- Header
@@ -185,6 +197,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- newline, so multiline match text or special characters in entries are
     -- never confused with record boundaries.
     ['--print0']      = '',
+    -- Set ':' as the fzf field delimiter for search/fzf modes so that field
+    -- references like {2} (line number) in --preview-window work correctly.
+    ['--delimiter']   = mode ~= 'files' and ':' or nil,
     ['--header']      = header,
     ['--prompt']      = build_prompt(kwargs, mode),
     ['--preview-window'] = (mode == 'files') and ('+{},' .. default_size)
@@ -199,21 +214,19 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       config.toggle_preview_key   .. ':change-preview-window('
                                   .. other_size .. '|' .. config.second_preview_size .. '%|)',
     },
-    -- --read0 is only used in files mode.
+    -- --read0 tells fzf to split its input stream on NUL bytes (rather than
+    -- newlines), which handles paths and match text containing any special
+    -- characters including newlines.
     --
-    -- In files mode, `rg --null --files` emits NUL-TERMINATED paths:
-    --   file1\0file2\0file3\0...
-    -- NUL IS the record terminator, so --read0 splits fzf's input stream on
-    -- NUL correctly: each fzf entry is exactly one filename.
-    --
-    -- In search mode, `rg --null --column --line-number --with-filename` would emit:
-    --   file\0line:col:text\n  (NUL after filename, newline terminates the record)
-    -- NUL appears WITHIN each newline-terminated record as a field separator
-    -- between the filename and the line number.  Adding --read0 here would make
-    -- fzf split on those internal NULs, producing garbled entries ("file" as
-    -- one entry, "line:col:text\nnextfile" as the next).  rg provides no flag
-    -- to NUL-terminate search records, so --read0 cannot be used in search mode.
-    ['--read0']       = mode == 'files' and '' or nil,
+    -- Files mode:  rg --null --files emits NUL-terminated paths directly.
+    -- Search/fzf:  rg --null | rg2fzf converts each `file\0rest\n` record to
+    --              `file:rest\0`, making records NUL-terminated while keeping
+    --              the standard `file:line:col:text` format that fzf-lua's
+    --              path.entry_to_file() parses.
+    -- Fallback:    when rg2fzf is absent, search/fzf mode works without --read0
+    --              (rare edge cases like colons in filenames are handled by
+    --              fzf-lua's smart parser).
+    ['--read0']       = (mode == 'files' or rg2fzf ~= nil) and '' or nil,
   }
 
   -- ── Helpers for actions ──────────────────────────────────────────────────────

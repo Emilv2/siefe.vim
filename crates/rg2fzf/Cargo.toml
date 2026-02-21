@@ -1,0 +1,9 @@
+[package]
+name = "rg2fzf"
+version = "0.1.0"
+edition = "2021"
+description = "Translate rg --null search output to NUL-terminated records for fzf --read0"
+
+[[bin]]
+name = "rg2fzf"
+path = "src/main.rs"

@@ -463,8 +463,10 @@ function M.fd_command()
   return _fd_cmd
 end
 
--- Always use ':' — the standard rg output delimiter, required by fzf-lua's
--- builtin previewer and native path.entry_to_file() parser.
+-- Always use ':' — the standard rg field separator understood by fzf-lua's
+-- builtin previewer and path.entry_to_file() parser.  In search mode, rg2fzf
+-- (when present) converts `rg --null` output (`file\0rest\n`) to this format
+-- (`file:rest\0`), enabling fzf --read0 without changing the per-field format.
 function M.rg_delimiter()
   return ':'
 end

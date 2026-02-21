@@ -1,2 +1,5 @@
 # python virtual env directory used for pre-commit
 .venv
+# Rust build artifacts
+/target/
+/bin/rg2fzf
