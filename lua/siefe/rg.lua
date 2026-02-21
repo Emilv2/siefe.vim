@@ -63,7 +63,10 @@ local function build_files_command(kwargs)
   local depth1 = bool_to_flag(kwargs.depth1, '-d1 ')
   local type_f = kwargs.type or ''
 
-  return 'rg ' .. zip .. text .. no_ign .. hidden .. depth1
+  -- --null outputs NUL-terminated paths (no newline between entries), which
+  -- pairs with fzf's --read0 to handle filenames containing any special
+  -- characters including colons and spaces.
+  return 'rg --null ' .. zip .. text .. no_ign .. hidden .. depth1
     .. ' --color=always --files ' .. type_f
 end
 
@@ -177,6 +180,11 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     ['--ansi']        = '',
     ['--multi']       = '',
     ['--print-query'] = '',
+    -- Use NUL as the output record separator.  fzf-lua detects --print0 in
+    -- fzf.lua (get_EOL("print0")) and splits fzf's output on NUL instead of
+    -- newline, so multiline match text or special characters in entries are
+    -- never confused with record boundaries.
+    ['--print0']      = '',
     ['--header']      = header,
     ['--prompt']      = build_prompt(kwargs, mode),
     ['--preview-window'] = (mode == 'files') and ('+{},' .. default_size)
@@ -191,6 +199,10 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       config.toggle_preview_key   .. ':change-preview-window('
                                   .. other_size .. '|' .. config.second_preview_size .. '%|)',
     },
+    -- In files mode, rg --null emits NUL-terminated paths; --read0 tells fzf
+    -- to use NUL as the input record separator so filenames containing
+    -- newlines are treated as a single entry.
+    ['--read0']       = mode == 'files' and '' or nil,
   }
 
   -- ── Helpers for actions ──────────────────────────────────────────────────────
