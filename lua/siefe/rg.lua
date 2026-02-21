@@ -198,34 +198,35 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   local paths_info = #kwargs.paths == 0 and ''
                   or ('\npaths: ' .. table.concat(kwargs.paths, ' '))
 
-  local no_ign_next = kwargs.no_ignore == 0 and '-u'
-                   or kwargs.no_ignore == 1 and '-uu'
-                   or kwargs.no_ignore == 2 and '-uuu'
-                   or 'off'
-  local fzf_rg          = kwargs.fzf and 'rg' or 'fzf'
-  local rg_fzf_help_line = kwargs.fzf and '' or (' ╱ ' .. utils.prettify_header(config.rg_rgfzf_key, 'rg/fzf'))
+  -- Active flags (shown only when non-default)
+  local flags = ''
+  if kwargs.word           then flags = flags .. ' -w' end
+  if kwargs.depth1         then flags = flags .. ' -d1' end
+  if kwargs.hidden         then flags = flags .. ' -.' end
+  if kwargs.fixed_strings  then flags = flags .. ' -F' end
+  if kwargs.max_1          then flags = flags .. ' -m1' end
+  if kwargs.search_zip     then flags = flags .. ' -z' end
+  if kwargs.text           then flags = flags .. ' -a' end
+  if kwargs.no_ignore == 1 then flags = flags .. ' -u'
+  elseif kwargs.no_ignore == 2 then flags = flags .. ' -uu'
+  elseif kwargs.no_ignore == 3 then flags = flags .. ' -uuu' end
+  if kwargs.case_sensitive == 2 then flags = flags .. ' -i'
+  elseif kwargs.case_sensitive == 0 then flags = flags .. ' -s' end
+  if kwargs.type ~= '' then flags = flags .. ' ' .. kwargs.type end
 
-  local header = utils.blue(name_info)
-    .. '\n' .. utils.prettify_header(config.rg_toggle_fzf_key, fzf_rg)
-    .. rg_fzf_help_line
-    .. ' ╱ ' .. utils.prettify_header(config.rg_files_key, 'Files')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_type_key, '-t')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_type_not_key, '-T')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_buffers_key, 'Buffers')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_no_ignore_key, no_ign_next)
-    .. ' ╱ ' .. utils.prettify_header(config.rg_hidden_key, '-.:' .. (kwargs.hidden and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.rg_case_key, kwargs.case_sensitive == 1 and '-s' or kwargs.case_sensitive == 2 and '-i' or '-S')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_depth1_key, '-d1:' .. (kwargs.depth1 and 'off' or 'on'))
-    .. '\n' .. utils.prettify_header(config.rg_dir_key, 'cd')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_yank_key, 'yank')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_history_key, 'history')
-    .. (mode ~= 'files' and (' ╱ ' .. utils.prettify_header(config.rg_word_key, '-w:' .. (kwargs.word and 'off' or 'on'))) or '')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_fixed_strings_key, '-F:' .. (kwargs.fixed_strings and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.rg_max_1_key, '-m1:' .. (kwargs.max_1 and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.rg_search_zip_key, '-z:' .. (kwargs.search_zip and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.rg_text_key, '--text:' .. (kwargs.text and 'off' or 'on'))
-    .. '\n' .. utils.common_window_help()
+  local header = utils.blue(name_info) .. ' ' .. utils.magenta(mode) .. flags
     .. paths_info
+
+  local rg_km, _rg_cli = utils.make_binds({
+    [config.up_key]               = 'up',
+    [config.down_key]             = 'down',
+    [config.next_history_key]     = 'next-history',
+    [config.previous_history_key] = 'previous-history',
+    [config.toggle_up_key]        = 'toggle+up',
+    [config.toggle_down_key]      = 'toggle+down',
+    [config.toggle_preview_key]   = 'change-preview-window('
+                                  .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {})
 
   local fzf_opts = {
     ['--history']     = utils.data_path() .. '/rg_fzf_history',
@@ -252,16 +253,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- entry_to_file() — no fzf-side '+{N}' scroll hint is needed or reliable.
     ['--preview-window'] = (mode == 'files') and ('+{},' .. default_size)
                         or default_size,
-    ['--bind'] = {
-      config.up_key               .. ':up',
-      config.down_key             .. ':down',
-      config.next_history_key     .. ':next-history',
-      config.previous_history_key .. ':previous-history',
-      config.toggle_up_key        .. ':toggle+up',
-      config.toggle_down_key      .. ':toggle+down',
-      config.toggle_preview_key   .. ':change-preview-window('
-                                  .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    },
     -- --read0 tells fzf to split its input stream on NUL bytes (rather than
     -- newlines), which handles paths and match text containing any special
     -- characters including newlines.
@@ -306,7 +297,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- When rg2fzf is active entries are `filename\x01line:col:text` — parsed
   -- without fs_stat.  Fallback entries are `file:line:col:text` — parsed via
   -- fzl_actions which calls entry_to_file() / fs_stat internally.
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local entries = get_entries(selected)
     if #entries == 0 then return end
     if rg2fzf then
@@ -321,13 +312,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         end
       end
     end
-  end
+  end, header = 'open' }
 
   -- Window open actions.
   -- rg2fzf path: parse \x01 format directly (no fs_stat).
   -- Fallback path: native fzl_actions (uses entry_to_file / fs_stat).
-  local function make_open_action(win_cmd)
-    return function(selected, opts)
+  local function make_open_action(win_cmd, desc)
+    return { fn = function(selected, opts)
       local entries = get_entries(selected)
       if #entries == 0 then return end
       if rg2fzf then
@@ -338,13 +329,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         elseif win_cmd == 'tabedit' then fzl_actions.file_tabedit(entries, opts)
         end
       end
-    end
+    end, header = desc }
   end
 
-  actions[config.split_key]      = make_open_action('split')
-  actions[config.vsplit_key]     = make_open_action('vsplit')
-  actions[config.tab_key]        = make_open_action('tabedit')
-  actions[config.vdiffsplit_key] = function(selected, _opts)
+  actions[config.split_key]      = make_open_action('split', 'split')
+  actions[config.vsplit_key]     = make_open_action('vsplit', 'vsplit')
+  actions[config.tab_key]        = make_open_action('tabedit', 'tab')
+  actions[config.vdiffsplit_key] = { fn = function(selected, _opts)
     -- fzl_actions has no diffsplit equivalent; keep custom parsing.
     local entries = get_entries(selected)
     if #entries == 0 then return end
@@ -355,128 +346,128 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       local parsed = utils.parse_rg_line(entries[1])
       if parsed then utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col) end
     end
-  end
+  end, header = 'diff' }
 
   -- Toggle: fzf/rg mode
-  actions[config.rg_toggle_fzf_key] = function(selected, _opts)
+  actions[config.rg_toggle_fzf_key] = { fn = function(selected, _opts)
     if kwargs.files then
       reopen(selected, { files = false })
     else
       reopen(selected, { fzf = not kwargs.fzf })
     end
-  end
+  end, header = 'mode' }
 
   -- Toggle: rg/fzf combined filter
-  actions[config.rg_rgfzf_key] = function(selected, _opts)
+  actions[config.rg_rgfzf_key] = { fn = function(selected, _opts)
     reopen(selected, { fzf = not kwargs.fzf })
-  end
+  end, header = 'rg/fzf' }
 
   -- Toggle: files mode
-  actions[config.rg_files_key] = function(selected, _opts)
+  actions[config.rg_files_key] = { fn = function(selected, _opts)
     reopen(selected, { files = not kwargs.files })
-  end
+  end, header = 'files' }
 
   -- Toggle: word boundary (not registered in files mode — ctrl-w must remain
   -- available for Neovim window navigation when fzf is in files mode).
   if mode ~= 'files' then
-    actions[config.rg_word_key] = function(selected, _opts)
+    actions[config.rg_word_key] = { fn = function(selected, _opts)
       reopen(selected, { word = not kwargs.word })
-    end
+    end, header = '-w' }
   end
 
   -- Toggle: depth-1
-  actions[config.rg_depth1_key] = function(selected, _opts)
+  actions[config.rg_depth1_key] = { fn = function(selected, _opts)
     reopen(selected, { depth1 = not kwargs.depth1 })
-  end
+  end, header = '-d1' }
 
   -- Toggle: case sensitivity (cycles smart → ignore → sensitive → smart)
-  actions[config.rg_case_key] = function(selected, _opts)
+  actions[config.rg_case_key] = { fn = function(selected, _opts)
     reopen(selected, { case_sensitive = (kwargs.case_sensitive + 1) % 3 })
-  end
+  end, header = 'case' }
 
   -- Toggle: hidden files
-  actions[config.rg_hidden_key] = function(selected, _opts)
+  actions[config.rg_hidden_key] = { fn = function(selected, _opts)
     reopen(selected, { hidden = not kwargs.hidden })
-  end
+  end, header = '-.' }
 
   -- Toggle: no-ignore (cycles 0 → -u → -uu → -uuu → 0)
-  actions[config.rg_no_ignore_key] = function(selected, _opts)
+  actions[config.rg_no_ignore_key] = { fn = function(selected, _opts)
     reopen(selected, { no_ignore = (kwargs.no_ignore + 1) % 4 })
-  end
+  end, header = '-u' }
 
   -- Toggle: fixed strings
-  actions[config.rg_fixed_strings_key] = function(selected, _opts)
+  actions[config.rg_fixed_strings_key] = { fn = function(selected, _opts)
     reopen(selected, { fixed_strings = not kwargs.fixed_strings })
-  end
+  end, header = '-F' }
 
   -- Toggle: max-1
-  actions[config.rg_max_1_key] = function(selected, _opts)
+  actions[config.rg_max_1_key] = { fn = function(selected, _opts)
     reopen(selected, { max_1 = not kwargs.max_1 })
-  end
+  end, header = '-m1' }
 
   -- Toggle: search compressed files
-  actions[config.rg_search_zip_key] = function(selected, _opts)
+  actions[config.rg_search_zip_key] = { fn = function(selected, _opts)
     reopen(selected, { search_zip = not kwargs.search_zip })
-  end
+  end, header = '-z' }
 
   -- Toggle: treat binary as text
-  actions[config.rg_text_key] = function(selected, _opts)
+  actions[config.rg_text_key] = { fn = function(selected, _opts)
     reopen(selected, { text = not kwargs.text })
-  end
+  end, header = '-a' }
 
   -- Sub-picker: file type filter (-t / -T)
   -- vim.schedule defers until after the current fzf session closes.
-  actions[config.rg_type_key] = function(selected, _opts)
+  actions[config.rg_type_key] = { fn = function(selected, _opts)
     kwargs.query = get_query(selected)
     vim.schedule(function()
       require('siefe.type_select').type_select('rg', fullscreen, dir, kwargs)
     end)
-  end
+  end, header = '-t' }
 
-  actions[config.rg_type_not_key] = function(selected, _opts)
+  actions[config.rg_type_not_key] = { fn = function(selected, _opts)
     kwargs.query = get_query(selected)
     vim.schedule(function()
       require('siefe.type_select').type_select('rg_not', fullscreen, dir, kwargs)
     end)
-  end
+  end, header = '-T' }
 
   -- Sub-picker: directory selection
   -- vim.schedule defers until after the current fzf session closes.
-  actions[config.rg_dir_key] = function(selected, _opts)
+  actions[config.rg_dir_key] = { fn = function(selected, _opts)
     kwargs.query    = get_query(selected)
     kwargs.fd_query = ''
     vim.schedule(function()
       local ds = require('siefe.dir_select')
       ds.dir_select(ds.ripgrep_dir_sink, fullscreen, dir, false, false, 'd', false, false, '', kwargs)
     end)
-  end
+  end, header = 'cd' }
 
   -- Toggle: limit search to open buffers
-  actions[config.rg_buffers_key] = function(selected, _opts)
+  actions[config.rg_buffers_key] = { fn = function(selected, _opts)
     local bufs = vim.tbl_map(function(b)
       return vim.fn.fnamemodify(vim.fn.expand(vim.fn.bufname(b)), ':p:~:.')
     end, vim.tbl_filter(function(b)
       return vim.fn.buflisted(b) == 1
     end, vim.api.nvim_list_bufs()))
     reopen(selected, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
-  end
+  end, header = 'buffers' }
 
   -- Yank matched text to default register.
   -- rg2fzf path: parse \x01 format directly.
   -- Fallback path: parse standard file:line:col:text format.
-  actions[config.rg_yank_key] = function(selected, _opts)
+  actions[config.rg_yank_key] = { fn = function(selected, _opts)
     local texts = {}
     for _, line in ipairs(get_entries(selected)) do
       local parsed = rg2fzf and parse_rg2fzf_entry(line) or utils.parse_rg_line(line)
       if parsed then table.insert(texts, parsed.text) end
     end
     utils.yank_to_register(table.concat(texts, '\n'))
-  end
+  end, header = 'yank' }
 
   -- Toggle: recent-files history paths.
   -- May open a different picker (historyoldfiles) so can't use reopen(), but
   -- follows the same get_query() + vim.schedule pattern as all other actions.
-  actions[config.rg_history_key] = function(selected, _opts)
+  actions[config.rg_history_key] = { fn = function(selected, _opts)
     kwargs.query = get_query(selected)
     if kwargs.files then
       vim.schedule(function()
@@ -495,17 +486,19 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         end)
       end
     end
-  end
+  end, header = 'history' }
 
   -- ── Launch ────────────────────────────────────────────────────────────────────
 
   local picker_opts = {
-    query     = kwargs.query,
-    cwd       = dir,
-    winopts   = utils.winopts(fullscreen),
-    previewer = 'builtin',   -- Neovim buffer preview with Treesitter/LSP
-    fzf_opts  = fzf_opts,
-    actions   = actions,
+    query          = kwargs.query,
+    cwd            = dir,
+    winopts        = utils.winopts(fullscreen),
+    previewer      = 'builtin',   -- Neovim buffer preview with Treesitter/LSP
+    fzf_opts       = fzf_opts,
+    keymap         = rg_km,
+    _fzf_cli_args  = _rg_cli,
+    actions        = actions,
   }
 
   if mode == 'rg' then

@@ -86,34 +86,22 @@ function M.gitstatus(fullscreen, kwargs)
   local default_size, other_size = utils.preview_window_size()
   local default_preview = ({ p0, p1 })[config.gitlog_default_preview_command + 1] or p0
 
-  local header = utils.prettify_header(config.gitstatus_uno_key, '-uno')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_add_key, 'add')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_add_patch_key, 'add -p')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_unstage_key, 'unstage')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_unstage_patch_key, 'unstage -p')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_restore_key, 'restore')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_restore_patch_key, 'restore -p')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_stash_key, 'stash')
-    .. ' ╱ ' .. utils.prettify_header(config.gitstatus_stash_patch_key, 'stash -p')
-    .. ' ╱ ' .. utils.magenta(utils.preview_help({ config.gitstatus_preview_0_key, config.gitstatus_preview_1_key }), 'Special') .. ' change preview'
-    .. '\n' .. utils.common_window_help()
+  local header = (kwargs.uno and '-uno ' or '') .. 'git status'
     .. paths_info
 
-  local binds = {
-    'enter:ignore',
-    'esc:ignore',
-    'change:first',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local gs_km, gs_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.gitstatus_preview_0_key .. ':change-preview(' .. p0 .. ')',
     config.gitstatus_preview_1_key .. ':change-preview(' .. p1 .. ')',
-  }
+  })
 
   -- Parse selected lines into file entries
   local function parse_files(items)
@@ -145,102 +133,102 @@ function M.gitstatus(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     utils.open_file('edit', filelist[1].filename)
     if config.rg_loclist then utils.fill_loc(filelist) else utils.fill_quickfix(filelist) end
-  end
+  end, header = 'open' }
 
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       local filelist = parse_files(items)
       for _, f in ipairs(filelist) do
         utils.open_file(c, f.filename)
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.gitstatus_uno_key] = function(selected, opts)
+  actions[config.gitstatus_uno_key] = { fn = function(selected, opts)
     kwargs.uno = not kwargs.uno
     M.gitstatus(fullscreen, kwargs)
-  end
+  end, header = '-uno' }
 
-  actions[config.gitstatus_add_key] = function(selected, opts)
+  actions[config.gitstatus_add_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git add -- ' .. files)
-  end
+  end, header = 'add' }
 
-  actions[config.gitstatus_add_patch_key] = function(selected, opts)
+  actions[config.gitstatus_add_patch_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git add --patch -- ' .. files)
-  end
+  end, header = 'add -p' }
 
-  actions[config.gitstatus_restore_key] = function(selected, opts)
+  actions[config.gitstatus_restore_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git restore -- ' .. files)
-  end
+  end, header = 'restore' }
 
-  actions[config.gitstatus_restore_patch_key] = function(selected, opts)
+  actions[config.gitstatus_restore_patch_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git restore --patch -- ' .. files)
-  end
+  end, header = 'restore -p' }
 
-  actions[config.gitstatus_unstage_key] = function(selected, opts)
+  actions[config.gitstatus_unstage_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git reset HEAD -- ' .. files)
-  end
+  end, header = 'unstage' }
 
-  actions[config.gitstatus_unstage_patch_key] = function(selected, opts)
+  actions[config.gitstatus_unstage_patch_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git reset HEAD --patch -- ' .. files)
-  end
+  end, header = 'unstage -p' }
 
-  actions[config.gitstatus_stash_key] = function(selected, opts)
+  actions[config.gitstatus_stash_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git stash -- ' .. files)
-  end
+  end, header = 'stash' }
 
-  actions[config.gitstatus_stash_patch_key] = function(selected, opts)
+  actions[config.gitstatus_stash_patch_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local filelist = parse_files(items)
     if #filelist == 0 then return end
     local files = table.concat(vim.tbl_map(function(f) return vim.fn.shellescape(f.filename) end, filelist), ' ')
     vim.cmd('Git stash --patch -- ' .. files)
-  end
+  end, header = 'stash -p' }
 
   fzf_lua.fzf_exec(source, {
-    prompt    = (kwargs.uno and '-uno ' or '') .. 'git status> ',
-    query     = kwargs.query,
-    cwd       = utils.get_git_root(),
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = default_preview,
-    fzf_opts  = {
+    prompt        = (kwargs.uno and '-uno ' or '') .. 'git status> ',
+    query         = kwargs.query,
+    cwd           = utils.get_git_root(),
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = default_preview,
+    fzf_opts      = {
       ['--history']        = utils.data_path() .. '/git_status_history',
       ['--ansi']           = '',
       ['--multi']          = '',
@@ -249,8 +237,9 @@ function M.gitstatus(fullscreen, kwargs)
       ['--delimiter']      = '//',
       ['--preview-window'] = default_size,
       ['--header']         = header,
-      ['--bind']           = binds,
     },
+    keymap        = gs_km,
+    _fzf_cli_args = gs_cli,
     actions = actions,
   })
 end

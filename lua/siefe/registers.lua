@@ -48,11 +48,7 @@ function M.registers(fullscreen, kwargs)
   local entries = get_all_registers()
   local source  = vim.tbl_map(printreg, entries)
 
-  local header = utils.prettify_header(config.registers_edit_key, 'edit')
-    .. ' ╱ ' .. utils.prettify_header(config.registers_paste_key, 'paste')
-    .. ' ╱ ' .. utils.prettify_header(config.registers_execute_key, 'execute')
-    .. ' ╱ ' .. utils.prettify_header(config.registers_clear_key, 'clear')
-    .. ' ╱ ' .. utils.prettify_header(config.abort_key, 'abort')
+  local header = 'registers'
 
   local function get_reg(line)
     -- Format: red("reg_char") blue("contents")
@@ -71,8 +67,16 @@ function M.registers(fullscreen, kwargs)
 
   local actions = {}
 
+  local regs_km, regs_cli = utils.make_binds({
+    ['change']                = 'first',
+    [config.up_key]           = 'up',
+    [config.down_key]         = 'down',
+    [config.toggle_up_key]    = 'toggle+up',
+    [config.toggle_down_key]  = 'toggle+down',
+  }, {})
+
   -- Default: edit register in a split buffer
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local reg = get_reg(items[1])
@@ -90,50 +94,43 @@ function M.registers(fullscreen, kwargs)
       once     = false,
       group    = vim.api.nvim_create_augroup('siefe_registers', { clear = true }),
     })
-  end
+  end, header = 'edit' }
 
-  actions[config.registers_paste_key] = function(selected, opts)
+  actions[config.registers_paste_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local reg = get_reg(items[1])
     vim.cmd('put ' .. reg)
-  end
+  end, header = 'paste' }
 
-  actions[config.registers_execute_key] = function(selected, opts)
+  actions[config.registers_execute_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local reg = get_reg(items[1])
     vim.cmd('normal @' .. reg)
-  end
+  end, header = 'execute' }
 
-  actions[config.registers_clear_key] = function(selected, opts)
+  actions[config.registers_clear_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local reg = get_reg(items[1])
     local reg_amode = vim.fn.getregtype(reg)
     vim.fn.setreg(reg, {}, reg_amode)
-  end
+  end, header = 'clear' }
 
   fzf_lua.fzf_exec(source, {
-    prompt    = 'Regs> ',
-    query     = kwargs.query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    fzf_opts  = {
+    prompt        = 'Regs> ',
+    query         = kwargs.query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    fzf_opts      = {
       ['--ansi']     = '',
       ['--sync']     = '',
       ['--delimiter']= ' ',
       ['--header']   = header,
-      ['--bind']     = {
-        'enter:ignore', 'esc:ignore',
-        'change:first',
-        config.registers_edit_key .. ':accept',
-        config.up_key             .. ':up',
-        config.down_key           .. ':down',
-        config.toggle_up_key      .. ':toggle+up',
-        config.toggle_down_key    .. ':toggle+down',
-      },
     },
+    keymap        = regs_km,
+    _fzf_cli_args = regs_cli,
     actions = actions,
   })
 end

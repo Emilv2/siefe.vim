@@ -78,22 +78,20 @@ function M.jumps(fullscreen, kwargs)
 
   local default_size, other_size = utils.preview_window_size()
 
-  local header = 'm\tl\tc\tfile/text current:' .. current
-    .. '\n' .. utils.common_window_help()
+  local header = 'jumps  current:' .. current
 
-  local binds = {
-    'enter:ignore', 'esc:ignore',
-    'change:first',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local jumps_km, jumps_cli = utils.make_binds({
+    ['change']                      = 'first',
+    ['start']                       = 'pos:' .. (#jumplist - current),
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.jumps_preview_key      .. ':change-preview(' .. p0 .. ')',
     config.jumps_fast_preview_key .. ':change-preview(' .. p1 .. ')',
-    'start:pos:' .. (#jumplist - current),
-  }
+  })
 
   local function parse_jump_line(line)
     local parts = vim.split(line, '//://', { plain = true })
@@ -116,7 +114,7 @@ function M.jumps(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local j = parse_jump_line(items[1])
@@ -126,25 +124,25 @@ function M.jumps(fullscreen, kwargs)
     else
       vim.cmd('normal! ' .. j.index .. '\x09')      -- Ctrl-I
     end
-  end
+  end, header = 'jump' }
 
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       if #items == 0 then return end
       local j = parse_jump_line(items[1])
       if j and j.filename ~= '' then
         utils.open_file(c, j.filename, j.lnum, j.col)
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.jumps_clear_key] = function(selected, opts)
+  actions[config.jumps_clear_key] = { fn = function(selected, opts)
     vim.cmd('clearjumps')
-  end
+  end, header = 'clear' }
 
-  actions[config.jumps_yank_key] = function(selected, opts)
+  actions[config.jumps_yank_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local texts = {}
     for _, line in ipairs(items) do
@@ -156,15 +154,15 @@ function M.jumps(fullscreen, kwargs)
       end
     end
     utils.yank_to_register(table.concat(texts, '\n'))
-  end
+  end, header = 'yank' }
 
   fzf_lua.fzf_exec(source, {
-    prompt    = 'Jumps> ',
-    query     = kwargs.query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = preview_cmd,
-    fzf_opts  = {
+    prompt        = 'Jumps> ',
+    query         = kwargs.query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = preview_cmd,
+    fzf_opts      = {
       ['--ansi']           = '',
       ['--tac']            = '',
       ['--sync']           = '',
@@ -174,8 +172,9 @@ function M.jumps(fullscreen, kwargs)
       ['--with-nth']       = '5..',
       ['--preview-window'] = '+{2}-/2,' .. default_size,
       ['--header']         = header,
-      ['--bind']           = binds,
     },
+    keymap        = jumps_km,
+    _fzf_cli_args = jumps_cli,
     actions = actions,
   })
 end

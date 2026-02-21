@@ -42,26 +42,19 @@ function M.dir_select(callback_fn, fullscreen, dir, fd_hidden, fd_no_ignore, fd_
     .. base_dir_flag
 
   local header  = vim.fn.getcwd()
-    .. '\n' .. utils.prettify_header(config.fd_hidden_key,    'hidden:' .. (fd_hidden and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.fd_no_ignore_key, 'no ignore:' .. (fd_no_ignore and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.fd_git_root_key, '√git')
-    .. (has_project_root and (' ╱ ' .. utils.prettify_header(config.fd_project_root_key, '√work')) or '')
-    .. ' ╱ ' .. utils.prettify_header(config.abort_key, 'abort')
-    .. '\n' .. utils.prettify_header(config.fd_search_git_root_key, 'search √git')
-    .. ' ╱ ' .. utils.prettify_header(config.fd_depth1_key, '-d1:' .. (fd_depth1 and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.fd_open_dir_key, 'open dir')
-    .. (has_project_root and (' ╱ ' .. utils.prettify_header(config.fd_search_project_root_key, 'search √work')) or '')
+    .. (fd_hidden and ' -H' or '')
+    .. (fd_no_ignore and ' -u' or '')
+    .. (fd_depth1 and ' -d1' or '')
 
-  local binds = {
-    'change:first',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-  }
+  local ds_km, ds_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+  }, {})
 
   local multi_opt = multi and { ['--multi'] = '' } or {}
 
@@ -79,67 +72,67 @@ function M.dir_select(callback_fn, fullscreen, dir, fd_hidden, fd_no_ignore, fd_
     callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, { query, key, unpack(paths) })
   end
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     local paths = selected
     -- If print-query caused query to be prepended, strip it
     kwargs.fd_query = query
     callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, vim.list_extend({ query, '' }, paths))
-  end
+  end, header = 'select' }
 
-  actions[config.abort_key] = function(selected, opts)
+  actions[config.abort_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, { query, config.abort_key })
-  end
+  end, header = 'abort' }
 
-  actions[config.fd_hidden_key] = function(selected, opts)
+  actions[config.fd_hidden_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     M.dir_select(callback_fn, fullscreen, dir, not fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, base_dir, kwargs)
-  end
+  end, header = '-H' }
 
-  actions[config.fd_no_ignore_key] = function(selected, opts)
+  actions[config.fd_no_ignore_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     M.dir_select(callback_fn, fullscreen, dir, fd_hidden, not fd_no_ignore, fd_type, multi, fd_depth1, base_dir, kwargs)
-  end
+  end, header = '-u' }
 
-  actions[config.fd_depth1_key] = function(selected, opts)
+  actions[config.fd_depth1_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     M.dir_select(callback_fn, fullscreen, dir, fd_hidden, fd_no_ignore, fd_type, multi, not fd_depth1, base_dir, kwargs)
-  end
+  end, header = '-d1' }
 
-  actions[config.fd_open_dir_key] = function(selected, opts)
+  actions[config.fd_open_dir_key] = { fn = function(selected, opts)
     vim.cmd('edit ' .. vim.fn.fnameescape(dir))
-  end
+  end, header = 'open' }
 
-  actions[config.fd_git_root_key] = function(selected, opts)
+  actions[config.fd_git_root_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     M.dir_select(callback_fn, fullscreen, utils.get_git_root(), fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, utils.get_git_root(), kwargs)
-  end
+  end, header = 'git root' }
 
-  actions[config.fd_search_git_root_key] = function(selected, opts)
+  actions[config.fd_search_git_root_key] = { fn = function(selected, opts)
     local query = (opts and opts.last_query) or (selected[1] or '')
     kwargs.fd_query = query
     M.dir_select(callback_fn, fullscreen, utils.get_git_root(), fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, utils.get_git_root(), kwargs)
-  end
+  end, header = 'search git root' }
 
   if has_project_root then
-    actions[config.fd_project_root_key] = function(selected, opts)
+    actions[config.fd_project_root_key] = { fn = function(selected, opts)
       local query = (opts and opts.last_query) or (selected[1] or '')
       kwargs.fd_query = query
       local proot = vim.fn.expand(project_root_env)
       M.dir_select(callback_fn, fullscreen, proot, fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, proot, kwargs)
-    end
-    actions[config.fd_search_project_root_key] = function(selected, opts)
+    end, header = 'project root' }
+    actions[config.fd_search_project_root_key] = { fn = function(selected, opts)
       local query = (opts and opts.last_query) or (selected[1] or '')
       kwargs.fd_query = query
       local proot = vim.fn.expand(project_root_env)
       M.dir_select(callback_fn, fullscreen, proot, fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, proot, kwargs)
-    end
+    end, header = 'search project root' }
   end
 
   local fzf_opts = vim.tbl_extend('force', {
@@ -148,19 +141,20 @@ function M.dir_select(callback_fn, fullscreen, dir, fd_hidden, fd_no_ignore, fd_
     ['--print-query'] = '',
     ['--query']       = kwargs.fd_query or '',
     ['--scheme']      = 'path',
-    ['--bind']        = binds,
     ['--header']      = header,
     ['--prompt']      = prompt,
   }, multi_opt)
 
   fzf_lua.fzf_exec(source, {
-    prompt    = prompt,
-    query     = kwargs.fd_query or '',
-    cwd       = dir,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    fzf_opts  = fzf_opts,
-    actions   = actions,
+    prompt        = prompt,
+    query         = kwargs.fd_query or '',
+    cwd           = dir,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    fzf_opts      = fzf_opts,
+    keymap        = ds_km,
+    _fzf_cli_args = ds_cli,
+    actions       = actions,
   })
 end
 

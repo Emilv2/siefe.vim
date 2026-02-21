@@ -63,20 +63,19 @@ function M.marks(fullscreen, kwargs)
 
   local default_size, other_size = utils.preview_window_size()
 
-  local header = 'm\tl\tc\tfile/text\n' .. utils.common_window_help()
+  local header = 'm\tl\tc\tfile/text'
 
-  local binds = {
-    'change:first',
-    'enter:ignore', 'esc:ignore',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local marks_km, marks_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.marks_preview_key      .. ':change-preview(' .. p0 .. ')',
     config.marks_fast_preview_key .. ':change-preview(' .. p1 .. ')',
-  }
+  })
 
   local function parse_mark_line(line)
     -- format: mark//://filename//://lnum//://col//://bufnr//://display\t...
@@ -102,7 +101,7 @@ function M.marks(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local filelist = {}
@@ -119,11 +118,11 @@ function M.marks(fullscreen, kwargs)
       utils.open_file('edit', first.filename, first.lnum, first.col)
     end
     if config.marks_loclist then utils.fill_loc(filelist) else utils.fill_quickfix(filelist) end
-  end
+  end, header = 'jump' }
 
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       for _, line in ipairs(items) do
         local m = parse_mark_line(line)
@@ -131,18 +130,18 @@ function M.marks(fullscreen, kwargs)
           utils.open_file(c, m.filename, m.lnum, m.col)
         end
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.marks_delete_key] = function(selected, opts)
+  actions[config.marks_delete_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     for _, line in ipairs(items) do
       local m = parse_mark_line(line)
       if m then vim.fn.setpos("'" .. m.mark, { 0, 0, 0, 0 }) end
     end
-  end
+  end, header = 'delete' }
 
-  actions[config.marks_yank_key] = function(selected, opts)
+  actions[config.marks_yank_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     local texts = {}
     for _, line in ipairs(items) do
@@ -152,15 +151,15 @@ function M.marks(fullscreen, kwargs)
       end
     end
     utils.yank_to_register(table.concat(texts, '\n'))
-  end
+  end, header = 'yank' }
 
   fzf_lua.fzf_exec(source, {
-    prompt    = 'Marks> ',
-    query     = kwargs.query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = preview_cmd,
-    fzf_opts  = {
+    prompt        = 'Marks> ',
+    query         = kwargs.query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = preview_cmd,
+    fzf_opts      = {
       ['--tiebreak']       = 'begin',
       ['--ansi']           = '',
       ['--multi']          = '',
@@ -169,8 +168,9 @@ function M.marks(fullscreen, kwargs)
       ['--with-nth']       = '6..',
       ['--preview-window'] = '+{2}-/2,' .. default_size,
       ['--header']         = header,
-      ['--bind']           = binds,
     },
+    keymap        = marks_km,
+    _fzf_cli_args = marks_cli,
     actions = actions,
   })
 end

@@ -57,35 +57,37 @@ function M.type_select(func, fullscreen, ...)
     end
   end
 
+  local ts_km, ts_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+  }, {})
+
   local default_size, _ = utils.preview_window_size()
   fzf_lua.fzf_exec(
     utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' rg --color=always --type-list',
     {
-      prompt    = 'Choose type> ',
-      winopts   = utils.winopts(fullscreen),
-      previewer = false,
-      fzf_opts  = {
+      prompt        = 'Choose type> ',
+      winopts       = utils.winopts(fullscreen),
+      previewer     = false,
+      fzf_opts      = {
         ['--multi']   = '',
         ['--ansi']    = '',
         ['--history'] = utils.data_path() .. '/type_fzf_history',
-        ['--bind']    = {
-          'change:first',
-          config.accept_key   .. ':accept',
-          config.up_key       .. ':up',
-          config.down_key     .. ':down',
-          config.next_history_key     .. ':next-history',
-          config.previous_history_key .. ':previous-history',
-          config.toggle_up_key   .. ':toggle+up',
-          config.toggle_down_key .. ':toggle+down',
-        },
-        ['--header']  = utils.prettify_header(config.abort_key, 'abort'),
+        ['--header']  = 'file types',
         ['--print-query'] = '',
       },
+      keymap        = ts_km,
+      _fzf_cli_args = ts_cli,
       actions = {
-        ['default'] = on_select,
-        [config.abort_key] = function(selected, opts)
+        ['default'] = { fn = on_select, header = 'select' },
+        [config.abort_key] = { fn = function(selected, opts)
           on_select({ '', config.abort_key }, opts)
-        end,
+        end, header = 'abort' },
       },
     }
   )

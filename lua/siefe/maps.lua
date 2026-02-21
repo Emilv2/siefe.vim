@@ -30,38 +30,38 @@ function M.mode_select(fullscreen, query)
     utils.red('t') .. ' # Terminal-Job',
   }
 
+  local ms_km, ms_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.modes_select_all_key]   = 'select-all',
+  }, {})
+
   local actions = {}
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     -- selected contains chosen mode lines
     local modes = vim.tbl_map(function(l)
       return vim.trim(l:gsub('\x1b%[[%d;]*m', ''):sub(1, 1))
     end, selected or {})
     M.maps(fullscreen, query, modes)
-  end
+  end, header = 'maps' }
 
   fzf_lua.fzf_exec(mode_source, {
-    prompt    = 'mode> ',
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    fzf_opts  = {
+    prompt        = 'mode> ',
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    fzf_opts      = {
       ['--history'] = utils.data_path() .. '/git_dir_history',
       ['--ansi']    = '',
       ['--multi']   = '',
-      ['--header']  = utils.prettify_header(config.abort_key, 'abort')
-        .. ' ╱ ' .. utils.prettify_header(config.modes_select_all_key, 'select all'),
-      ['--bind']    = {
-        'change:first',
-        'enter:ignore', 'esc:ignore',
-        config.accept_key        .. ':accept',
-        config.up_key            .. ':up',
-        config.down_key          .. ':down',
-        config.next_history_key     .. ':next-history',
-        config.previous_history_key .. ':previous-history',
-        config.toggle_up_key     .. ':toggle+up',
-        config.toggle_down_key   .. ':toggle+down',
-        config.modes_select_all_key .. ':select-all',
-      },
+      ['--header']  = 'select modes',
     },
+    keymap        = ms_km,
+    _fzf_cli_args = ms_cli,
     actions = actions,
   })
 end
@@ -120,10 +120,7 @@ function M.maps(fullscreen, query, modes)
 
   table.sort(lines)
 
-  local header = utils.prettify_header(config.accept_key, 'execute')
-    .. ' ╱ ' .. utils.prettify_header(config.maps_open_key, 'open location')
-    .. ' ╱ ' .. utils.prettify_header(config.maps_modes_key, 'modes')
-    .. ' ╱ ' .. utils.prettify_header(config.abort_key, 'abort')
+  local header = 'maps (' .. table.concat(modes, '/') .. ')'
 
   local function get_query(selected, opts)
     if opts and opts.last_query then return opts.last_query end
@@ -152,10 +149,15 @@ function M.maps(fullscreen, query, modes)
     }
   end
 
+  local maps_km, maps_cli = utils.make_binds({
+    [config.up_key]    = 'up',
+    [config.down_key]  = 'down',
+  }, {})
+
   local actions = {}
 
   -- Default: execute the mapping
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local m = parse_map_line(items[1])
@@ -171,40 +173,36 @@ function M.maps(fullscreen, query, modes)
       end)
       vim.api.nvim_feedkeys(map_op .. lhs, '', false)
     end)
-  end
+  end, header = 'execute' }
 
-  actions[config.maps_open_key] = function(selected, opts)
+  actions[config.maps_open_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local m = parse_map_line(items[1])
     if m and m.file ~= '' then
       utils.open_file('edit', m.file, m.lnum)
     end
-  end
+  end, header = 'open' }
 
-  actions[config.maps_modes_key] = function(selected, opts)
+  actions[config.maps_modes_key] = { fn = function(selected, opts)
     local q = get_query(selected, opts)
     M.mode_select(fullscreen, q)
-  end
+  end, header = 'modes' }
 
   fzf_lua.fzf_exec(lines, {
-    prompt    = 'Maps (' .. table.concat(modes, '/') .. ')> ',
-    query     = query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    fzf_opts  = {
+    prompt        = 'Maps (' .. table.concat(modes, '/') .. ')> ',
+    query         = query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    fzf_opts      = {
       ['--ansi']        = '',
       ['--print-query'] = '',
       ['--delimiter']   = '•',
       ['--with-nth']    = '5..',
       ['--header']      = header,
-      ['--bind']        = {
-        'enter:ignore', 'esc:ignore',
-        config.accept_key  .. ':accept',
-        config.up_key      .. ':up',
-        config.down_key    .. ':down',
-      },
     },
+    keymap        = maps_km,
+    _fzf_cli_args = maps_cli,
     actions = actions,
   })
 end

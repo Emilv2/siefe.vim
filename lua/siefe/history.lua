@@ -5,21 +5,35 @@ local M = {}
 local config = require('siefe.config')
 local utils  = require('siefe.utils')
 
--- Parse an entry in `line//col//filename` format.
+-- Parse an entry in `lnum//col//fname//display` or `lnum//col//fname` format.
 -- Returns: lnum (int), col (int), filename (string).
--- Handles filenames that themselves contain "//" by rejoining all parts from
--- index 3 onwards with "//", making the round-trip lossless.
+-- Handles filenames that themselves contain "//" by joining parts correctly.
 -- Legacy two-field format `line//filename` (no col) is also accepted.
 local function parse_entry(line)
   local parts = vim.split(line, '//', { plain = true })
-  if #parts >= 3 then
+  if #parts >= 4 then
+    -- New format: lnum//col//fname//display  (field 4 is display-only; fname may itself
+    -- contain '//' so we join parts 3..#parts-1, excluding the last display field)
+    return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
+           table.concat(vim.list_slice(parts, 3, #parts - 1), '//')
+  elseif #parts >= 3 then
+    -- Older format: lnum//col//fname
     return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0,
            table.concat(vim.list_slice(parts, 3), '//')
   elseif #parts == 2 then
-    -- Legacy `line//filename` (e.g. from recent_git_files_info edge case)
     return tonumber(parts[1]) or 0, 0, parts[2]
   end
   return 0, 0, line
+end
+
+-- Build a history source entry with a 4th display field for fzf --with-nth=4..
+-- Format: lnum//col//fname//DISPLAY
+-- where DISPLAY = "lnum:col fname" (with lnum colored if > 0).
+local function make_history_entry(lnum, col, fname)
+  local pos = (lnum > 0) and (utils.green(tostring(lnum))
+    .. (col > 0 and utils.green(':' .. tostring(col)) or '')) or ''
+  local display = pos ~= '' and (pos .. ' ' .. fname) or fname
+  return tostring(lnum) .. '//' .. tostring(col) .. '//' .. fname .. '//' .. display
 end
 
 function M.historyoldfiles(fullscreen, kwargs)
@@ -49,7 +63,10 @@ function M.historyoldfiles(fullscreen, kwargs)
   local source
   local project_prefix = ''
   if kwargs.project and in_git then
-    source         = utils.recent_git_files_info()
+    source         = vim.tbl_map(function(e)
+      local lnum, col, fname = parse_entry(e)
+      return make_history_entry(lnum, col, fname)
+    end, utils.recent_git_files_info())
     project_prefix = utils.get_git_basename_or_bufdir() .. ' '
   elseif has_shada2fzf then
     -- Streaming source: emit current buffer + listed buffers immediately, then
@@ -65,7 +82,7 @@ function M.historyoldfiles(fullscreen, kwargs)
       if cur ~= '' then
         local fname = vim.fn.fnamemodify(cur, ':~:.')
         local lnum  = vim.fn.line('.')
-        table.insert(prefix, lnum .. '//0//' .. fname)
+        table.insert(prefix, make_history_entry(lnum, 0, fname))
         visited[fname] = true
       end
       for _, b in ipairs(utils.buflisted_sorted()) do
@@ -74,7 +91,7 @@ function M.historyoldfiles(fullscreen, kwargs)
           local fname = vim.fn.fnamemodify(vim.fn.expand(name), ':~:.')
           if not visited[fname] then
             local lnum = (vim.fn.getbufinfo(b)[1] or {}).lnum or 0
-            table.insert(prefix, tostring(lnum) .. '//0//' .. fname)
+            table.insert(prefix, make_history_entry(lnum, 0, fname))
             visited[fname] = true
           end
         end
@@ -98,11 +115,13 @@ function M.historyoldfiles(fullscreen, kwargs)
         local f = io.popen(vim.fn.shellescape(s2f) .. ' ' .. vim.fn.shellescape(shada_path))
         if f then
           for line in f:lines() do
-            -- Extract the filename (third //-field)
+            -- Extract the filename (third //-field) and convert to 4-field display format
             local parts = vim.split(line, '//', { plain = true })
             local fname = #parts >= 3 and parts[3] or nil
             if fname and fname ~= '' and not vis[fname] then
-              fzf_cb(line)
+              local lnum = tonumber(parts[1]) or 0
+              local col  = tonumber(parts[2]) or 0
+              fzf_cb(make_history_entry(lnum, col, fname))
               vis[fname] = true
             end
           end
@@ -113,7 +132,10 @@ function M.historyoldfiles(fullscreen, kwargs)
       end
     end)()
   else
-    source = utils.recent_files_info()
+    source = vim.tbl_map(function(e)
+      local lnum, col, fname = parse_entry(e)
+      return make_history_entry(lnum, col, fname)
+    end, utils.recent_files_info())
   end
 
   local previews    = utils.make_preview_commands()
@@ -124,29 +146,23 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   local default_size, other_size = utils.preview_window_size()
 
-  local header = utils.prettify_header(config.history_files_key, 'rg files')
-    .. ' ╱ ' .. utils.prettify_header(config.history_rg_key, 'rg')
-    .. ' ╱ ' .. utils.prettify_header(config.history_buffers_key, 'buf')
+  local header = (kwargs.project and 'project ' or '') .. 'history'
     .. git_help
-    .. ' ╱ ' .. utils.magenta(utils.preview_help({ config.history_preview_key, config.history_fast_preview_key, config.history_faster_preview_key }), 'Special') .. ' change preview'
-    .. '\n' .. utils.common_window_help()
 
-  local binds = {
-    'change:first',
-    'enter:ignore',
-    'esc:ignore',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    config.history_preview_key       .. ':change-preview(' .. p0 .. ')',
-    config.history_fast_preview_key  .. ':change-preview(' .. p1 .. ')',
-    config.history_faster_preview_key.. ':change-preview(' .. p2 .. ')',
-  }
+  local hist_km, hist_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
+    config.history_preview_key        .. ':change-preview(' .. p0 .. ')',
+    config.history_fast_preview_key   .. ':change-preview(' .. p1 .. ')',
+    config.history_faster_preview_key .. ':change-preview(' .. p2 .. ')',
+  })
 
   -- Shows current buffer at top as a "header line"
   local header_lines = (vim.fn.expand('%') ~= '') and 1 or 0
@@ -156,15 +172,14 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--ansi']        = '',
     ['--multi']       = '',
     ['--print-query'] = '',
-    -- Entry format: line//col//filename
-    -- {1}=line, {2}=col, {3}=filename (shown to user)
-    ['--with-nth']    = '3..',
+    -- Entry format: lnum//col//fname//display
+    -- {1}=lnum, {2}=col, {3}=fname, {4}=display (shown to user)
+    ['--with-nth']    = '4..',
     ['--delimiter']   = '//',
     ['--preview-window'] = '+{1}-/2,' .. default_size,
     ['--header-lines'] = tostring(header_lines),
     ['--header']      = header,
     ['--prompt']      = project_prefix .. 'Hist> ',
-    ['--bind']        = binds,
   }
 
   -- ── Helpers ─────────────────────────────────────────────────────────────────
@@ -187,7 +202,7 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local lnum, col, filename = parse_entry(items[1])
@@ -199,57 +214,59 @@ function M.historyoldfiles(fullscreen, kwargs)
       end, items)
       if config.history_loclist then utils.fill_loc(qf) else utils.fill_quickfix(qf) end
     end
-  end
+  end, header = 'open' }
 
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       for _, line in ipairs(items) do
         local lnum, col, filename = parse_entry(line)
         utils.open_file(c, filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.history_git_key] = function(selected, opts)
+  actions[config.history_git_key] = { fn = function(selected, opts)
     kwargs.query   = get_query(selected, opts)
     kwargs.project = not kwargs.project
     M.historyoldfiles(fullscreen, kwargs)
-  end
+  end, header = 'project' }
 
-  actions[config.history_buffers_key] = function(selected, opts)
+  actions[config.history_buffers_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local bufs = require('siefe.buffers')
     bufs.buffers(fullscreen, kwargs)
-  end
+  end, header = 'buffers' }
 
-  actions[config.history_files_key] = function(selected, opts)
+  actions[config.history_files_key] = { fn = function(selected, opts)
     kwargs.query  = get_query(selected, opts)
     kwargs.prompt = utils.get_relative_git_or_bufdir()
     kwargs.files  = true
     local rg = require('siefe.rg')
     rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)
-  end
+  end, header = 'files' }
 
-  actions[config.history_rg_key] = function(selected, opts)
+  actions[config.history_rg_key] = { fn = function(selected, opts)
     kwargs.query  = get_query(selected, opts)
     kwargs.prompt = utils.get_relative_git_or_bufdir()
     kwargs.paths  = source
     kwargs.files  = false
     local rg = require('siefe.rg')
     rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)
-  end
+  end, header = 'rg' }
 
   -- Launch
   local launch_opts = {
-    prompt    = project_prefix .. 'Hist> ',
-    query     = kwargs.query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = preview_cmd,
-    fzf_opts  = fzf_opts,
-    actions   = actions,
+    prompt        = project_prefix .. 'Hist> ',
+    query         = kwargs.query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = preview_cmd,
+    fzf_opts      = fzf_opts,
+    keymap        = hist_km,
+    _fzf_cli_args = hist_cli,
+    actions       = actions,
   }
   if kwargs.project and in_git then
     launch_opts.cwd = git_root
@@ -261,7 +278,8 @@ end
 -- Test-only exports (not part of the public API).
 -- Used by test/test_history.lua to exercise pure logic without launching fzf.
 M._test = {
-  parse_entry = parse_entry,
+  parse_entry        = parse_entry,
+  make_history_entry = make_history_entry,
 }
 
 return M

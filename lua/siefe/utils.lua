@@ -450,6 +450,20 @@ function M.log_path()
   return M.data_path() .. '/siefe.log'
 end
 
+-- Build keymap.fzf (for simple navigational binds that survive build_fzf_cli's
+-- fzf_opts["--bind"] overwrite) and _fzf_cli_args (for complex shell-command
+-- binds that must not be combined or shellescaped by create_fzf_binds).
+--
+-- simple : { [key] = 'fzf-action', ... }  — merged into keymap.fzf
+-- complex: { 'key:action(shellcmd)', ... } — appended as --bind=<shellescaped>
+function M.make_binds(simple, complex)
+  local cli = {}
+  for _, b in ipairs(complex or {}) do
+    table.insert(cli, '--bind=' .. vim.fn.shellescape(b))
+  end
+  return { fzf = simple or {} }, cli
+end
+
 -- ── Preview commands ──────────────────────────────────────────────────────────
 
 local _bat_cmd = nil

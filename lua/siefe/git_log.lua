@@ -183,35 +183,25 @@ function M.gitlogfzf(fullscreen, kwargs)
   local default_size, other_size = utils.preview_window_size()
 
   -- Header
-  local header = utils.prettify_header(config.gitlog_author_key, 'authors')
-    .. ' ╱ ' .. utils.prettify_header(config.gitlog_branch_key, 'branches')
-    .. ' ╱ ' .. utils.prettify_header(config.gitlog_type_key, 'type')
-    .. ' ╱ ' .. utils.prettify_header(config.gitlog_switch_key, 'switch')
-    .. ' ╱ ' .. utils.magenta(utils.preview_help({
-        config.gitlog_preview_0_key, config.gitlog_preview_1_key, config.gitlog_preview_2_key,
-        config.gitlog_preview_3_key, config.gitlog_preview_4_key,
-      }), 'Special') .. ' change preview'
-    .. ' ╱ ' .. utils.prettify_header(config.gitlog_not_branch_key, '^branches')
-    .. '\n' .. utils.common_window_help()
-    .. sg_help
-    .. follow_help
+  local header = G_prompt .. regex .. ic_sym .. follow
+    .. (kwargs.branches ~= '' and 'branches:' .. kwargs.branches .. ' ' or '')
+    .. (kwargs.notbranches ~= '' and '^branches:' .. kwargs.notbranches .. ' ' or '')
     .. authors_info
     .. paths_info
 
   local prompt = branches .. notbranches .. G_prompt .. regex .. ic_sym .. follow .. line_range_str .. 'pickaxe> '
 
-  local binds = {
-    'change:first',
-    'enter:ignore',
-    'esc:ignore',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+down',
-    config.toggle_down_key      .. ':toggle+up',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local gl_simple = {
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+down',
+    [config.toggle_down_key]        = 'toggle+up',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }
+  local gl_complex = {
     config.gitlog_preview_0_key .. ':change-preview(' .. p0 .. ')',
     config.gitlog_preview_1_key .. ':change-preview(' .. p1 .. ')',
     config.gitlog_preview_2_key .. ':change-preview(' .. p2 .. ')',
@@ -220,10 +210,11 @@ function M.gitlogfzf(fullscreen, kwargs)
   }
 
   if #kwargs.line_range == 0 then
-    table.insert(binds, 'change:first+reload(' .. reload_command .. ')')
-    table.insert(binds, config.gitlog_fzf_key .. ':unbind(change,' .. config.gitlog_fzf_key .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind(' .. config.gitlog_s_key .. ')')
-    table.insert(binds, config.gitlog_s_key .. ':unbind(change,' .. config.gitlog_s_key .. ')+change-prompt(' .. prompt .. ')+disable-search+reload(' .. reload_command .. ')+rebind(change,' .. config.gitlog_fzf_key .. ')')
+    table.insert(gl_complex, 'change:first+reload(' .. reload_command .. ')')
+    table.insert(gl_complex, config.gitlog_fzf_key .. ':unbind(change,' .. config.gitlog_fzf_key .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind(' .. config.gitlog_s_key .. ')')
+    table.insert(gl_complex, config.gitlog_s_key .. ':unbind(change,' .. config.gitlog_s_key .. ')+change-prompt(' .. prompt .. ')+disable-search+reload(' .. reload_command .. ')+rebind(change,' .. config.gitlog_fzf_key .. ')')
   end
+  local gl_km, gl_cli = utils.make_binds(gl_simple, gl_complex)
 
   local fzf_opts = {
     ['--history']        = utils.data_path() .. '/git_fzf_history',
@@ -235,7 +226,6 @@ function M.gitlogfzf(fullscreen, kwargs)
     ['--preview-window'] = default_size,
     ['--header']         = header,
     ['--prompt']         = prompt,
-    ['--bind']           = binds,
   }
 
   if kwargs.fixup == 0 then
@@ -271,7 +261,7 @@ function M.gitlogfzf(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local hash = get_hash(items[1])
@@ -283,47 +273,47 @@ function M.gitlogfzf(fullscreen, kwargs)
     end, items)
     vim.cmd('Gedit ' .. hash)
     if config.gitlog_loclist then utils.fill_loc(qf) else utils.fill_quickfix(qf) end
-  end
+  end, header = 'open' }
 
   -- Window actions (fugitive)
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
     local fugitive_cmd = config.fugitive_window_actions[c] or c
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       for _, line in ipairs(items) do
         local h = get_hash(line)
         pcall(vim.cmd, 'silent ' .. fugitive_cmd .. ' ' .. h)
         vim.cmd('normal! zvzz')
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.gitlog_sg_key] = function(selected, opts)
+  actions[config.gitlog_sg_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.G = not kwargs.G
     M.gitlogfzf(fullscreen, kwargs)
-  end
+  end, header = 'S/G' }
 
-  actions[config.gitlog_ignore_case_key] = function(selected, opts)
+  actions[config.gitlog_ignore_case_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.ignore_case = not kwargs.ignore_case
     M.gitlogfzf(fullscreen, kwargs)
-  end
+  end, header = '-i' }
 
-  actions[config.gitlog_pickaxe_regex_key] = function(selected, opts)
+  actions[config.gitlog_pickaxe_regex_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.regex = not kwargs.regex
     M.gitlogfzf(fullscreen, kwargs)
-  end
+  end, header = 'regex' }
 
-  actions[config.gitlog_follow_key] = function(selected, opts)
+  actions[config.gitlog_follow_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.follow = not kwargs.follow
     M.gitlogfzf(fullscreen, kwargs)
-  end
+  end, header = 'follow' }
 
-  actions[config.gitlog_branch_key] = function(selected, opts)
+  actions[config.gitlog_branch_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local gb = require('siefe.git_branch')
     gb.branch_select(function(blines)
@@ -338,9 +328,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       end
       M.gitlogfzf(fullscreen, kwargs)
     end, fullscreen, false, false)
-  end
+  end, header = 'branches' }
 
-  actions[config.gitlog_not_branch_key] = function(selected, opts)
+  actions[config.gitlog_not_branch_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local gb = require('siefe.git_branch')
     gb.branch_select(function(blines)
@@ -353,9 +343,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       end
       M.gitlogfzf(fullscreen, kwargs)
     end, fullscreen, true, false)
-  end
+  end, header = '^branches' }
 
-  actions[config.gitlog_author_key] = function(selected, opts)
+  actions[config.gitlog_author_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local gb = require('siefe.git_branch')
     gb.author_select(function(alines)
@@ -366,22 +356,22 @@ function M.gitlogfzf(fullscreen, kwargs)
       end
       M.gitlogfzf(fullscreen, kwargs)
     end, fullscreen)
-  end
+  end, header = 'authors' }
 
-  actions[config.gitlog_dir_key] = function(selected, opts)
+  actions[config.gitlog_dir_key] = { fn = function(selected, opts)
     kwargs.query    = get_query(selected, opts)
     kwargs.fd_query = ''
     local ds = require('siefe.dir_select')
     ds.dir_select(ds.gitlog_path_sink, fullscreen, utils.bufdir(), false, false, '', true, false, utils.get_git_root(), kwargs)
-  end
+  end, header = 'paths' }
 
-  actions[config.gitlog_type_key] = function(selected, opts)
+  actions[config.gitlog_type_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local ts = require('siefe.type_select')
     ts.type_select('gitlog', fullscreen, kwargs)
-  end
+  end, header = 'type' }
 
-  actions[config.gitlog_switch_key] = function(selected, opts)
+  actions[config.gitlog_switch_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items ~= 1 then
       utils.warn('select exactly 1 commit for switch')
@@ -395,9 +385,9 @@ function M.gitlogfzf(fullscreen, kwargs)
     elseif action == 'n' then
       vim.cmd('Git switch ' .. commit)
     end
-  end
+  end, header = 'switch' }
 
-  actions[config.gitlog_vdiffsplit_key] = function(selected, opts)
+  actions[config.gitlog_vdiffsplit_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 2 then
       local h1, h2 = get_hash(items[1]), get_hash(items[2])
@@ -408,18 +398,20 @@ function M.gitlogfzf(fullscreen, kwargs)
       pcall(vim.cmd, 'Gedit HEAD:%')
       pcall(vim.cmd, 'Gvdiffsplit ' .. h .. ':%')
     end
-  end
+  end, header = 'diff' }
 
   -- Launch
   fzf_lua.fzf_exec(initial_command, {
-    prompt    = prompt,
-    query     = kwargs.query,
-    cwd       = utils.get_git_root(),
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = default_preview,
-    fzf_opts  = fzf_opts,
-    actions   = actions,
+    prompt        = prompt,
+    query         = kwargs.query,
+    cwd           = utils.get_git_root(),
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = default_preview,
+    fzf_opts      = fzf_opts,
+    keymap        = gl_km,
+    _fzf_cli_args = gl_cli,
+    actions       = actions,
   })
 end
 

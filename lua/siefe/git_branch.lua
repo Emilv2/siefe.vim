@@ -42,26 +42,24 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
     extra_help = ' ╱ ' .. utils.prettify_header(config.branches_all_key, '--all')
   end
 
-  local header = utils.prettify_header(config.abort_key, 'abort')
-    .. extra_help
+  local header = (is_not and '^' or '') .. 'branches'
+    .. (standalone and '' or (has_all and ' ╱ --all' or ''))
 
-  local binds = {
-    'enter:ignore',
-    'esc:ignore',
-    'change:first',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local br_km, br_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.gitbranch_preview_0_key .. ':change-preview(' .. p0 .. ')',
     config.gitbranch_preview_1_key .. ':change-preview(' .. p1 .. ')',
     config.gitbranch_preview_2_key .. ':change-preview(' .. p2 .. ')',
     config.gitbranch_preview_3_key .. ':change-preview(' .. p3 .. ')',
-  }
+  })
 
   local fzf_opts = {
     ['--history']     = utils.data_path() .. '/rg_branch_history',
@@ -70,7 +68,6 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
     ['--preview-window'] = '~1,' .. default_size,
     ['--header']      = header,
     ['--prompt']      = not_prefix .. 'branches> ',
-    ['--bind']        = binds,
   }
 
   if standalone then
@@ -81,46 +78,47 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items = selected or {}
     if standalone then
-      -- selected[1] might be query if print-query is set
       callback({ '', unpack(items) })
     else
       callback({ '', unpack(items) })
     end
-  end
+  end, header = 'select' }
 
-  actions[config.abort_key] = function(selected, opts)
+  actions[config.abort_key] = { fn = function(selected, opts)
     callback({ config.abort_key })
-  end
+  end, header = 'abort' }
 
   if has_all and not standalone then
-    actions[config.branches_all_key] = function(selected, opts)
+    actions[config.branches_all_key] = { fn = function(selected, opts)
       callback({ config.branches_all_key })
-    end
+    end, header = '--all' }
   end
 
   if standalone then
-    actions[config.branches_switch_key] = function(selected, opts)
+    actions[config.branches_switch_key] = { fn = function(selected, opts)
       callback({ config.branches_switch_key, unpack(selected or {}) })
-    end
-    actions[config.branches_merge_key] = function(selected, opts)
+    end, header = 'switch' }
+    actions[config.branches_merge_key] = { fn = function(selected, opts)
       callback({ config.branches_merge_key, unpack(selected or {}) })
-    end
-    actions[config.branches_rebase_interactive_key] = function(selected, opts)
+    end, header = 'merge' }
+    actions[config.branches_rebase_interactive_key] = { fn = function(selected, opts)
       callback({ config.branches_rebase_interactive_key, unpack(selected or {}) })
-    end
+    end, header = 'rebase -i' }
   end
 
   fzf_lua.fzf_exec(branch_source, {
-    prompt    = not_prefix .. 'branches> ',
-    cwd       = utils.get_git_root(),
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = p0,
-    fzf_opts  = fzf_opts,
-    actions   = actions,
+    prompt        = not_prefix .. 'branches> ',
+    cwd           = utils.get_git_root(),
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = p0,
+    fzf_opts      = fzf_opts,
+    keymap        = br_km,
+    _fzf_cli_args = br_cli,
+    actions       = actions,
   })
 end
 
@@ -131,35 +129,37 @@ function M.author_select(callback, fullscreen)
 
   local source = "git log --format='%aN <%aE>' | awk '!x[$0]++'"
 
+  local au_km, au_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+  }, {})
+
   local actions = {}
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     callback({ '', unpack(selected or {}) })
-  end
-  actions[config.abort_key] = function(selected, opts)
+  end, header = 'select' }
+  actions[config.abort_key] = { fn = function(selected, opts)
     callback({ config.abort_key })
-  end
+  end, header = 'abort' }
 
   fzf_lua.fzf_exec(source, {
-    prompt    = 'authors> ',
-    cwd       = utils.get_git_root(),
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    fzf_opts  = {
+    prompt        = 'authors> ',
+    cwd           = utils.get_git_root(),
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    fzf_opts      = {
       ['--history']     = utils.data_path() .. '/rg_author_history',
       ['--multi']       = '',
       ['--ansi']        = '',
       ['--header']      = utils.prettify_header(config.abort_key, 'abort'),
-      ['--bind']        = {
-        'change:first',
-        'enter:ignore', 'esc:ignore',
-        config.accept_key .. ':accept',
-        config.up_key .. ':up', config.down_key .. ':down',
-        config.next_history_key .. ':next-history',
-        config.previous_history_key .. ':previous-history',
-        config.toggle_up_key .. ':toggle+up',
-        config.toggle_down_key .. ':toggle+down',
-      },
     },
+    keymap        = au_km,
+    _fzf_cli_args = au_cli,
     actions = actions,
   })
 end

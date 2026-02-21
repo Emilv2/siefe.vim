@@ -80,27 +80,17 @@ function M.gitstash(fullscreen, kwargs)
   local default_size, other_size = utils.preview_window_size()
   local prompt = G_prompt .. regex .. ic_sym .. 'stash> '
 
-  local header = utils.prettify_header(config.abort_key, 'abort')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_apply_key, 'apply')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_pop_key, 'pop')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_drop_key, 'drop')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_sg_key, 'toggle S/G')
-    .. '\n' .. utils.prettify_header(config.stash_ignore_case_key, 'ignore case:' .. (kwargs.ignore_case and 'off' or 'on'))
-    .. ' ╱ ' .. utils.prettify_header(config.stash_fzf_key, 'fzf messages')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_s_key, 'pickaxe')
-    .. ' ╱ ' .. utils.prettify_header(config.stash_pickaxe_regex_key, 'regex')
+  local header = G_prompt .. regex .. ic_sym .. 'stash'
 
-  local binds = {
-    'enter:ignore',
-    'esc:ignore',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+down',
-    config.toggle_down_key      .. ':toggle+up',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local stash_km, stash_cli = utils.make_binds({
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+down',
+    [config.toggle_down_key]        = 'toggle+up',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.stash_preview_0_key  .. ':change-preview(' .. p0 .. ')',
     config.stash_preview_1_key  .. ':change-preview(' .. p1 .. ')',
     config.stash_preview_2_key  .. ':change-preview(' .. p2 .. ')',
@@ -109,7 +99,7 @@ function M.gitstash(fullscreen, kwargs)
     'change:first+reload(' .. reload_cmd .. ')',
     config.stash_fzf_key .. ':unbind(change,' .. config.stash_fzf_key .. ')+change-prompt(stash/fzf> )+enable-search+rebind(' .. config.stash_s_key .. ')',
     config.stash_s_key .. ':unbind(change,' .. config.stash_s_key .. ')+change-prompt(' .. prompt .. ')+disable-search+reload(' .. reload_cmd .. ')+rebind(change,' .. config.stash_fzf_key .. ')',
-  }
+  })
 
   local function get_query(selected, opts)
     if opts and opts.last_query then return opts.last_query end
@@ -131,61 +121,61 @@ function M.gitstash(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     -- No default action for stash (open Gedit of the stash commit)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     local stash = get_stash(items[1])
     pcall(vim.cmd, 'Gedit ' .. stash)
-  end
+  end, header = 'open' }
 
-  actions[config.stash_apply_key] = function(selected, opts)
+  actions[config.stash_apply_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     for _, line in ipairs(items) do
       vim.cmd('Git stash apply ' .. get_stash(line))
     end
-  end
+  end, header = 'apply' }
 
-  actions[config.stash_pop_key] = function(selected, opts)
+  actions[config.stash_pop_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     for _, line in ipairs(items) do
       vim.cmd('Git stash pop ' .. get_stash(line))
     end
-  end
+  end, header = 'pop' }
 
-  actions[config.stash_drop_key] = function(selected, opts)
+  actions[config.stash_drop_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     for _, line in ipairs(items) do
       vim.cmd('Git stash drop ' .. get_stash(line))
     end
-  end
+  end, header = 'drop' }
 
-  actions[config.stash_sg_key] = function(selected, opts)
+  actions[config.stash_sg_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.G = not kwargs.G
     M.gitstash(fullscreen, kwargs)
-  end
+  end, header = 'S/G' }
 
-  actions[config.stash_ignore_case_key] = function(selected, opts)
+  actions[config.stash_ignore_case_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.ignore_case = not kwargs.ignore_case
     M.gitstash(fullscreen, kwargs)
-  end
+  end, header = '-i' }
 
-  actions[config.stash_pickaxe_regex_key] = function(selected, opts)
+  actions[config.stash_pickaxe_regex_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     kwargs.regex = not kwargs.regex
     M.gitstash(fullscreen, kwargs)
-  end
+  end, header = 'regex' }
 
   fzf_lua.fzf_exec(initial_cmd, {
-    prompt    = prompt,
-    query     = kwargs.query,
-    cwd       = utils.get_git_root(),
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = default_preview,
-    fzf_opts  = {
+    prompt        = prompt,
+    query         = kwargs.query,
+    cwd           = utils.get_git_root(),
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = default_preview,
+    fzf_opts      = {
       ['--history']        = utils.data_path() .. '/rg_branch_history',
       ['--ansi']           = '',
       ['--multi']          = '',
@@ -196,8 +186,9 @@ function M.gitstash(fullscreen, kwargs)
       ['--delimiter']      = '•',
       ['--preview-window'] = default_size,
       ['--header']         = header,
-      ['--bind']           = binds,
     },
+    keymap        = stash_km,
+    _fzf_cli_args = stash_cli,
     actions = actions,
   })
 end

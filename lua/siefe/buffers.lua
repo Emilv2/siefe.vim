@@ -80,25 +80,22 @@ function M.buffers(fullscreen, kwargs)
 
   local default_size, other_size = utils.preview_window_size()
 
-  local header = utils.prettify_header(config.buffers_delete_key, 'delete')
-    .. ' ╱ ' .. utils.prettify_header(config.buffers_history_key, 'history')
+  local header = (kwargs.project and 'project ' or '') .. 'buffers'
     .. git_help
-    .. '\n' .. utils.common_window_help()
 
-  local binds = {
-    'change:first',
-    'enter:ignore', 'esc:ignore',
-    config.accept_key           .. ':accept',
-    config.up_key               .. ':up',
-    config.down_key             .. ':down',
-    config.next_history_key     .. ':next-history',
-    config.previous_history_key .. ':previous-history',
-    config.toggle_up_key        .. ':toggle+up',
-    config.toggle_down_key      .. ':toggle+down',
-    config.toggle_preview_key   .. ':change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  local buf_km, buf_cli = utils.make_binds({
+    ['change']                      = 'first',
+    [config.up_key]                 = 'up',
+    [config.down_key]               = 'down',
+    [config.next_history_key]       = 'next-history',
+    [config.previous_history_key]   = 'previous-history',
+    [config.toggle_up_key]          = 'toggle+up',
+    [config.toggle_down_key]        = 'toggle+down',
+    [config.toggle_preview_key]     = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+  }, {
     config.buffers_preview_key      .. ':change-preview(' .. p0 .. ')',
     config.buffers_fast_preview_key .. ':change-preview(' .. p1 .. ')',
-  }
+  })
 
   -- ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -125,7 +122,7 @@ function M.buffers(fullscreen, kwargs)
 
   local actions = {}
 
-  actions['default'] = function(selected, opts)
+  actions['default'] = { fn = function(selected, opts)
     local items  = get_items(selected, opts)
     if #items == 0 then return end
     local b = get_bufnr(items[1])
@@ -139,11 +136,11 @@ function M.buffers(fullscreen, kwargs)
       end
     end
     vim.cmd('buffer ' .. b)
-  end
+  end, header = 'switch' }
 
   for key, cmd in pairs(config.common_window_actions) do
     local k, c = key, cmd
-    actions[k] = function(selected, opts)
+    actions[k] = { fn = function(selected, opts)
       local items = get_items(selected, opts)
       for _, line in ipairs(items) do
         local b = get_bufnr(line)
@@ -153,10 +150,10 @@ function M.buffers(fullscreen, kwargs)
           vim.cmd('normal! zvzz')
         end
       end
-    end
+    end, header = 'open ' .. c }
   end
 
-  actions[config.buffers_delete_key] = function(selected, opts)
+  actions[config.buffers_delete_key] = { fn = function(selected, opts)
     local items = get_items(selected, opts)
     if #items == 0 then return end
     for _, line in ipairs(items) do
@@ -187,30 +184,30 @@ function M.buffers(fullscreen, kwargs)
     -- Reopen buffers picker
     kwargs.query = get_query(selected, opts)
     M.buffers(fullscreen, kwargs)
-  end
+  end, header = 'delete' }
 
-  actions[config.buffers_git_key] = function(selected, opts)
+  actions[config.buffers_git_key] = { fn = function(selected, opts)
     kwargs.query   = get_query(selected, opts)
     kwargs.project = not kwargs.project
     M.buffers(fullscreen, kwargs)
-  end
+  end, header = 'project' }
 
-  actions[config.buffers_history_key] = function(selected, opts)
+  actions[config.buffers_history_key] = { fn = function(selected, opts)
     kwargs.query = get_query(selected, opts)
     local hist = require('siefe.history')
     hist.historyoldfiles(fullscreen, kwargs)
-  end
+  end, header = 'history' }
 
   -- Build source
   local source = vim.tbl_map(function(b) return format_buffer(b, git_dir) end, sorted)
 
   fzf_lua.fzf_exec(source, {
-    prompt    = project_prefix .. 'Buf> ',
-    query     = kwargs.query,
-    winopts   = utils.winopts(fullscreen),
-    previewer = false,
-    preview   = default_preview,
-    fzf_opts  = {
+    prompt        = project_prefix .. 'Buf> ',
+    query         = kwargs.query,
+    winopts       = utils.winopts(fullscreen),
+    previewer     = false,
+    preview       = default_preview,
+    fzf_opts      = {
       ['--multi']          = '',
       ['--tiebreak']       = 'index',
       ['--ansi']           = '',
@@ -222,8 +219,9 @@ function M.buffers(fullscreen, kwargs)
       ['--header-lines']   = tostring(header_lines),
       ['--preview-window'] = '+{2}-/2,' .. default_size,
       ['--header']         = header,
-      ['--bind']           = binds,
     },
+    keymap        = buf_km,
+    _fzf_cli_args = buf_cli,
     actions = actions,
   })
 end
