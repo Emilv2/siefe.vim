@@ -18,6 +18,26 @@ local function run_bin(bin_path, input, extra_args)
   return out
 end
 
+-- Binary-safe helper for programs whose stdin or stdout contains NUL or SOH
+-- bytes.  vim.fn.system() converts such values to Blobs, making string methods
+-- unavailable (E976).  This helper writes input to a temp file and reads
+-- output via io.popen/io.open in binary mode, bypassing Vim's Blob handling.
+local function run_bin_binary(bin_path, input)
+  local tmpin  = os.tmpname()
+  local tmpout = os.tmpname()
+  local f = assert(io.open(tmpin, 'wb'))
+  f:write(input or '')
+  f:close()
+  os.execute(vim.fn.shellescape(bin_path)
+             .. ' <' .. tmpin .. ' >' .. tmpout .. ' 2>/dev/null')
+  local of = assert(io.open(tmpout, 'rb'))
+  local out = of:read('*a')
+  of:close()
+  os.remove(tmpin)
+  os.remove(tmpout)
+  return out
+end
+
 -- ── rg2fzf binary ─────────────────────────────────────────────────────────────
 
 T.group('rg2fzf binary', function()
@@ -28,28 +48,28 @@ T.group('rg2fzf binary', function()
   end
 
   -- Basic NUL→SOH translation: filename\0rest\n → filename\x01rest\0
-  local out1 = run_bin(bin, 'file.lua\x001:5:hello world\n')
+  local out1 = run_bin_binary(bin, 'file.lua\x001:5:hello world\n')
   T.ok(out1:find('\x01', 1, true),        'output contains SOH separator')
   T.ok(out1:find('file.lua', 1, true),    'output contains filename')
   T.ok(out1:find('hello world', 1, true), 'output contains match text')
   T.ok(out1:sub(-1) == '\0',              'record is NUL-terminated')
 
   -- Multiple records
-  local out2 = run_bin(bin, 'a.lua\x001:1:foo\nb.lua\x002:3:bar\n')
+  local out2 = run_bin_binary(bin, 'a.lua\x001:1:foo\nb.lua\x002:3:bar\n')
   T.eq(out2, 'a.lua\x011:1:foo\0b.lua\x012:3:bar\0', 'multiple records')
 
   -- Passthrough for lines without NUL (logger output etc.)
-  local out3 = run_bin(bin, 'log line without nul\n')
+  local out3 = run_bin_binary(bin, 'log line without nul\n')
   T.ok(out3:find('log line', 1, true), 'passthrough line preserved')
   T.ok(out3:sub(-1) == '\0',           'passthrough line NUL-terminated')
 
   -- Colons in both filename and match text: SOH is the unambiguous separator
-  local out4 = run_bin(bin, 'server:8080/api.go\x001:1:http://host:9090/\n')
+  local out4 = run_bin_binary(bin, 'server:8080/api.go\x001:1:http://host:9090/\n')
   T.ok(out4:find('server:8080/api.go\x01', 1, true),
        'colon-in-filename preserved before SOH')
 
   -- Empty input → empty output
-  local out5 = run_bin(bin, '')
+  local out5 = run_bin_binary(bin, '')
   T.eq(#out5, 0, 'empty input yields empty output')
 end)
 

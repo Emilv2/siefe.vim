@@ -549,14 +549,6 @@ function M.parse_rg_line(line)
       col      = tonumber(parts[3]) or 1,
       text     = table.concat(vim.list_slice(parts, 4), delim),
     }
-  elseif #parts == 1 then
-    local content = vim.fn.readfile(parts[1])
-    return {
-      filename = parts[1],
-      lnum     = 1,
-      col      = 1,
-      text     = #content > 0 and content[1] or '',
-    }
   end
   return nil
 end

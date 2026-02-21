@@ -166,9 +166,11 @@ fn with_real_git() {
     )
     .unwrap();
 
-    // Get the unstaged diff
+    // Get the unstaged diff.  Force --no-color so that a global
+    // color.ui=always config does not produce ANSI escape codes that
+    // confuse hunk_matches (which checks the first byte for '+'/'-').
     let diff_out = Command::new("git")
-        .args(["diff"])
+        .args(["-c", "color.diff=never", "diff"])
         .current_dir(&dir)
         .output()
         .unwrap()
