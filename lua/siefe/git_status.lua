@@ -21,7 +21,64 @@ function M.gitstatus(fullscreen, kwargs)
   end, kwargs.paths)), ' ')
   local paths_info = rel_paths == '' and '' or ('\npaths: ' .. rel_paths)
 
-  local source = utils.bin_path('git_status') .. uno_flag .. ' -- ' .. rel_paths
+  local git_root = utils.get_git_root()
+
+  -- Get git colours once (these are raw ANSI escape sequences)
+  local c_added     = vim.fn.system({'git', 'config', '--get-color', 'color.status.added',     'yellow'})
+  local c_changed   = vim.fn.system({'git', 'config', '--get-color', 'color.status.changed',   'green'})
+  local c_untracked = vim.fn.system({'git', 'config', '--get-color', 'color.status.untracked', 'yellow'})
+  local c_unmerged  = vim.fn.system({'git', 'config', '--get-color', 'color.status.unmerged',  'red'})
+  local c_none      = '\x1b[m'
+
+  local function pick_color(ch)
+    if ch == 'A' then return c_added
+    elseif ch == 'U' then return c_unmerged
+    elseif ch == '?' then return c_untracked
+    elseif ch == ' ' then return c_none
+    else return c_changed
+    end
+  end
+
+  -- Streaming source: parse git status --porcelain -z in Lua.
+  -- Each fzf_cb() call feeds one NUL-free entry directly to fzf-lua,
+  -- so --read0 is not needed and no bin/git_status subprocess is required.
+  local source = function(fzf_cb)
+    local cmd = {'git', '-C', git_root, 'status', '--porcelain', '-z'}
+    if kwargs.uno then table.insert(cmd, '-uno') end
+    if rel_paths ~= '' then
+      table.insert(cmd, '--')
+      for p in rel_paths:gmatch('%S+') do table.insert(cmd, p) end
+    end
+
+    local output  = vim.fn.system(cmd)
+    local records = vim.split(output, '\0', { plain = true })
+    local i = 1
+    while i <= #records do
+      local rec = records[i]
+      if rec ~= '' then
+        local status   = rec:sub(1, 2)
+        local filename = rec:sub(4)
+        local x = status:sub(1, 1)
+        local y = status:sub(2, 2)
+        local c1 = pick_color(x)
+        local c2 = pick_color(y)
+        if x == 'R' or x == 'C' then
+          -- Next NUL-delimited record is the old filename (rename source)
+          local prev = records[i + 1] or ''
+          fzf_cb(status .. '//' .. filename .. '//' .. prev .. ' //'
+            .. c1 .. x .. c2 .. y .. c_none .. ' ' .. filename .. ' -> ' .. prev)
+          i = i + 2
+        else
+          fzf_cb(status .. '// //' .. filename .. ' //'
+            .. c1 .. x .. c2 .. y .. c_none .. ' ' .. filename)
+          i = i + 1
+        end
+      else
+        i = i + 1
+      end
+    end
+    fzf_cb(nil)
+  end
 
   local p0 = 'git diff -- {3}'
   local p1 = 'git diff --staged -- {3}'
@@ -64,8 +121,14 @@ function M.gitstatus(fullscreen, kwargs)
     for _, line in ipairs(items) do
       local parts = vim.split(line, '//', { plain = true })
       if #parts >= 4 then
-        -- format: status//oldfile//filename//\0
-        local filename = parts[3]:gsub('%z$', '')  -- strip trailing null
+        -- Wire format (matches the source coroutine above):
+        --   Non-rename:  STATUS// //FILENAME //colored-display
+        --   Rename/copy: STATUS//NEW//OLD //colored-display
+        -- parts[3] is therefore the NEW filename for non-renames, and the
+        -- OLD (pre-rename) filename for R/C entries.  This is intentional:
+        -- preview commands use {3} as the path for `git diff`, and for a
+        -- rename the interesting diff is shown against the old path.
+        local filename = parts[3]:gsub('%z$', '')  -- strip accidental trailing null
         table.insert(filelist, { filename = filename, text = parts[1] })
       end
     end
@@ -171,7 +234,7 @@ function M.gitstatus(fullscreen, kwargs)
   end
 
   fzf_lua.fzf_exec(source, {
-    prompt    = uno_flag .. 'git status> ',
+    prompt    = (kwargs.uno and '-uno ' or '') .. 'git status> ',
     query     = kwargs.query,
     cwd       = utils.get_git_root(),
     winopts   = utils.winopts(fullscreen),
@@ -181,7 +244,6 @@ function M.gitstatus(fullscreen, kwargs)
       ['--history']        = utils.data_path() .. '/git_status_history',
       ['--ansi']           = '',
       ['--multi']          = '',
-      ['--read0']          = '',
       ['--print-query']    = '',
       ['--with-nth']       = '4..',
       ['--delimiter']      = '//',

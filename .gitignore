@@ -3,3 +3,6 @@
 # Rust build artifacts
 /target/
 /bin/rg2fzf
+/bin/shada2fzf
+/bin/diffgrep
+/bin/pickaxe-diff

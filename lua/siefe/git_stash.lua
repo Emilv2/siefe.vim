@@ -58,17 +58,18 @@ function M.gitstash(fullscreen, kwargs)
   local p2 = 'echo -e "\\033[0;35mgit show matching files\\033[0m" && '
     .. git_SG .. ' -C ' .. git_root_cmd .. ' show ' .. G .. '"`cat ' .. query_file .. '`" -O' .. vim.fn.shellescape(orderfile)
     .. ' ' .. regex .. '--color=always {1} --format=format: --patch --stat -- ' .. suffix
+  local pickaxe_diff = utils.bin_path('pickaxe-diff')
   local p3
-  if vim.fn.executable('grepdiff') == 1 then
+  if vim.fn.executable(pickaxe_diff) == 1 then
     p3 = ' bash -c \''
       .. ' echo -e "\\033[0;35mgit show matching hunks\\033[0m" && '
       .. '(export GREPDIFF_REGEX=`cat ' .. query_file .. '`; '
-      .. 'git -C ' .. git_root_cmd .. ' -c diff.external=' .. utils.bin_path('pickaxe-diff')
+      .. 'git -C ' .. git_root_cmd .. ' -c diff.external=' .. pickaxe_diff
       .. ' show {1} -O' .. vim.fn.shellescape(orderfile) .. ' --ext-diff ' .. regex .. G
       .. '"`cat ' .. query_file .. '`" --format=format: --patch --stat --) \''
       .. suffix
   else
-    p3 = 'echo install grepdiff from the patchutils package for this preview'
+    p3 = 'echo run "make build" to compile siefe.vim binaries'
   end
   local p4 = 'echo -e "\\033[0;35mgit diff\\033[0m" && git -C ' .. git_root_cmd
     .. ' diff --color=always -O' .. vim.fn.shellescape(orderfile) .. ' --patch --stat {1} -- ' .. suffix
