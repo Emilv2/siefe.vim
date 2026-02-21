@@ -199,9 +199,20 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       config.toggle_preview_key   .. ':change-preview-window('
                                   .. other_size .. '|' .. config.second_preview_size .. '%|)',
     },
-    -- In files mode, rg --null emits NUL-terminated paths; --read0 tells fzf
-    -- to use NUL as the input record separator so filenames containing
-    -- newlines are treated as a single entry.
+    -- --read0 is only used in files mode.
+    --
+    -- In files mode, `rg --null --files` emits NUL-TERMINATED paths:
+    --   file1\0file2\0file3\0...
+    -- NUL IS the record terminator, so --read0 splits fzf's input stream on
+    -- NUL correctly: each fzf entry is exactly one filename.
+    --
+    -- In search mode, `rg --null --column --line-number --with-filename` would emit:
+    --   file\0line:col:text\n  (NUL after filename, newline terminates the record)
+    -- NUL appears WITHIN each newline-terminated record as a field separator
+    -- between the filename and the line number.  Adding --read0 here would make
+    -- fzf split on those internal NULs, producing garbled entries ("file" as
+    -- one entry, "line:col:text\nnextfile" as the next).  rg provides no flag
+    -- to NUL-terminate search records, so --read0 cannot be used in search mode.
     ['--read0']       = mode == 'files' and '' or nil,
   }
 
