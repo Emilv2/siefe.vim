@@ -219,7 +219,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     .. '\n' .. utils.prettify_header(config.rg_dir_key, 'cd')
     .. ' ╱ ' .. utils.prettify_header(config.rg_yank_key, 'yank')
     .. ' ╱ ' .. utils.prettify_header(config.rg_history_key, 'history')
-    .. ' ╱ ' .. utils.prettify_header(config.rg_word_key, '-w:' .. (kwargs.word and 'off' or 'on'))
+    .. (mode ~= 'files' and (' ╱ ' .. utils.prettify_header(config.rg_word_key, '-w:' .. (kwargs.word and 'off' or 'on'))) or '')
     .. ' ╱ ' .. utils.prettify_header(config.rg_fixed_strings_key, '-F:' .. (kwargs.fixed_strings and 'off' or 'on'))
     .. ' ╱ ' .. utils.prettify_header(config.rg_max_1_key, '-m1:' .. (kwargs.max_1 and 'off' or 'on'))
     .. ' ╱ ' .. utils.prettify_header(config.rg_search_zip_key, '-z:' .. (kwargs.search_zip and 'off' or 'on'))
@@ -376,9 +376,12 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     reopen(selected, { files = not kwargs.files })
   end
 
-  -- Toggle: word boundary
-  actions[config.rg_word_key] = function(selected, _opts)
-    reopen(selected, { word = not kwargs.word })
+  -- Toggle: word boundary (not registered in files mode — ctrl-w must remain
+  -- available for Neovim window navigation when fzf is in files mode).
+  if mode ~= 'files' then
+    actions[config.rg_word_key] = function(selected, _opts)
+      reopen(selected, { word = not kwargs.word })
+    end
   end
 
   -- Toggle: depth-1

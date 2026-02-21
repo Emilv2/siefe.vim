@@ -45,7 +45,7 @@ local function make_defaults()
   d.rg_files_key                   = 'ctrl-f'
   d.rg_type_key                    = 'ctrl-t'
   d.rg_type_not_key                = 'ctrl-^'
-  d.rg_word_key                    = 'alt-w'
+  d.rg_word_key                    = 'ctrl-w'
   d.rg_case_key                    = 'ctrl-s'
   d.rg_hidden_key                  = 'alt-.'
   d.rg_no_ignore_key               = 'ctrl-u'
