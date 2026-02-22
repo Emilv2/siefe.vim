@@ -119,7 +119,7 @@ function M.gitstatus(fullscreen, kwargs)
 
   local header = (kwargs.uno and '-uno ' or '') .. 'git status' .. paths_info
 
-  local gs_km, gs_cli = utils.make_binds({
+  local gs_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -128,9 +128,8 @@ function M.gitstatus(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.gitstatus_preview_0_key .. ':change-preview(' .. p0 .. ')',
-    config.gitstatus_preview_1_key .. ':change-preview(' .. p1 .. ')',
+    [config.gitstatus_preview_0_key] = 'change-preview(' .. p0 .. ')',
+    [config.gitstatus_preview_1_key] = 'change-preview(' .. p1 .. ')',
   })
 
   -- Parse selected lines into file entries
@@ -365,7 +364,6 @@ function M.gitstatus(fullscreen, kwargs)
       ['--preview-window'] = default_size,
     },
     keymap = gs_km,
-    _fzf_cli_args = gs_cli,
     actions = actions,
   })
 end

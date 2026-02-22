@@ -35,7 +35,7 @@ function M.mode_select(fullscreen, query)
     utils.red('t') .. ' # Terminal-Job',
   }
 
-  local ms_km, ms_cli = utils.make_binds({
+  local ms_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -44,7 +44,7 @@ function M.mode_select(fullscreen, query)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.modes_select_all_key] = 'select-all',
-  }, {})
+  })
 
   local actions = {}
   actions['default'] = {
@@ -68,7 +68,6 @@ function M.mode_select(fullscreen, query)
       ['--multi'] = '',
     },
     keymap = ms_km,
-    _fzf_cli_args = ms_cli,
     actions = actions,
   })
 end
@@ -193,10 +192,10 @@ function M.maps(fullscreen, query, modes)
     }
   end
 
-  local maps_km, maps_cli = utils.make_binds({
+  local maps_km = utils.make_binds({
     [config.up_key] = 'up',
     [config.down_key] = 'down',
-  }, {})
+  })
 
   local actions = {}
 
@@ -260,7 +259,6 @@ function M.maps(fullscreen, query, modes)
       ['--with-nth'] = '5..',
     },
     keymap = maps_km,
-    _fzf_cli_args = maps_cli,
     actions = actions,
   })
 end

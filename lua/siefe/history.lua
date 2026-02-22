@@ -155,7 +155,7 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   local header = (kwargs.project and 'project ' or '') .. 'history' .. git_help
 
-  local hist_km, hist_cli = utils.make_binds({
+  local hist_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -164,10 +164,9 @@ function M.historyoldfiles(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.history_preview_key .. ':change-preview(' .. p0 .. ')',
-    config.history_fast_preview_key .. ':change-preview(' .. p1 .. ')',
-    config.history_faster_preview_key .. ':change-preview(' .. p2 .. ')',
+    [config.history_preview_key] = 'change-preview(' .. p0 .. ')',
+    [config.history_fast_preview_key] = 'change-preview(' .. p1 .. ')',
+    [config.history_faster_preview_key] = 'change-preview(' .. p2 .. ')',
   })
 
   -- Shows current buffer at top as a "header line"
@@ -303,7 +302,6 @@ function M.historyoldfiles(fullscreen, kwargs)
     preview = preview_cmd,
     fzf_opts = fzf_opts,
     keymap = hist_km,
-    _fzf_cli_args = hist_cli,
     actions = actions,
   }
   if kwargs.project and in_git then

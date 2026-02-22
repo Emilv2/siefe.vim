@@ -95,7 +95,7 @@ function M.buffers(fullscreen, kwargs)
 
   local header = (kwargs.project and 'project ' or '') .. 'buffers' .. git_help
 
-  local buf_km, buf_cli = utils.make_binds({
+  local buf_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -104,9 +104,8 @@ function M.buffers(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.buffers_preview_key .. ':change-preview(' .. p0 .. ')',
-    config.buffers_fast_preview_key .. ':change-preview(' .. p1 .. ')',
+    [config.buffers_preview_key] = 'change-preview(' .. p0 .. ')',
+    [config.buffers_fast_preview_key] = 'change-preview(' .. p1 .. ')',
   })
 
   -- ── Helpers ─────────────────────────────────────────────────────────────────
@@ -265,7 +264,6 @@ function M.buffers(fullscreen, kwargs)
       ['--preview-window'] = '+{2}-/2,' .. default_size,
     },
     keymap = buf_km,
-    _fzf_cli_args = buf_cli,
     actions = actions,
   })
 end

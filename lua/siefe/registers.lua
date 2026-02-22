@@ -78,13 +78,13 @@ function M.registers(fullscreen, kwargs)
 
   local actions = {}
 
-  local regs_km, regs_cli = utils.make_binds({
+  local regs_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-  }, {})
+  })
 
   -- Default: edit register in a split buffer
   actions['default'] = {
@@ -163,7 +163,6 @@ function M.registers(fullscreen, kwargs)
       ['--delimiter'] = ' ',
     },
     keymap = regs_km,
-    _fzf_cli_args = regs_cli,
     actions = actions,
   })
 end

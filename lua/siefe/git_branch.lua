@@ -41,7 +41,7 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 
   local header = (is_not and '^' or '') .. 'branches' .. (standalone and '' or (has_all and ' ╱ --all' or ''))
 
-  local br_km, br_cli = utils.make_binds({
+  local br_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -50,11 +50,10 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.gitbranch_preview_0_key .. ':change-preview(' .. p0 .. ')',
-    config.gitbranch_preview_1_key .. ':change-preview(' .. p1 .. ')',
-    config.gitbranch_preview_2_key .. ':change-preview(' .. p2 .. ')',
-    config.gitbranch_preview_3_key .. ':change-preview(' .. p3 .. ')',
+    [config.gitbranch_preview_0_key] = 'change-preview(' .. p0 .. ')',
+    [config.gitbranch_preview_1_key] = 'change-preview(' .. p1 .. ')',
+    [config.gitbranch_preview_2_key] = 'change-preview(' .. p2 .. ')',
+    [config.gitbranch_preview_3_key] = 'change-preview(' .. p3 .. ')',
   })
 
   local fzf_opts = {
@@ -130,7 +129,6 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
     preview = p0,
     fzf_opts = fzf_opts,
     keymap = br_km,
-    _fzf_cli_args = br_cli,
     actions = actions,
   })
 end
@@ -145,7 +143,7 @@ function M.author_select(callback, fullscreen)
 
   local source = "git log --format='%aN <%aE>' | awk '!x[$0]++'"
 
-  local au_km, au_cli = utils.make_binds({
+  local au_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -153,7 +151,7 @@ function M.author_select(callback, fullscreen)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-  }, {})
+  })
 
   local actions = {}
   actions['default'] = {
@@ -180,7 +178,6 @@ function M.author_select(callback, fullscreen)
       ['--ansi'] = '',
     },
     keymap = au_km,
-    _fzf_cli_args = au_cli,
     actions = actions,
   })
 end

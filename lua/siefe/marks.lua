@@ -96,16 +96,15 @@ function M.marks(fullscreen, kwargs)
 
   local header = 'm\tl\tc\tfile/text'
 
-  local marks_km, marks_cli = utils.make_binds({
+  local marks_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.marks_preview_key .. ':change-preview(' .. p0 .. ')',
-    config.marks_fast_preview_key .. ':change-preview(' .. p1 .. ')',
+    [config.marks_preview_key] = 'change-preview(' .. p0 .. ')',
+    [config.marks_fast_preview_key] = 'change-preview(' .. p1 .. ')',
   })
 
   local function parse_mark_line(line)
@@ -228,7 +227,6 @@ function M.marks(fullscreen, kwargs)
       ['--preview-window'] = '+{2}-/2,' .. default_size,
     },
     keymap = marks_km,
-    _fzf_cli_args = marks_cli,
     actions = actions,
   })
 end

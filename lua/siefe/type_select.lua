@@ -60,7 +60,7 @@ function M.type_select(func, fullscreen, ...)
     end
   end
 
-  local ts_km, ts_cli = utils.make_binds({
+  local ts_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -68,7 +68,7 @@ function M.type_select(func, fullscreen, ...)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-  }, {})
+  })
 
   fzf_lua.fzf_exec(
     utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' rg --color=always --type-list',
@@ -83,7 +83,6 @@ function M.type_select(func, fullscreen, ...)
         ['--print-query'] = '',
       },
       keymap = ts_km,
-      _fzf_cli_args = ts_cli,
       actions = {
         ['default'] = { fn = on_select, header = 'select' },
         [config.abort_key] = {

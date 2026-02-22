@@ -117,7 +117,7 @@ function M.gitstash(fullscreen, kwargs)
 
   local header = G_prompt .. regex .. ic_sym .. 'stash'
 
-  local stash_km, stash_cli = utils.make_binds({
+  local stash_km = utils.make_binds({
     [config.up_key] = 'up',
     [config.down_key] = 'down',
     [config.next_history_key] = 'next-history',
@@ -125,21 +125,18 @@ function M.gitstash(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+down',
     [config.toggle_down_key] = 'toggle+up',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.stash_preview_0_key .. ':change-preview(' .. p0 .. ')',
-    config.stash_preview_1_key .. ':change-preview(' .. p1 .. ')',
-    config.stash_preview_2_key .. ':change-preview(' .. p2 .. ')',
-    config.stash_preview_3_key .. ':change-preview(' .. p3 .. ')',
-    config.stash_preview_4_key .. ':change-preview(' .. p4 .. ')',
-    'change:first+reload(' .. reload_cmd .. ')',
-    config.stash_fzf_key
-      .. ':unbind(change,'
+    [config.stash_preview_0_key] = 'change-preview(' .. p0 .. ')',
+    [config.stash_preview_1_key] = 'change-preview(' .. p1 .. ')',
+    [config.stash_preview_2_key] = 'change-preview(' .. p2 .. ')',
+    [config.stash_preview_3_key] = 'change-preview(' .. p3 .. ')',
+    [config.stash_preview_4_key] = 'change-preview(' .. p4 .. ')',
+    ['change'] = 'first+reload(' .. reload_cmd .. ')',
+    [config.stash_fzf_key] = 'unbind(change,'
       .. config.stash_fzf_key
       .. ')+change-prompt(stash/fzf> )+enable-search+rebind('
       .. config.stash_s_key
       .. ')',
-    config.stash_s_key
-      .. ':unbind(change,'
+    [config.stash_s_key] = 'unbind(change,'
       .. config.stash_s_key
       .. ')+change-prompt('
       .. prompt
@@ -264,7 +261,6 @@ function M.gitstash(fullscreen, kwargs)
       ['--preview-window'] = default_size,
     },
     keymap = stash_km,
-    _fzf_cli_args = stash_cli,
     actions = actions,
   })
 end

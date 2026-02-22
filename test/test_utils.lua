@@ -210,25 +210,26 @@ end)
 -- ── make_binds ────────────────────────────────────────────────────────────────
 
 T.group('make_binds', function()
-  -- Simple binds go into keymap.fzf; complex into --bind= cli args
-  local km, cli = utils.make_binds({ ['ctrl-a'] = 'abort' }, { 'ctrl-b:up' })
+  -- All binds go into keymap.fzf
+  local km = utils.make_binds({ ['ctrl-a'] = 'abort', ['ctrl-b'] = 'up' })
   T.ok(type(km.fzf) == 'table', 'keymap.fzf is a table')
-  T.eq(km.fzf['ctrl-a'], 'abort', 'simple bind in keymap.fzf')
-  T.eq(#cli, 1, 'one complex bind in cli list')
-  T.ok(cli[1]:find('--bind=', 1, true) ~= nil, 'complex bind has --bind= prefix')
-  T.ok(cli[1]:find('ctrl-b:up', 1, true) ~= nil or cli[1]:find('ctrl%-b:up', 1) ~= nil, 'complex bind value present')
+  T.eq(km.fzf['ctrl-a'], 'abort', 'bind in keymap.fzf')
+  T.eq(km.fzf['ctrl-b'], 'up', 'second bind in keymap.fzf')
 
-  -- Nil inputs → empty structures (no error)
-  local km2, cli2 = utils.make_binds()
-  T.eq(km2.fzf, {}, 'nil simple → empty keymap table')
-  T.eq(cli2, {}, 'nil complex → empty cli list')
+  -- Nil/no input → empty keymap (no error)
+  local km2 = utils.make_binds()
+  T.eq(km2.fzf, {}, 'nil input → empty keymap table')
 
-  -- Multiple complex binds
-  local _, cli3 = utils.make_binds(nil, { 'a:up', 'b:down', 'c:abort' })
-  T.eq(#cli3, 3, 'three complex binds produce three --bind= entries')
+  -- Complex fzf actions (change-preview, reload, etc.) also go in keymap.fzf
+  local km3 = utils.make_binds({
+    ['f1'] = 'change-preview(git show {1})',
+    ['change'] = 'first+reload(rg {q})',
+  })
+  T.eq(km3.fzf['f1'], 'change-preview(git show {1})', 'change-preview bind stored')
+  T.eq(km3.fzf['change'], 'first+reload(rg {q})', 'reload bind stored')
 
   -- Multiple simple binds all stored
-  local km4, _ = utils.make_binds({ ['ctrl-x'] = 'clear-query', ['ctrl-y'] = 'yank' }, {})
+  local km4 = utils.make_binds({ ['ctrl-x'] = 'clear-query', ['ctrl-y'] = 'yank' })
   T.eq(km4.fzf['ctrl-x'], 'clear-query', 'second simple bind stored')
   T.eq(km4.fzf['ctrl-y'], 'yank', 'third simple bind stored')
 end)

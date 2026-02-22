@@ -281,7 +281,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   local header = utils.blue(name_info) .. ' ' .. utils.magenta(mode) .. flags .. paths_info
 
-  local rg_km, _rg_cli = utils.make_binds({
+  local rg_km = utils.make_binds({
     [config.up_key] = 'up',
     [config.down_key] = 'down',
     [config.next_history_key] = 'next-history',
@@ -289,7 +289,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {})
+  })
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/rg_fzf_history',
@@ -645,7 +645,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     previewer = 'builtin', -- Neovim buffer preview with Treesitter/LSP
     fzf_opts = fzf_opts,
     keymap = rg_km,
-    _fzf_cli_args = _rg_cli,
     actions = actions,
   }
 

@@ -66,7 +66,7 @@ function M.dir_select(
     .. (fd_no_ignore and ' -u' or '')
     .. (fd_depth1 and ' -d1' or '')
 
-  local ds_km, ds_cli = utils.make_binds({
+  local ds_km = utils.make_binds({
     ['change'] = 'first',
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -74,7 +74,7 @@ function M.dir_select(
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-  }, {})
+  })
 
   local multi_opt = multi and { ['--multi'] = '' } or {}
 
@@ -247,7 +247,6 @@ function M.dir_select(
     previewer = false,
     fzf_opts = fzf_opts,
     keymap = ds_km,
-    _fzf_cli_args = ds_cli,
     actions = actions,
   })
 end

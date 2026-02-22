@@ -239,8 +239,7 @@ function M.gitlogfzf(fullscreen, kwargs)
 
   local prompt = branches .. notbranches .. G_prompt .. regex .. ic_sym .. follow .. line_range_str .. 'pickaxe> '
 
-  local gl_simple = {
-    ['change'] = 'first',
+  local gl_binds = {
     [config.up_key] = 'up',
     [config.down_key] = 'down',
     [config.next_history_key] = 'next-history',
@@ -248,41 +247,33 @@ function M.gitlogfzf(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+down',
     [config.toggle_down_key] = 'toggle+up',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }
-  local gl_complex = {
-    config.gitlog_preview_0_key .. ':change-preview(' .. p0 .. ')',
-    config.gitlog_preview_1_key .. ':change-preview(' .. p1 .. ')',
-    config.gitlog_preview_2_key .. ':change-preview(' .. p2 .. ')',
-    config.gitlog_preview_3_key .. ':change-preview(' .. p3 .. ')',
-    config.gitlog_preview_4_key .. ':change-preview(' .. p4 .. ')',
+    [config.gitlog_preview_0_key] = 'change-preview(' .. p0 .. ')',
+    [config.gitlog_preview_1_key] = 'change-preview(' .. p1 .. ')',
+    [config.gitlog_preview_2_key] = 'change-preview(' .. p2 .. ')',
+    [config.gitlog_preview_3_key] = 'change-preview(' .. p3 .. ')',
+    [config.gitlog_preview_4_key] = 'change-preview(' .. p4 .. ')',
   }
 
   if #kwargs.line_range == 0 then
-    table.insert(gl_complex, 'change:first+reload(' .. reload_command .. ')')
-    table.insert(
-      gl_complex,
-      config.gitlog_fzf_key
-        .. ':unbind(change,'
-        .. config.gitlog_fzf_key
-        .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind('
-        .. config.gitlog_s_key
-        .. ')'
-    )
-    table.insert(
-      gl_complex,
-      config.gitlog_s_key
-        .. ':unbind(change,'
-        .. config.gitlog_s_key
-        .. ')+change-prompt('
-        .. prompt
-        .. ')+disable-search+reload('
-        .. reload_command
-        .. ')+rebind(change,'
-        .. config.gitlog_fzf_key
-        .. ')'
-    )
+    gl_binds['change'] = 'first+reload(' .. reload_command .. ')'
+    gl_binds[config.gitlog_fzf_key] = 'unbind(change,'
+      .. config.gitlog_fzf_key
+      .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind('
+      .. config.gitlog_s_key
+      .. ')'
+    gl_binds[config.gitlog_s_key] = 'unbind(change,'
+      .. config.gitlog_s_key
+      .. ')+change-prompt('
+      .. prompt
+      .. ')+disable-search+reload('
+      .. reload_command
+      .. ')+rebind(change,'
+      .. config.gitlog_fzf_key
+      .. ')'
+  else
+    gl_binds['change'] = 'first'
   end
-  local gl_km, gl_cli = utils.make_binds(gl_simple, gl_complex)
+  local gl_km = utils.make_binds(gl_binds)
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/git_fzf_history',
@@ -548,7 +539,6 @@ function M.gitlogfzf(fullscreen, kwargs)
     preview = default_preview,
     fzf_opts = fzf_opts,
     keymap = gl_km,
-    _fzf_cli_args = gl_cli,
     actions = actions,
   })
 end

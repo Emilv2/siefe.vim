@@ -94,7 +94,7 @@ function M.jumps(fullscreen, kwargs)
 
   local header = 'jumps  current:' .. current
 
-  local jumps_km, jumps_cli = utils.make_binds({
+  local jumps_km = utils.make_binds({
     ['change'] = 'first',
     ['start'] = 'pos:' .. (#jumplist - current),
     [config.up_key] = 'up',
@@ -102,9 +102,8 @@ function M.jumps(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-  }, {
-    config.jumps_preview_key .. ':change-preview(' .. p0 .. ')',
-    config.jumps_fast_preview_key .. ':change-preview(' .. p1 .. ')',
+    [config.jumps_preview_key] = 'change-preview(' .. p0 .. ')',
+    [config.jumps_fast_preview_key] = 'change-preview(' .. p1 .. ')',
   })
 
   local function parse_jump_line(line)
@@ -211,7 +210,6 @@ function M.jumps(fullscreen, kwargs)
       ['--preview-window'] = '+{2}-/2,' .. default_size,
     },
     keymap = jumps_km,
-    _fzf_cli_args = jumps_cli,
     actions = actions,
   })
 end
