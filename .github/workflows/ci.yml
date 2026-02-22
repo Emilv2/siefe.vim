@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  # ── 1. Rust: unit tests, formatter, linter ──────────────────────────────────
+  rust:
+    name: Rust (test · fmt · clippy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable (clippy + rustfmt)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo registry / build artefacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo test
+        run: cargo test
+
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        run: cargo clippy -- -D warnings
+
+  # ── 2. Lua: unit tests, luacheck, stylua ────────────────────────────────────
+  lua:
+    name: Lua (test · luacheck · stylua)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim (stable)
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install luacheck
+        run: |
+          sudo apt-get install -y luarocks
+          luarocks install --local luacheck
+          echo "$HOME/.luarocks/bin" >> "$GITHUB_PATH"
+
+      - name: stylua --check
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua/ test/ plugin/siefe.lua
+
+      - name: luacheck
+        run: luacheck lua/ test/ plugin/siefe.lua
+
+      - name: Lua unit tests (make test-lua)
+        run: make test-lua
+
+  # ── 3. Integration: build Rust binaries → run real-rg/git tests ─────────────
+  integration:
+    name: Integration (build · rg · git)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry / build artefacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Neovim (stable)
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install ripgrep
+        run: sudo apt-get install -y ripgrep
+
+      - name: Build Rust binaries (make build)
+        run: make build
+
+      - name: Integration tests (make test-integration)
+        run: make test-integration
