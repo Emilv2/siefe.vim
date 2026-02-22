@@ -227,16 +227,6 @@ function M.gitlogfzf(fullscreen, kwargs)
 
   local default_size, other_size = utils.preview_window_size()
 
-  -- Header
-  local header = G_prompt
-    .. regex
-    .. ic_sym
-    .. follow
-    .. (kwargs.branches ~= '' and 'branches:' .. kwargs.branches .. ' ' or '')
-    .. (kwargs.notbranches ~= '' and '^branches:' .. kwargs.notbranches .. ' ' or '')
-    .. authors_info
-    .. paths_info
-
   local prompt = branches .. notbranches .. G_prompt .. regex .. ic_sym .. follow .. line_range_str .. 'pickaxe> '
 
   local gl_binds = {
@@ -246,30 +236,40 @@ function M.gitlogfzf(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+down',
     [config.toggle_down_key] = 'toggle+up',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.gitlog_preview_0_key] = 'change-preview(' .. p0 .. ')',
-    [config.gitlog_preview_1_key] = 'change-preview(' .. p1 .. ')',
-    [config.gitlog_preview_2_key] = 'change-preview(' .. p2 .. ')',
-    [config.gitlog_preview_3_key] = 'change-preview(' .. p3 .. ')',
-    [config.gitlog_preview_4_key] = 'change-preview(' .. p4 .. ')',
+    -- Wrap complex fzf bind strings with desc so F1 help shows short labels.
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
+    [config.gitlog_preview_0_key] = { 'change-preview(' .. p0 .. ')', desc = 'preview:patch+stat' },
+    [config.gitlog_preview_1_key] = { 'change-preview(' .. p1 .. ')', desc = 'preview:stat-only' },
+    [config.gitlog_preview_2_key] = { 'change-preview(' .. p2 .. ')', desc = 'preview:matching-files' },
+    [config.gitlog_preview_3_key] = { 'change-preview(' .. p3 .. ')', desc = 'preview:matching-hunks' },
+    [config.gitlog_preview_4_key] = { 'change-preview(' .. p4 .. ')', desc = 'preview:diff' },
   }
 
   if #kwargs.line_range == 0 then
     gl_binds['change'] = 'first+reload(' .. reload_command .. ')'
-    gl_binds[config.gitlog_fzf_key] = 'unbind(change,'
-      .. config.gitlog_fzf_key
-      .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind('
-      .. config.gitlog_s_key
-      .. ')'
-    gl_binds[config.gitlog_s_key] = 'unbind(change,'
-      .. config.gitlog_s_key
-      .. ')+change-prompt('
-      .. prompt
-      .. ')+disable-search+reload('
-      .. reload_command
-      .. ')+rebind(change,'
-      .. config.gitlog_fzf_key
-      .. ')'
+    gl_binds[config.gitlog_fzf_key] = {
+      'unbind(change,'
+        .. config.gitlog_fzf_key
+        .. ')+change-prompt(pickaxe/fzf> )+enable-search+rebind('
+        .. config.gitlog_s_key
+        .. ')',
+      desc = 'fzf-mode',
+    }
+    gl_binds[config.gitlog_s_key] = {
+      'unbind(change,'
+        .. config.gitlog_s_key
+        .. ')+change-prompt('
+        .. prompt
+        .. ')+disable-search+reload('
+        .. reload_command
+        .. ')+rebind(change,'
+        .. config.gitlog_fzf_key
+        .. ')',
+      desc = 'pickaxe-mode',
+    }
   else
     gl_binds['change'] = 'first'
   end
@@ -375,6 +375,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       M.gitlogfzf(fullscreen, kwargs)
     end,
     desc = 'S/G',
+    header = function()
+      return kwargs.G and '-G' or '-S'
+    end,
   }
 
   actions[config.gitlog_ignore_case_key] = {
@@ -384,6 +387,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       M.gitlogfzf(fullscreen, kwargs)
     end,
     desc = '-i',
+    header = function()
+      return kwargs.ignore_case and '-i' or nil
+    end,
   }
 
   actions[config.gitlog_pickaxe_regex_key] = {
@@ -393,6 +399,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       M.gitlogfzf(fullscreen, kwargs)
     end,
     desc = 'regex',
+    header = function()
+      return kwargs.regex and '--pickaxe-regex' or nil
+    end,
   }
 
   actions[config.gitlog_follow_key] = {
@@ -402,6 +411,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       M.gitlogfzf(fullscreen, kwargs)
     end,
     desc = 'follow',
+    header = function()
+      return kwargs.follow and '--follow' or nil
+    end,
   }
 
   actions[config.gitlog_branch_key] = {
@@ -425,6 +437,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen, false, false)
     end,
     desc = 'branches',
+    header = function()
+      return kwargs.branches ~= '' and ('branch:' .. kwargs.branches) or nil
+    end,
   }
 
   actions[config.gitlog_not_branch_key] = {
@@ -446,6 +461,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen, true, false)
     end,
     desc = '^branches',
+    header = function()
+      return kwargs.notbranches ~= '' and ('^branch:' .. kwargs.notbranches) or nil
+    end,
   }
 
   actions[config.gitlog_author_key] = {
@@ -462,6 +480,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen)
     end,
     desc = 'authors',
+    header = function()
+      return #kwargs.authors > 0 and ('author:' .. table.concat(kwargs.authors, ',')) or nil
+    end,
   }
 
   actions[config.gitlog_dir_key] = {
@@ -483,6 +504,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       )
     end,
     desc = 'paths',
+    header = function()
+      return #kwargs.paths > 0 and table.concat(kwargs.paths, ' ') or nil
+    end,
   }
 
   actions[config.gitlog_type_key] = {
@@ -492,6 +516,9 @@ function M.gitlogfzf(fullscreen, kwargs)
       ts.type_select('gitlog', fullscreen, kwargs)
     end,
     desc = 'type',
+    header = function()
+      return #kwargs.type > 0 and table.concat(kwargs.type, ',') or nil
+    end,
   }
 
   actions[config.gitlog_switch_key] = {

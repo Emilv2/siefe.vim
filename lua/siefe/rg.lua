@@ -235,52 +235,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   local cmd_fmt = build_rg_command(kwargs, rg2fzf)
   local files_cmd = build_files_command(kwargs)
 
-  -- Header
-  local name_info = vim.fn.bufname() == '' and '[No Name]'
-    or vim.fn.fnameescape(vim.fn.fnamemodify(vim.fn.bufname(), ':t'))
-  local paths_info = #kwargs.paths == 0 and '' or ('\npaths: ' .. table.concat(kwargs.paths, ' '))
-
-  -- Active flags (shown only when non-default)
-  local flags = ''
-  if kwargs.word then
-    flags = flags .. ' -w'
-  end
-  if kwargs.depth1 then
-    flags = flags .. ' -d1'
-  end
-  if kwargs.hidden then
-    flags = flags .. ' -.'
-  end
-  if kwargs.fixed_strings then
-    flags = flags .. ' -F'
-  end
-  if kwargs.max_1 then
-    flags = flags .. ' -m1'
-  end
-  if kwargs.search_zip then
-    flags = flags .. ' -z'
-  end
-  if kwargs.text then
-    flags = flags .. ' -a'
-  end
-  if kwargs.no_ignore == 1 then
-    flags = flags .. ' -u'
-  elseif kwargs.no_ignore == 2 then
-    flags = flags .. ' -uu'
-  elseif kwargs.no_ignore == 3 then
-    flags = flags .. ' -uuu'
-  end
-  if kwargs.case_sensitive == 2 then
-    flags = flags .. ' -i'
-  elseif kwargs.case_sensitive == 0 then
-    flags = flags .. ' -s'
-  end
-  if kwargs.type ~= '' then
-    flags = flags .. ' ' .. kwargs.type
-  end
-
-  local header = utils.blue(name_info) .. ' ' .. utils.magenta(mode) .. flags .. paths_info
-
   local rg_km = utils.make_binds({
     [config.up_key] = 'up',
     [config.down_key] = 'down',
@@ -288,7 +242,12 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+    -- Wrap complex fzf bind strings as { action, desc = 'short' } so fzf-lua's
+    -- F1 help shows the short description instead of the full action string.
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   local fzf_opts = {
@@ -436,6 +395,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   }
 
   -- Toggle: fzf/rg mode
+  -- header() always returns the current mode so it's always visible in --header.
   actions[config.rg_toggle_fzf_key] = {
     fn = function(selected, _opts)
       if kwargs.files then
@@ -445,6 +405,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       end
     end,
     desc = 'mode',
+    header = function()
+      return mode
+    end,
   }
 
   -- Toggle: rg/fzf combined filter
@@ -453,6 +416,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { fzf = not kwargs.fzf })
     end,
     desc = 'rg/fzf',
+    header = function()
+      return kwargs.fzf and 'fzf' or nil
+    end,
   }
 
   -- Toggle: files mode
@@ -461,6 +427,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { files = not kwargs.files })
     end,
     desc = 'files',
+    header = function()
+      return kwargs.files and 'files' or nil
+    end,
   }
 
   -- Toggle: word boundary (not registered in files mode — ctrl-w must remain
@@ -471,6 +440,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         reopen(selected, { word = not kwargs.word })
       end,
       desc = '-w',
+      header = function()
+        return kwargs.word and '-w' or nil
+      end,
     }
   end
 
@@ -480,6 +452,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { depth1 = not kwargs.depth1 })
     end,
     desc = '-d1',
+    header = function()
+      return kwargs.depth1 and '-d1' or nil
+    end,
   }
 
   -- Toggle: case sensitivity (cycles smart → ignore → sensitive → smart)
@@ -488,6 +463,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { case_sensitive = (kwargs.case_sensitive + 1) % 3 })
     end,
     desc = 'case',
+    header = function()
+      if kwargs.case_sensitive == 2 then
+        return '-i'
+      elseif kwargs.case_sensitive == 0 then
+        return '-s'
+      end
+    end,
   }
 
   -- Toggle: hidden files
@@ -496,6 +478,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { hidden = not kwargs.hidden })
     end,
     desc = '-.',
+    header = function()
+      return kwargs.hidden and '-.' or nil
+    end,
   }
 
   -- Toggle: no-ignore (cycles 0 → -u → -uu → -uuu → 0)
@@ -504,6 +489,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { no_ignore = (kwargs.no_ignore + 1) % 4 })
     end,
     desc = '-u',
+    header = function()
+      return kwargs.no_ignore > 0 and string.rep('-u', kwargs.no_ignore) or nil
+    end,
   }
 
   -- Toggle: fixed strings
@@ -512,6 +500,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { fixed_strings = not kwargs.fixed_strings })
     end,
     desc = '-F',
+    header = function()
+      return kwargs.fixed_strings and '-F' or nil
+    end,
   }
 
   -- Toggle: max-1
@@ -520,6 +511,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { max_1 = not kwargs.max_1 })
     end,
     desc = '-m1',
+    header = function()
+      return kwargs.max_1 and '-m1' or nil
+    end,
   }
 
   -- Toggle: search compressed files
@@ -528,6 +522,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { search_zip = not kwargs.search_zip })
     end,
     desc = '-z',
+    header = function()
+      return kwargs.search_zip and '-z' or nil
+    end,
   }
 
   -- Toggle: treat binary as text
@@ -536,6 +533,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { text = not kwargs.text })
     end,
     desc = '-a',
+    header = function()
+      return kwargs.text and '-a' or nil
+    end,
   }
 
   -- Sub-picker: file type filter (-t / -T)
@@ -548,6 +548,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       end)
     end,
     desc = '-t',
+    header = function()
+      return kwargs.type ~= '' and kwargs.type or nil
+    end,
   }
 
   actions[config.rg_type_not_key] = {
@@ -572,6 +575,9 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       end)
     end,
     desc = 'cd',
+    header = function()
+      return #kwargs.paths > 0 and table.concat(kwargs.paths, ' ') or nil
+    end,
   }
 
   -- Toggle: limit search to open buffers
@@ -588,6 +594,17 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       reopen(selected, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
     end,
     desc = 'buffers',
+    header = function()
+      local bufs = vim.tbl_map(
+        function(b)
+          return vim.fn.fnamemodify(vim.fn.expand(vim.fn.bufname(b)), ':p:~:.')
+        end,
+        vim.tbl_filter(function(b)
+          return vim.fn.buflisted(b) == 1
+        end, vim.api.nvim_list_bufs())
+      )
+      return vim.deep_equal(kwargs.paths, bufs) and 'buffers' or nil
+    end,
   }
 
   -- Yank matched text to default register.
@@ -634,6 +651,11 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       end
     end,
     desc = 'history',
+    header = function()
+      local git_dir = utils.get_git_root()
+      local recent = utils.recent_files(git_dir ~= '' and git_dir or nil)
+      return vim.deep_equal(kwargs.paths, recent) and 'history' or nil
+    end,
   }
 
   -- ── Launch ────────────────────────────────────────────────────────────────────
