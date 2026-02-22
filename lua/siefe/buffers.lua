@@ -159,7 +159,7 @@ function M.buffers(fullscreen, kwargs)
       end
       vim.cmd('buffer ' .. b)
     end,
-    header = 'switch',
+    desc = 'switch',
   }
 
   for key, cmd in pairs(config.common_window_actions) do
@@ -176,7 +176,7 @@ function M.buffers(fullscreen, kwargs)
           end
         end
       end,
-      header = 'open ' .. c,
+      desc = 'open ' .. c,
     }
   end
 
@@ -219,7 +219,7 @@ function M.buffers(fullscreen, kwargs)
       kwargs.query = get_query(selected, opts)
       M.buffers(fullscreen, kwargs)
     end,
-    header = 'delete',
+    desc = 'delete',
   }
 
   actions[config.buffers_git_key] = {
@@ -228,7 +228,7 @@ function M.buffers(fullscreen, kwargs)
       kwargs.project = not kwargs.project
       M.buffers(fullscreen, kwargs)
     end,
-    header = 'project',
+    desc = 'project',
   }
 
   actions[config.buffers_history_key] = {
@@ -237,7 +237,7 @@ function M.buffers(fullscreen, kwargs)
       local hist = require('siefe.history')
       hist.historyoldfiles(fullscreen, kwargs)
     end,
-    header = 'history',
+    desc = 'history',
   }
 
   -- Build source

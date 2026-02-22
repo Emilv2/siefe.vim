@@ -81,14 +81,14 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
         callback({ '', unpack(items) })
       end
     end,
-    header = 'select',
+    desc = 'select',
   }
 
   actions[config.abort_key] = {
     fn = function(selected, opts)
       callback({ config.abort_key })
     end,
-    header = 'abort',
+    desc = 'abort',
   }
 
   if has_all and not standalone then
@@ -96,7 +96,7 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
       fn = function(selected, opts)
         callback({ config.branches_all_key })
       end,
-      header = '--all',
+      desc = '--all',
     }
   end
 
@@ -105,19 +105,19 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
       fn = function(selected, opts)
         callback({ config.branches_switch_key, unpack(selected or {}) })
       end,
-      header = 'switch',
+      desc = 'switch',
     }
     actions[config.branches_merge_key] = {
       fn = function(selected, opts)
         callback({ config.branches_merge_key, unpack(selected or {}) })
       end,
-      header = 'merge',
+      desc = 'merge',
     }
     actions[config.branches_rebase_interactive_key] = {
       fn = function(selected, opts)
         callback({ config.branches_rebase_interactive_key, unpack(selected or {}) })
       end,
-      header = 'rebase -i',
+      desc = 'rebase -i',
     }
   end
 
@@ -158,13 +158,13 @@ function M.author_select(callback, fullscreen)
     fn = function(selected, opts)
       callback({ '', unpack(selected or {}) })
     end,
-    header = 'select',
+    desc = 'select',
   }
   actions[config.abort_key] = {
     fn = function(selected, opts)
       callback({ config.abort_key })
     end,
-    header = 'abort',
+    desc = 'abort',
   }
 
   fzf_lua.fzf_exec(source, {

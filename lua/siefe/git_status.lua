@@ -178,7 +178,7 @@ function M.gitstatus(fullscreen, kwargs)
         utils.fill_quickfix(filelist)
       end
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   for key, cmd in pairs(config.common_window_actions) do
@@ -191,7 +191,7 @@ function M.gitstatus(fullscreen, kwargs)
           utils.open_file(c, f.filename)
         end
       end,
-      header = 'open ' .. c,
+      desc = 'open ' .. c,
     }
   end
 
@@ -200,7 +200,7 @@ function M.gitstatus(fullscreen, kwargs)
       kwargs.uno = not kwargs.uno
       M.gitstatus(fullscreen, kwargs)
     end,
-    header = '-uno',
+    desc = '-uno',
   }
 
   actions[config.gitstatus_add_key] = {
@@ -218,7 +218,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git add -- ' .. files)
     end,
-    header = 'add',
+    desc = 'add',
   }
 
   actions[config.gitstatus_add_patch_key] = {
@@ -236,7 +236,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git add --patch -- ' .. files)
     end,
-    header = 'add -p',
+    desc = 'add -p',
   }
 
   actions[config.gitstatus_restore_key] = {
@@ -254,7 +254,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git restore -- ' .. files)
     end,
-    header = 'restore',
+    desc = 'restore',
   }
 
   actions[config.gitstatus_restore_patch_key] = {
@@ -272,7 +272,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git restore --patch -- ' .. files)
     end,
-    header = 'restore -p',
+    desc = 'restore -p',
   }
 
   actions[config.gitstatus_unstage_key] = {
@@ -290,7 +290,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git reset HEAD -- ' .. files)
     end,
-    header = 'unstage',
+    desc = 'unstage',
   }
 
   actions[config.gitstatus_unstage_patch_key] = {
@@ -308,7 +308,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git reset HEAD --patch -- ' .. files)
     end,
-    header = 'unstage -p',
+    desc = 'unstage -p',
   }
 
   actions[config.gitstatus_stash_key] = {
@@ -326,7 +326,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git stash -- ' .. files)
     end,
-    header = 'stash',
+    desc = 'stash',
   }
 
   actions[config.gitstatus_stash_patch_key] = {
@@ -344,7 +344,7 @@ function M.gitstatus(fullscreen, kwargs)
       )
       vim.cmd('Git stash --patch -- ' .. files)
     end,
-    header = 'stash -p',
+    desc = 'stash -p',
   }
 
   fzf_lua.fzf_exec(source, {

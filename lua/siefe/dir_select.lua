@@ -90,7 +90,7 @@ function M.dir_select(
       kwargs.fd_query = query
       callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, vim.list_extend({ query, '' }, paths))
     end,
-    header = 'select',
+    desc = 'select',
   }
 
   actions[config.abort_key] = {
@@ -99,7 +99,7 @@ function M.dir_select(
       kwargs.fd_query = query
       callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, { query, config.abort_key })
     end,
-    header = 'abort',
+    desc = 'abort',
   }
 
   actions[config.fd_hidden_key] = {
@@ -119,7 +119,7 @@ function M.dir_select(
         kwargs
       )
     end,
-    header = '-H',
+    desc = '-H',
   }
 
   actions[config.fd_no_ignore_key] = {
@@ -139,7 +139,7 @@ function M.dir_select(
         kwargs
       )
     end,
-    header = '-u',
+    desc = '-u',
   }
 
   actions[config.fd_depth1_key] = {
@@ -159,14 +159,14 @@ function M.dir_select(
         kwargs
       )
     end,
-    header = '-d1',
+    desc = '-d1',
   }
 
   actions[config.fd_open_dir_key] = {
     fn = function(selected, opts)
       vim.cmd('edit ' .. vim.fn.fnameescape(dir))
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   actions[config.fd_git_root_key] = {
@@ -186,7 +186,7 @@ function M.dir_select(
         kwargs
       )
     end,
-    header = 'git root',
+    desc = 'git root',
   }
 
   actions[config.fd_search_git_root_key] = {
@@ -206,7 +206,7 @@ function M.dir_select(
         kwargs
       )
     end,
-    header = 'search git root',
+    desc = 'search git root',
   }
 
   if has_project_root then
@@ -217,7 +217,7 @@ function M.dir_select(
         local proot = vim.fn.expand(project_root_env)
         M.dir_select(callback_fn, fullscreen, proot, fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, proot, kwargs)
       end,
-      header = 'project root',
+      desc = 'project root',
     }
     actions[config.fd_search_project_root_key] = {
       fn = function(selected, opts)
@@ -226,7 +226,7 @@ function M.dir_select(
         local proot = vim.fn.expand(project_root_env)
         M.dir_select(callback_fn, fullscreen, proot, fd_hidden, fd_no_ignore, fd_type, multi, fd_depth1, proot, kwargs)
       end,
-      header = 'search project root',
+      desc = 'search project root',
     }
   end
 

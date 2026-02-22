@@ -348,7 +348,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         utils.fill_quickfix(qf)
       end
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   -- Window actions (fugitive)
@@ -364,7 +364,7 @@ function M.gitlogfzf(fullscreen, kwargs)
           vim.cmd('normal! zvzz')
         end
       end,
-      header = 'open ' .. c,
+      desc = 'open ' .. c,
     }
   end
 
@@ -374,7 +374,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       kwargs.G = not kwargs.G
       M.gitlogfzf(fullscreen, kwargs)
     end,
-    header = 'S/G',
+    desc = 'S/G',
   }
 
   actions[config.gitlog_ignore_case_key] = {
@@ -383,7 +383,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       kwargs.ignore_case = not kwargs.ignore_case
       M.gitlogfzf(fullscreen, kwargs)
     end,
-    header = '-i',
+    desc = '-i',
   }
 
   actions[config.gitlog_pickaxe_regex_key] = {
@@ -392,7 +392,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       kwargs.regex = not kwargs.regex
       M.gitlogfzf(fullscreen, kwargs)
     end,
-    header = 'regex',
+    desc = 'regex',
   }
 
   actions[config.gitlog_follow_key] = {
@@ -401,7 +401,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       kwargs.follow = not kwargs.follow
       M.gitlogfzf(fullscreen, kwargs)
     end,
-    header = 'follow',
+    desc = 'follow',
   }
 
   actions[config.gitlog_branch_key] = {
@@ -424,7 +424,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen, false, false)
     end,
-    header = 'branches',
+    desc = 'branches',
   }
 
   actions[config.gitlog_not_branch_key] = {
@@ -445,7 +445,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen, true, false)
     end,
-    header = '^branches',
+    desc = '^branches',
   }
 
   actions[config.gitlog_author_key] = {
@@ -461,7 +461,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         M.gitlogfzf(fullscreen, kwargs)
       end, fullscreen)
     end,
-    header = 'authors',
+    desc = 'authors',
   }
 
   actions[config.gitlog_dir_key] = {
@@ -482,7 +482,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         kwargs
       )
     end,
-    header = 'paths',
+    desc = 'paths',
   }
 
   actions[config.gitlog_type_key] = {
@@ -491,7 +491,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       local ts = require('siefe.type_select')
       ts.type_select('gitlog', fullscreen, kwargs)
     end,
-    header = 'type',
+    desc = 'type',
   }
 
   actions[config.gitlog_switch_key] = {
@@ -510,7 +510,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         vim.cmd('Git switch ' .. commit)
       end
     end,
-    header = 'switch',
+    desc = 'switch',
   }
 
   actions[config.gitlog_vdiffsplit_key] = {
@@ -526,7 +526,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         pcall(vim.cmd, 'Gvdiffsplit ' .. h .. ':%')
       end
     end,
-    header = 'diff',
+    desc = 'diff',
   }
 
   -- Launch

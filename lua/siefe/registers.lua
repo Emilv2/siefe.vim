@@ -112,7 +112,7 @@ function M.registers(fullscreen, kwargs)
         group = vim.api.nvim_create_augroup('siefe_registers', { clear = true }),
       })
     end,
-    header = 'edit',
+    desc = 'edit',
   }
 
   actions[config.registers_paste_key] = {
@@ -124,7 +124,7 @@ function M.registers(fullscreen, kwargs)
       local reg = get_reg(items[1])
       vim.cmd('put ' .. reg)
     end,
-    header = 'paste',
+    desc = 'paste',
   }
 
   actions[config.registers_execute_key] = {
@@ -136,7 +136,7 @@ function M.registers(fullscreen, kwargs)
       local reg = get_reg(items[1])
       vim.cmd('normal @' .. reg)
     end,
-    header = 'execute',
+    desc = 'execute',
   }
 
   actions[config.registers_clear_key] = {
@@ -149,7 +149,7 @@ function M.registers(fullscreen, kwargs)
       local reg_amode = vim.fn.getregtype(reg)
       vim.fn.setreg(reg, {}, reg_amode)
     end,
-    header = 'clear',
+    desc = 'clear',
   }
 
   fzf_lua.fzf_exec(source, {

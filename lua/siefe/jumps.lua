@@ -147,7 +147,7 @@ function M.jumps(fullscreen, kwargs)
         vim.cmd('normal! ' .. j.index .. '\x09') -- Ctrl-I
       end
     end,
-    header = 'jump',
+    desc = 'jump',
   }
 
   for key, cmd in pairs(config.common_window_actions) do
@@ -163,7 +163,7 @@ function M.jumps(fullscreen, kwargs)
           utils.open_file(c, j.filename, j.lnum, j.col)
         end
       end,
-      header = 'open ' .. c,
+      desc = 'open ' .. c,
     }
   end
 
@@ -171,7 +171,7 @@ function M.jumps(fullscreen, kwargs)
     fn = function(selected, opts)
       vim.cmd('clearjumps')
     end,
-    header = 'clear',
+    desc = 'clear',
   }
 
   actions[config.jumps_yank_key] = {
@@ -190,7 +190,7 @@ function M.jumps(fullscreen, kwargs)
       end
       utils.yank_to_register(table.concat(texts, '\n'))
     end,
-    header = 'yank',
+    desc = 'yank',
   }
 
   fzf_lua.fzf_exec(source, {

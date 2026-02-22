@@ -232,7 +232,7 @@ function M.historyoldfiles(fullscreen, kwargs)
         end
       end
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   for key, cmd in pairs(config.common_window_actions) do
@@ -245,7 +245,7 @@ function M.historyoldfiles(fullscreen, kwargs)
           utils.open_file(c, filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
         end
       end,
-      header = 'open ' .. c,
+      desc = 'open ' .. c,
     }
   end
 
@@ -255,7 +255,7 @@ function M.historyoldfiles(fullscreen, kwargs)
       kwargs.project = not kwargs.project
       M.historyoldfiles(fullscreen, kwargs)
     end,
-    header = 'project',
+    desc = 'project',
   }
 
   actions[config.history_buffers_key] = {
@@ -264,7 +264,7 @@ function M.historyoldfiles(fullscreen, kwargs)
       local bufs = require('siefe.buffers')
       bufs.buffers(fullscreen, kwargs)
     end,
-    header = 'buffers',
+    desc = 'buffers',
   }
 
   actions[config.history_files_key] = {
@@ -275,7 +275,7 @@ function M.historyoldfiles(fullscreen, kwargs)
       local rg = require('siefe.rg')
       rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)
     end,
-    header = 'files',
+    desc = 'files',
   }
 
   actions[config.history_rg_key] = {
@@ -290,7 +290,7 @@ function M.historyoldfiles(fullscreen, kwargs)
       local rg = require('siefe.rg')
       rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)
     end,
-    header = 'rg',
+    desc = 'rg',
   }
 
   -- Launch

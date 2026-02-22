@@ -183,7 +183,7 @@ function M.gitstash(fullscreen, kwargs)
       local stash = get_stash(items[1])
       pcall(vim.cmd, 'Gedit ' .. stash)
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   actions[config.stash_apply_key] = {
@@ -193,7 +193,7 @@ function M.gitstash(fullscreen, kwargs)
         vim.cmd('Git stash apply ' .. get_stash(line))
       end
     end,
-    header = 'apply',
+    desc = 'apply',
   }
 
   actions[config.stash_pop_key] = {
@@ -203,7 +203,7 @@ function M.gitstash(fullscreen, kwargs)
         vim.cmd('Git stash pop ' .. get_stash(line))
       end
     end,
-    header = 'pop',
+    desc = 'pop',
   }
 
   actions[config.stash_drop_key] = {
@@ -213,7 +213,7 @@ function M.gitstash(fullscreen, kwargs)
         vim.cmd('Git stash drop ' .. get_stash(line))
       end
     end,
-    header = 'drop',
+    desc = 'drop',
   }
 
   actions[config.stash_sg_key] = {
@@ -222,7 +222,7 @@ function M.gitstash(fullscreen, kwargs)
       kwargs.G = not kwargs.G
       M.gitstash(fullscreen, kwargs)
     end,
-    header = 'S/G',
+    desc = 'S/G',
   }
 
   actions[config.stash_ignore_case_key] = {
@@ -231,7 +231,7 @@ function M.gitstash(fullscreen, kwargs)
       kwargs.ignore_case = not kwargs.ignore_case
       M.gitstash(fullscreen, kwargs)
     end,
-    header = '-i',
+    desc = '-i',
   }
 
   actions[config.stash_pickaxe_regex_key] = {
@@ -240,7 +240,7 @@ function M.gitstash(fullscreen, kwargs)
       kwargs.regex = not kwargs.regex
       M.gitstash(fullscreen, kwargs)
     end,
-    header = 'regex',
+    desc = 'regex',
   }
 
   fzf_lua.fzf_exec(initial_cmd, {

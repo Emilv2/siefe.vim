@@ -381,7 +381,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         end
       end
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   -- Window open actions.
@@ -406,7 +406,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
           end
         end
       end,
-      header = desc,
+      desc = desc,
     }
   end
 
@@ -432,7 +432,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         end
       end
     end,
-    header = 'diff',
+    desc = 'diff',
   }
 
   -- Toggle: fzf/rg mode
@@ -444,7 +444,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         reopen(selected, { fzf = not kwargs.fzf })
       end
     end,
-    header = 'mode',
+    desc = 'mode',
   }
 
   -- Toggle: rg/fzf combined filter
@@ -452,7 +452,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { fzf = not kwargs.fzf })
     end,
-    header = 'rg/fzf',
+    desc = 'rg/fzf',
   }
 
   -- Toggle: files mode
@@ -460,7 +460,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { files = not kwargs.files })
     end,
-    header = 'files',
+    desc = 'files',
   }
 
   -- Toggle: word boundary (not registered in files mode — ctrl-w must remain
@@ -470,7 +470,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       fn = function(selected, _opts)
         reopen(selected, { word = not kwargs.word })
       end,
-      header = '-w',
+      desc = '-w',
     }
   end
 
@@ -479,7 +479,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { depth1 = not kwargs.depth1 })
     end,
-    header = '-d1',
+    desc = '-d1',
   }
 
   -- Toggle: case sensitivity (cycles smart → ignore → sensitive → smart)
@@ -487,7 +487,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { case_sensitive = (kwargs.case_sensitive + 1) % 3 })
     end,
-    header = 'case',
+    desc = 'case',
   }
 
   -- Toggle: hidden files
@@ -495,7 +495,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { hidden = not kwargs.hidden })
     end,
-    header = '-.',
+    desc = '-.',
   }
 
   -- Toggle: no-ignore (cycles 0 → -u → -uu → -uuu → 0)
@@ -503,7 +503,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { no_ignore = (kwargs.no_ignore + 1) % 4 })
     end,
-    header = '-u',
+    desc = '-u',
   }
 
   -- Toggle: fixed strings
@@ -511,7 +511,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { fixed_strings = not kwargs.fixed_strings })
     end,
-    header = '-F',
+    desc = '-F',
   }
 
   -- Toggle: max-1
@@ -519,7 +519,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { max_1 = not kwargs.max_1 })
     end,
-    header = '-m1',
+    desc = '-m1',
   }
 
   -- Toggle: search compressed files
@@ -527,7 +527,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { search_zip = not kwargs.search_zip })
     end,
-    header = '-z',
+    desc = '-z',
   }
 
   -- Toggle: treat binary as text
@@ -535,7 +535,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fn = function(selected, _opts)
       reopen(selected, { text = not kwargs.text })
     end,
-    header = '-a',
+    desc = '-a',
   }
 
   -- Sub-picker: file type filter (-t / -T)
@@ -547,7 +547,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         require('siefe.type_select').type_select('rg', fullscreen, dir, kwargs)
       end)
     end,
-    header = '-t',
+    desc = '-t',
   }
 
   actions[config.rg_type_not_key] = {
@@ -557,7 +557,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         require('siefe.type_select').type_select('rg_not', fullscreen, dir, kwargs)
       end)
     end,
-    header = '-T',
+    desc = '-T',
   }
 
   -- Sub-picker: directory selection
@@ -571,7 +571,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         ds.dir_select(ds.ripgrep_dir_sink, fullscreen, dir, false, false, 'd', false, false, '', kwargs)
       end)
     end,
-    header = 'cd',
+    desc = 'cd',
   }
 
   -- Toggle: limit search to open buffers
@@ -587,7 +587,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       )
       reopen(selected, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
     end,
-    header = 'buffers',
+    desc = 'buffers',
   }
 
   -- Yank matched text to default register.
@@ -604,7 +604,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       end
       utils.yank_to_register(table.concat(texts, '\n'))
     end,
-    header = 'yank',
+    desc = 'yank',
   }
 
   -- Toggle: recent-files history paths.
@@ -633,7 +633,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         end
       end
     end,
-    header = 'history',
+    desc = 'history',
   }
 
   -- ── Launch ────────────────────────────────────────────────────────────────────

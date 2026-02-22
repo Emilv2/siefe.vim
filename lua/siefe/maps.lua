@@ -55,7 +55,7 @@ function M.mode_select(fullscreen, query)
       end, selected or {})
       M.maps(fullscreen, query, modes)
     end,
-    header = 'maps',
+    desc = 'maps',
   }
 
   fzf_lua.fzf_exec(mode_source, {
@@ -222,7 +222,7 @@ function M.maps(fullscreen, query, modes)
         vim.api.nvim_feedkeys(map_op .. lhs, '', false)
       end)
     end,
-    header = 'execute',
+    desc = 'execute',
   }
 
   actions[config.maps_open_key] = {
@@ -236,7 +236,7 @@ function M.maps(fullscreen, query, modes)
         utils.open_file('edit', m.file, m.lnum)
       end
     end,
-    header = 'open',
+    desc = 'open',
   }
 
   actions[config.maps_modes_key] = {
@@ -244,7 +244,7 @@ function M.maps(fullscreen, query, modes)
       local q = get_query(selected, opts)
       M.mode_select(fullscreen, q)
     end,
-    header = 'modes',
+    desc = 'modes',
   }
 
   fzf_lua.fzf_exec(lines, {

@@ -84,12 +84,12 @@ function M.type_select(func, fullscreen, ...)
       },
       keymap = ts_km,
       actions = {
-        ['default'] = { fn = on_select, header = 'select' },
+        ['default'] = { fn = on_select, desc = 'select' },
         [config.abort_key] = {
           fn = function(selected, opts)
             on_select({ '', config.abort_key }, opts)
           end,
-          header = 'abort',
+          desc = 'abort',
         },
       },
     }
