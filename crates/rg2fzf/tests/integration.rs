@@ -80,6 +80,20 @@ fn binary_colon_in_filename_and_text() {
     );
 }
 
+#[test]
+fn binary_ansi_in_filename() {
+    // ANSI escape codes produced by rg --color=always wrap the filename.
+    // The NUL separator is still at a fixed position (after any ANSI reset),
+    // and the translation must preserve the ANSI bytes unchanged.
+    let input = b"\x1b[32mfile.lua\x1b[0m\x001:1:text\n";
+    let out = run(input);
+    assert_eq!(
+        out,
+        b"\x1b[32mfile.lua\x1b[0m\x011:1:text\0",
+        "ANSI codes round-trip; SOH replaces NUL"
+    );
+}
+
 // ── Pipeline test with real rg (skipped if rg is unavailable) ────────────────
 
 #[test]

@@ -7,7 +7,7 @@
 //! end-to-end coverage through the binary's argument-parsing and file I/O
 //! in addition to the core msgpack decoder.
 
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 fn shada2fzf_bin() -> &'static str {
     env!("CARGO_BIN_EXE_shada2fzf")
@@ -67,6 +67,26 @@ const B_RECORD: &[u8] = &[
     0xa1, 0x63, 0x01,                                  // "c" → 1
 ];
 
+// Record A_DUP: type=11, ts=200 (uint8), same filename "a.lua" as A_RECORD but
+// with l=99, c=3 — used to verify deduplication keeps the newer entry.
+// data bytes identical in structure to A_RECORD: len=18, fixmap4 {f,n,l,c}
+//   0x0b          type 11
+//   0xcc 0xc8     timestamp 200 (uint8 encoding)
+//   0x12          data length 18
+//   0x84          fixmap 4 pairs
+//   0xa1 'f'  → 0xa5 "a.lua"
+//   0xa1 'n'  → 0x22 (34)
+//   0xa1 'l'  → 0x63 (99)
+//   0xa1 'c'  → 0x03 (3)
+const A_DUP_RECORD: &[u8] = &[
+    0x0b, 0xcc, 0xc8, 0x12,
+    0x84,
+    0xa1, 0x66, 0xa5, 0x61, 0x2e, 0x6c, 0x75, 0x61,  // "f" → "a.lua"
+    0xa1, 0x6e, 0x22,                                  // "n" → 34
+    0xa1, 0x6c, 0x63,                                  // "l" → 99
+    0xa1, 0x63, 0x03,                                  // "c" → 3
+];
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[test]
@@ -104,4 +124,39 @@ fn binary_no_args_exits_nonzero() {
         .status()
         .expect("failed to run shada2fzf");
     assert!(!status.success(), "exit non-zero when no arguments given");
+}
+
+#[test]
+fn binary_deduplication() {
+    // A_RECORD (a.lua, ts=100, l=10, c=2) followed by A_DUP_RECORD (a.lua,
+    // ts=200, l=99, c=3).  Only the newer entry (ts=200) should appear.
+    let mut data = A_RECORD.to_vec();
+    data.extend_from_slice(A_DUP_RECORD);
+
+    let (out, ok) = run(&data, "dedup");
+    assert!(ok, "exit 0");
+
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines.len(), 1, "only one entry for a.lua after deduplication");
+    assert!(lines[0].contains("a.lua"), "filename present");
+    assert!(
+        lines[0].starts_with("99//3//"),
+        "newer entry (l=99, c=3) wins; got {:?}",
+        lines[0]
+    );
+}
+
+#[test]
+fn binary_nonexistent_file_exits_nonzero() {
+    let path = "/tmp/siefe_test_nonexistent_999999.shada";
+    // Ensure the file really doesn't exist
+    let _ = std::fs::remove_file(path);
+
+    let status = Command::new(shada2fzf_bin())
+        .arg(path)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("failed to run shada2fzf");
+    assert!(!status.success(), "exit non-zero for non-existent shada file");
 }

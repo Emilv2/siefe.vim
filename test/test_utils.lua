@@ -128,4 +128,126 @@ T.group('shada_path', function()
   vim.o.shadafile = orig
 end)
 
+-- ── csi ───────────────────────────────────────────────────────────────────────
+
+T.group('csi', function()
+  -- Hex color, foreground: 38;2;r;g;b
+  T.eq(utils.csi('#ff0080', true),  '38;2;255;0;128', 'hex fg: 38;2;r;g;b')
+  -- Hex color, background: 48;2;r;g;b
+  T.eq(utils.csi('#ff0080', false), '48;2;255;0;128', 'hex bg: 48;2;r;g;b')
+  -- Named/256-index color, fg: 38;5;N
+  T.eq(utils.csi('42', true),  '38;5;42', 'indexed fg: 38;5;N')
+  -- Named/256-index color, bg: 48;5;N
+  T.eq(utils.csi('42', false), '48;5;42', 'indexed bg: 48;5;N')
+  -- Black (#000000)
+  T.eq(utils.csi('#000000', true), '38;2;0;0;0', 'black hex')
+  -- White (#ffffff)
+  T.eq(utils.csi('#ffffff', true), '38;2;255;255;255', 'white hex')
+end)
+
+-- ── prettify_help ─────────────────────────────────────────────────────────────
+
+T.group('prettify_help', function()
+  local h = utils.prettify_help('ctrl-a')
+  -- Key must be uppercased in the output
+  T.ok(h:find('CTRL%-A', 1) ~= nil or h:find('CTRL-A', 1, true) ~= nil,
+    'key uppercased')
+  -- Must contain an ANSI escape sequence
+  T.ok(h:find('\27%[', 1) ~= nil, 'has ANSI escape')
+  -- Must end with reset
+  T.ok(h:find('\27%[m', 1) ~= nil, 'has ANSI reset')
+end)
+
+-- ── prettify_header ───────────────────────────────────────────────────────────
+
+T.group('prettify_header', function()
+  -- char == text:sub(1,1): no italic insertion, just key + ' ' + text
+  local h1 = utils.prettify_header('ctrl-a', 'all hidden')
+  T.ok(h1:find('all hidden', 1, true) ~= nil, 'text preserved when first char matches')
+  -- The italic escape (ESC[3m) should NOT appear in this branch
+  T.ok(h1:find('\27%[3m', 1) == nil, 'no italic when char matches first letter')
+
+  -- char != text:sub(1,1): italic escape injected around matching char in body
+  local h2 = utils.prettify_header('ctrl-h', 'show hidden')
+  -- The text is rendered as 's' + italic('h') + 'ow hidden'; 'show' is split by
+  -- ANSI escapes, but 'ow hidden' appears verbatim after the italic-h sequence.
+  T.ok(h2:find('ow hidden', 1, true) ~= nil, 'text body preserved after italic char')
+
+  -- Result always starts with the ANSI-styled key
+  T.ok(h1:find('\27%[', 1) ~= nil, 'header starts with ANSI key')
+end)
+
+-- ── preview_help ──────────────────────────────────────────────────────────────
+
+T.group('preview_help', function()
+  -- Consecutive range: f1,f2,f3 → "f1-3" (algorithm: fSTART-END, no second f)
+  local r1 = utils.preview_help({'f1', 'f2', 'f3'})
+  T.ok(r1:find('f1', 1, true) ~= nil, 'consecutive: start present (f1)')
+  -- Range end is the bare number (not f3): 'f1-3'
+  T.ok(r1:find('-3', 1, true) ~= nil, 'consecutive: end number present (-3)')
+  T.ok(r1:find('-', 1, true) ~= nil, 'consecutive: hyphen used')
+
+  -- Non-consecutive: f1, f3 — both should appear, separated
+  local r2 = utils.preview_help({'f1', 'f3'})
+  T.ok(r2:find('f1', 1, true) ~= nil, 'non-consecutive: f1 present')
+  T.ok(r2:find('f3', 1, true) ~= nil, 'non-consecutive: f3 present')
+
+  -- Non-f key only: returned with leading ", "
+  local r3 = utils.preview_help({'ctrl-p'})
+  T.ok(r3:find('ctrl%-p', 1) ~= nil or r3:find('ctrl-p', 1, true) ~= nil,
+    'non-f key included')
+
+  -- Mixed: f keys + non-f keys both appear
+  local r4 = utils.preview_help({'f1', 'f2', 'ctrl-p'})
+  T.ok(r4:find('f', 1, true) ~= nil,   'mixed: f keys present')
+  T.ok(r4:find('ctrl', 1, true) ~= nil, 'mixed: non-f key present')
+
+  -- Single f key: rendered as "fN-fN" (current algorithm repeats)
+  local r5 = utils.preview_help({'f2'})
+  T.ok(r5:find('f2', 1, true) ~= nil, 'single f key present')
+
+  -- Empty list → empty string
+  T.eq(utils.preview_help({}), '', 'empty list → empty string')
+end)
+
+-- ── make_binds ────────────────────────────────────────────────────────────────
+
+T.group('make_binds', function()
+  -- Simple binds go into keymap.fzf; complex into --bind= cli args
+  local km, cli = utils.make_binds({['ctrl-a'] = 'abort'}, {'ctrl-b:up'})
+  T.ok(type(km.fzf) == 'table',           'keymap.fzf is a table')
+  T.eq(km.fzf['ctrl-a'], 'abort',         'simple bind in keymap.fzf')
+  T.eq(#cli, 1,                           'one complex bind in cli list')
+  T.ok(cli[1]:find('--bind=', 1, true) ~= nil, 'complex bind has --bind= prefix')
+  T.ok(cli[1]:find('ctrl-b:up', 1, true) ~= nil or
+       cli[1]:find('ctrl%-b:up', 1) ~= nil, 'complex bind value present')
+
+  -- Nil inputs → empty structures (no error)
+  local km2, cli2 = utils.make_binds()
+  T.eq(km2.fzf, {}, 'nil simple → empty keymap table')
+  T.eq(cli2,    {}, 'nil complex → empty cli list')
+
+  -- Multiple complex binds
+  local _, cli3 = utils.make_binds(nil, {'a:up', 'b:down', 'c:abort'})
+  T.eq(#cli3, 3, 'three complex binds produce three --bind= entries')
+
+  -- Multiple simple binds all stored
+  local km4, _ = utils.make_binds({['ctrl-x'] = 'clear-query', ['ctrl-y'] = 'yank'}, {})
+  T.eq(km4.fzf['ctrl-x'], 'clear-query', 'second simple bind stored')
+  T.eq(km4.fzf['ctrl-y'], 'yank',        'third simple bind stored')
+end)
+
+-- ── log_path ──────────────────────────────────────────────────────────────────
+
+T.group('log_path', function()
+  local p = utils.log_path()
+  T.ok(type(p) == 'string' and #p > 0, 'log_path returns non-empty string')
+  T.ok(p:find('/siefe%.log$') ~= nil,   'log_path ends with /siefe.log')
+  -- Prefix must be data_path()
+  local dp = utils.data_path()
+  T.eq(p:sub(1, #dp), dp, 'log_path starts with data_path()')
+  -- Calling twice returns the same path (idempotent)
+  T.eq(utils.log_path(), p, 'log_path idempotent')
+end)
+
 T.finish()

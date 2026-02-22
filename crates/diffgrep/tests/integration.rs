@@ -113,6 +113,49 @@ index abc..def 100644\n\
     assert!(!found, "context-only match should not count");
 }
 
+// ── Additional binary tests ───────────────────────────────────────────────────
+
+#[test]
+fn binary_file_header_not_matched() {
+    // "needle" appears only in the `diff --git` filename, not in any +/- line.
+    // The file header must not trigger a match.
+    let diff = b"\
+diff --git a/needle.rs b/needle.rs\n\
+index abc..def 100644\n\
+--- a/needle.rs\n\
++++ b/needle.rs\n\
+@@ -1,1 +1,1 @@\n\
++unrelated\n\
+-unrelated\n";
+
+    let (out, found) = run(diff, "needle");
+    assert!(!found, "file-header match must not count as a hunk match");
+    assert!(out.is_empty(), "no output when only filename contains the pattern");
+}
+
+#[test]
+fn binary_multiple_files_only_matching_emitted() {
+    // Two files: only the first has a matching hunk.
+    let diff = b"\
+diff --git a/match.rs b/match.rs\n\
+index 000..111 100644\n\
+--- a/match.rs\n\
++++ b/match.rs\n\
+@@ -1,1 +1,1 @@\n\
++needle here\n\
+diff --git a/nomatch.rs b/nomatch.rs\n\
+index 222..333 100644\n\
+--- a/nomatch.rs\n\
++++ b/nomatch.rs\n\
+@@ -1,1 +1,1 @@\n\
++unrelated\n";
+
+    let (out, found) = run(diff, "needle");
+    assert!(found, "exit 0 when at least one file matches");
+    assert!(out.contains("match.rs"),    "matching file present in output");
+    assert!(!out.contains("nomatch.rs"), "non-matching file absent from output");
+}
+
 // ── Integration test with a real git repository ───────────────────────────────
 
 #[test]
