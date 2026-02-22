@@ -679,7 +679,11 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- metacharacters.  The '-- %s' placement after rg's end-of-options marker
     -- also ensures the query can never be mistaken for an rg flag.
     fzl.fzf_live(function(q)
-      return string.format(cmd_fmt, vim.fn.shellescape(q or ''))
+      -- fzf-lua's RPC mechanism passes fzf field expansions as a table, so
+      -- {q} arrives as {"query_text"} not as a plain string.  This mirrors
+      -- what fzf-lua's own cmd2fnc() does: extract [1] from the table.
+      local query = type(q) == 'table' and (q[1] or '') or (q or '')
+      return string.format(cmd_fmt, vim.fn.shellescape(query))
     end, picker_opts)
   else
     -- Files mode or fzf-filter-over-rg-results: static source.
