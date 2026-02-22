@@ -67,11 +67,9 @@ function M.buffers(fullscreen, kwargs)
 
   local git_dir = utils.get_git_root()
   local git_help = ''
-  local git_expect = ''
   if git_dir ~= '' then
     local toggle = kwargs.project and 'off' or 'on'
     git_help = ' ╱ ' .. utils.prettify_header(config.buffers_git_key, 'project buffers:' .. toggle)
-    git_expect = config.buffers_git_key .. ','
   end
 
   local sorted

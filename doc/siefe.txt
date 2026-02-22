@@ -1,4 +1,4 @@
-*siefe.txt*              A Vim plugin harnessing the power of fzf
+*siefe.txt*         Neovim search plugin — fzf-lua on steroids
 
 
                            Siefe.vim
@@ -11,145 +11,342 @@ Plugin Homepage:   <https://github.com/emilv2/siefe.vim>
 CONTENTS                                                    *siefe* *siefe-vim*
 
   Introduction                          |siefe-introduction|
+  Requirements                          |siefe-requirements|
+  Installation                          |siefe-installation|
+  Setup / Configuration                 |siefe-setup|
   Commands                              |siefe-commands|
-    ripgrep                             |siefe-ripgrep|
-      actions                           |siefe-ripgrep-actions|
-    git log                             |siefe-gitlog|
-      actions                           |siefe-gitlog-actions|
-    history                             |siefe-history|
+    Ripgrep                             |siefe-ripgrep|
+      Actions                           |siefe-ripgrep-actions|
+    Files                               |siefe-files|
+    Git log                             |siefe-gitlog|
+    Git status / branch / stash         |siefe-gitstatus|
+    History                             |siefe-history|
+    Buffers / Marks / Jumps / etc.      |siefe-misc|
+  Rust binaries                         |siefe-rust|
   Functions                             |siefe-functions|
-    SiefeDirSelect                      |SiefeDirSelect|
 
 ===============================================================================
 INTRODUCTION                                               *siefe-introduction*
 
-Siefe is based on |fzf-vim|, but with more options and more configurable.
+Siefe is a Neovim-only search plugin built on top of |fzf-lua|.  It provides
+live ripgrep search with extensive toggle support, git log/status/stash/branch
+pickers, MRU file history with saved cursor positions (line + column read from
+Neovim's shada file), buffer/mark/jump/register/map pickers, and more.
+
+The plugin is written entirely in Lua and requires Neovim >= 0.8.
+
+===============================================================================
+REQUIREMENTS                                               *siefe-requirements*
+
+  - Neovim >= 0.8
+  - Emilv2/fzf-lua  (Neovim fzf integration, required)
+  - fzf binary      (required)
+  - ripgrep (`rg`)  (required)
+  - fd / fdfind     (optional, for directory selection)
+  - bat             (optional, for syntax-highlighted previews)
+  - delta           (optional, for coloured git diff previews)
+  - Rust toolchain  (to compile helper binaries, see |siefe-rust|)
+
+===============================================================================
+INSTALLATION                                               *siefe-installation*
+
+With lazy.nvim: >lua
+
+  {
+    "Emilv2/siefe.vim",
+    dependencies = { "Emilv2/fzf-lua" },
+    build = "make build",
+    config = function()
+      require("siefe").setup({})
+    end,
+  }
+<
+
+===============================================================================
+SETUP / CONFIGURATION                                           *siefe-setup*
+
+All configuration is passed as a single Lua table to `require("siefe").setup()`.
+Every key is optional; defaults are shown below.
+
+>lua
+  require("siefe").setup({
+    -- Use location list instead of quickfix for multi-select results
+    loclist = false,
+
+    -- bat syntax highlighting options
+    bat_options = "--style=numbers,changes",
+
+    -- delta diff options
+    delta_options = "--keep-plus-minus-markers",
+
+    -- Default ripgrep toggle states
+    rg_default_hidden         = false,
+    rg_default_no_ignore      = 0,     -- 0=off, 1=--no-ignore, 2=--no-ignore-vcs
+    rg_default_case_sensitive = 1,     -- 1=smart, 2=sensitive, 3=insensitive
+    rg_default_fixed_strings  = false,
+    rg_default_word           = false,
+    rg_default_max_1          = false,
+    rg_default_search_zip     = false,
+    rg_default_text           = false,
+    rg_default_depth1         = false,
+
+    -- Key overrides (any fzf key string accepted)
+    rg_word_key  = "ctrl-w",
+    rg_case_key  = "ctrl-s",
+    rg_files_key = "ctrl-f",
+    rg_type_key  = "ctrl-t",
+    -- ... see lua/siefe/config.lua for the complete list (~100 keys)
+  })
+<
 
 ===============================================================================
 COMMANDS                                                       *siefe-commands*
 
-Ripgrep (rg) commands                                           *siefe-ripgrep*
+-------------------------------------------------------------------------------
+Ripgrep commands                                                *siefe-ripgrep*
 
-                                                               *siefe-:SiefeRg*
-:SiefeRg [PATTERN]             Start a rg search with pattern.
-                               Run from the location of the current buffer or
-                               the current directory if it is unamed.
+                                                               *:SiefeRg*
+:SiefeRg [PATTERN]             Live rg search from the directory of the
+                               current buffer (or cwd if unnamed).
                                default map: <leader>rg
 
-                                                           *siefe-:SiefeRgWord*
-:SiefeRgWord                   Start a rg search with the |word| under the
-                               cursor as pattern.
+                                                           *:SiefeRgVisual*
+:SiefeRgVisual                 rg search of the visual selection.
+                               default map: <leader>rv
+
+                                                           *:SiefeRgWord*
+:SiefeRgWord                   rg search of the |word| under the cursor.
                                default map: <leader>rw
 
-                                                           *siefe-:SiefeRgWORD*
-:SiefeRgWORD                   Start a rg search with the |WORD| under the
-                               cursor as pattern.
+                                                           *:SiefeRgWORD*
+:SiefeRgWORD                   rg search of the |WORD| under the cursor.
                                default map: <leader>rW
 
-                                                           *siefe-:SiefeRgLine*
-:SiefeRgLine                   Start a rg search with the current line as
-                               pattern.
+                                                           *:SiefeRgLine*
+:SiefeRgLine                   rg search of the current line.
                                default map: <leader>rl
 
-:SiefeRgConflict               Start a rg search with the pattern:
-                               ^(<{7} .*|={7}$|\|{7}$|>{7} .*)
+                                                       *:SiefeRgConflict*
+:SiefeRgConflict               rg search for merge conflict markers.
                                default map: <leader>rc
 
-                                                        *siefe-:SiefeProjectRg*
-:SiefeProjectRg [PATTERN]      Start a rg search with pattern.
-                               Run from the location of git root of the current
-                               buffer or the current directory if it is unamed
-                               or not in a git repository.
+                                                         *:SiefeProjectRg*
+:SiefeProjectRg [PATTERN]      rg search from the git root of the current
+                               buffer (falls back to cwd if not in a repo).
                                default map: <leader>Rg
 
-                                                    *siefe-:SiefeProjectRgWord*
-:SiefeProjectRgWord            Start a rg search with the |word| under the
-                               cursor as pattern.
-                               Run from the location of git root of the current
-                               buffer or the current directory if it is unamed
-                               or not in a git repository.
-                               default map: <leader>Rw
+:SiefeProjectRgVisual          Project rg of the visual selection.
+:SiefeProjectRgWord            Project rg of |word| under cursor.
+:SiefeProjectRgWORD            Project rg of |WORD| under cursor.
+:SiefeProjectRgLine            Project rg of the current line.
+:SiefeProjectRgConflict        Project rg for conflict markers.
 
-                                                    *siefe-:SiefeProjectRgWORD*
-:SiefeProjectRgWORD            Start a rg search with the |WORD| under the
-                               cursor as pattern.
-                               Run from the location of git root of the current
-                               buffer or the current directory if it is unamed
-                               or not in a git repository.
-                               default map: <leader>RW
+:SiefeBuffersRg                rg search limited to open buffers.
+:SiefeBuffersRgWord            Buffer rg of |word| under cursor.
+:SiefeBuffersRgWORD            Buffer rg of |WORD| under cursor.
 
-                                                    *siefe-:SiefeProjectRgLine*
-:SiefeProjectRgLine            Start a rg search with the current line as
-                               pattern.
-                               Run from the location of git root of the current
-                               buffer or the current directory if it is unamed
-                               or not in a git repository.
-                               default map: <leader>RW
+Ripgrep actions                                         *siefe-ripgrep-actions*
 
-:SiefeProjectRgConflict        Start a rg search with the pattern:
-                               `^(<{7} .*|={7}$|\|{7}$|>{7} .*)`
-                               default map: <leader>Rc
-                               Run from the location of git root of the current
-                               buffer or the current directory if it is unamed
-                               or not in a git repository.
-                               default map: <leader>RW
+Press the `help_key` (default F9) inside any picker to see the full list of
+bound keys.  The most important ones are:
 
-Ripgrep (rg) actions                                    *siefe-ripgrep-actions*
+word                                                        *siefe-rg-word*
+  Toggle `-w` (whole-word boundaries).  Disabled in files mode.
+  default key: ctrl-w
 
-word                                                      *g:siefe_rg_word_key*
-                               Only show matches surrounded by word boundaries
-                               default key: CTRL-W
+case                                                        *siefe-rg-case*
+  Cycle: smart-case → sensitive → insensitive → smart-case.
+  default key: ctrl-s
 
-case                                                      *g:siefe_rg_case_key*
-                               Toggle between --case/--case-insensitive/
-                               --smart-case.
-                               default key: CTRL-S
+files                                                      *siefe-rg-files*
+  Switch to files mode (`rg --files`).
+  default key: ctrl-f
 
-fixed-strings                                    *g:siefe_rg_fixed_strings_key*
-                               Treat all patterns as literals instead of as
-                               regular expressions.
-                               default key: CTRL-X
+fzf                                                          *siefe-rg-fzf*
+  Toggle fzf-fuzzy mode (fzf filters rg lines instead of rg re-running).
+  default key: ctrl-r
 
-max-count-1                                              *g:siefe_rg_max_1_key*
-                               Only show one match per file.
-                               default key: CTRL-A
+type / type-not                                   *siefe-rg-type* *siefe-rg-type-not*
+  Nested picker to select file types to include / exclude.
+  default keys: ctrl-t / ctrl-^
 
-depth-1                                                 *g:siefe_rg_depth1_key*
-                               Don't recursively search directories.
-                               default key: CTRL-E
+dir                                                          *siefe-rg-dir*
+  Nested fd picker to change the search directory.
+  default key: ctrl-d
 
-search-zip                                          *g:siefe_rg_search_zip_key*
-                               Search in gzip, bzip2, xz, LZ4, LZMA, Brotli and
-                               Zstd compressed files.
-                               default key: ALT-Z
+buffers                                                  *siefe-rg-buffers*
+  Restrict search to open buffers.
+  default key: ctrl-b
 
-text                                                        *siefe_rg_text_key*
-                               Search binary files as if they were text.
-                               default key: ALT-T
+history                                                  *siefe-rg-history*
+  Restrict search to history / project history files.
+  default key: ctrl-h
 
-history                                                  *siefe_rg_history_key*
-                               Only search oldfiles (from the git repo of the
-                               open file or current dir, otherwise all
-                               oldfiles).
-                               default key: CTRL-H
+max-count-1                                                *siefe-rg-max1*
+  Show only the first match per file.
+  default key: ctrl-a
 
-buffers                                                  *siefe_rg_buffers_key*
-                               Only search in open buffers.
-                               default key: CTRL-B
+depth-1                                                  *siefe-rg-depth1*
+  Do not recurse into subdirectories.
+  default key: ctrl-e
 
-yank                                                        *siefe_rg_yank_key*
-                               Yank current selected line.
-                               default key: CTRL-Y
+hidden                                                   *siefe-rg-hidden*
+  Toggle `--hidden` (search dotfiles).
+  default key: alt-.
 
-dir                                                          *siefe_rg_dir_key*
-                               Change the search directory. calls the function
-                               |SiefeDirSelect|
-                               default key: CTRL-D
+no-ignore                                             *siefe-rg-no-ignore*
+  Cycle: respect .gitignore → --no-ignore → --no-ignore-vcs.
+  default key: ctrl-u
 
-Git log commands                                                 *siefe-gitlog*
+fixed-strings                                     *siefe-rg-fixed-strings*
+  Toggle `--fixed-strings` (literal pattern matching).
+  default key: ctrl-x
 
-Git log (rg) actions                                     *siefe-gitlog-actions*
+search-zip                                           *siefe-rg-search-zip*
+  Toggle `--search-zip` (search inside compressed files).
+  default key: alt-z
 
+text                                                        *siefe-rg-text*
+  Toggle `--text` (treat binary files as text).
+  default key: alt-t
+
+yank                                                        *siefe-rg-yank*
+  Yank the selected match line into the unnamed register.
+  default key: ctrl-y
+
+-------------------------------------------------------------------------------
+Files commands                                                  *siefe-files*
+
+:SiefeFiles [PATTERN]          File search from buffer directory.
+                               default map: <leader>ff
+:SiefeFilesVisual              File search with visual selection as query.
+:SiefeFilesWord                File search with word under cursor as query.
+:SiefeFilesWORD                File search with WORD under cursor as query.
+:SiefeFilesLine                File search with current line as query.
+
+:SiefeProjectFiles             File search from git root.
+                               default map: <leader>Ff
+:SiefeProjectFilesVisual       Project file search with visual selection.
+:SiefeProjectFilesWord         Project file search with word under cursor.
+:SiefeProjectFilesWORD         Project file search with WORD under cursor.
+:SiefeProjectFilesLine         Project file search with current line.
+
+-------------------------------------------------------------------------------
+Git log commands                                                *siefe-gitlog*
+
+                                                           *:SiefeGitLog*
+:SiefeGitLog                   Git log with pickaxe (-S) search.
+                               default map: <leader>gl
+
+:SiefeGitLogWord               Git log for the |word| under cursor.
+                               default map: <leader>gw
+:SiefeGitLogWORD               Git log for the |WORD| under cursor.
+                               default map: <leader>gW
+:SiefeGitLogVisual             Git log for the visual selection.
+                               default map: <leader>gv
+
+:SiefeGitBufferLog             Git log for the current file.
+                               default map: <leader>gbl
+:SiefeGitBufferLogWord         Buffer log for the |word| under cursor.
+:SiefeGitBufferLogWORD         Buffer log for the |WORD| under cursor.
+:SiefeGitBufferLogVisual       Buffer log for the visual selection.
+
+:SiefeGitLLog                  Git log for the current line range.
+                               default map: <leader>gL
+
+Inside the git log picker, press F9 for the full key listing.  Highlights:
+- Toggle between `-S` (pickaxe string) and `-G` (grep regex) search mode
+- Filter by author, branch, file type, or pathspec via nested pickers
+- Open commit diff in split / vsplit / tab
+- Coloured diff preview via delta or bat
+
+-------------------------------------------------------------------------------
+Git status / branch / stash                                *siefe-gitstatus*
+
+                                                       *:SiefeGitStatus*
+:SiefeGitStatus                Git status picker.
+                               Actions: stage, unstage, restore, stash;
+                               open in split/vsplit/tab; vdiffsplit.
+                               default map: <leader>gs
+
+:SiefeToggleGitStatus          Toggle a persistent git status side-window.
+                               default map: <leader>gS
+
+:SiefeGitBranch                Branch picker (switch, merge, rebase -i).
+                               default map: <leader>gb
+
+:SiefeGitStash                 Stash picker (pop, apply, drop).
+                               default map: <leader>gx
+
+-------------------------------------------------------------------------------
+History                                                        *siefe-history*
+
+                                                         *:SiefeHistory*
+:SiefeHistory                  MRU file history.  When the `shada2fzf` binary
+                               is present (see |siefe-rust|), each entry shows
+                               the saved line and column read from the shada
+                               file, and the cursor is restored on open.
+                               default map: <leader>fh
+
+:SiefeProjectHistory           MRU history limited to files in the current
+                               git repository.
+                               default map: <leader>Fh
+
+-------------------------------------------------------------------------------
+Other pickers                                                   *siefe-misc*
+
+:SiefeBuffers                  Open buffers, sorted by most-recently-used.
+                               default map: <leader>fb
+
+:SiefeMarks                    Marks picker.   default map: <leader>m
+:SiefeJumps                    Jump list.      default map: <leader>j
+:SiefeRegisters                Registers.      default map: <leader>'"
+:SiefeMaps                     Key mappings.   default map: <leader>?
+
+===============================================================================
+RUST BINARIES                                                    *siefe-rust*
+
+Build with `make build` (requires a Rust toolchain).  The binaries are placed
+in `bin/` and loaded at runtime from there.
+
+rg2fzf ~
+  Translates `rg --null` search output to NUL-terminated records for
+  `fzf --read0`, inserting a SOH (`\x01`) byte as a fast field separator
+  between the filename and the rest of the match.  This lets Lua parse
+  entries without any `fs_stat` calls.
+
+shada2fzf ~
+  Parses Neovim's binary shada file (msgpack format), extracts `"` marks
+  (last-position per file), deduplicates by filename keeping the newest
+  entry, and emits `lnum\tcol\tfilename\t<display>\n` lines in MRU order.
+
+diffgrep ~
+  Reads a unified diff on stdin and a regex pattern from argv[1].  Emits
+  only the file headers and hunks whose `+`/`-` lines match the pattern.
+  Exit codes: 0 = match found, 1 = no match, 2 = bad arguments / regex.
+
+pickaxe-diff ~
+  Git external diff driver for pickaxe searches.  Reads `GREPDIFF_REGEX`
+  from the environment, runs `git diff --no-color`, pipes through `diffgrep`,
+  and colours the output.
+
+===============================================================================
 FUNCTIONS                                                     *siefe-functions*
 
-SiefeDirSelect                                                 *SiefeDirSelect*
+require("siefe").setup({opts})                             *siefe.setup()*
+  Initialise the plugin.  Must be called once.  See |siefe-setup|.
+
+The following functions are also available directly:
+
+  require("siefe").ripgrepfzf(fullscreen, dir, kwargs)
+  require("siefe").gitlogfzf(fullscreen, kwargs)
+  require("siefe").gitstatus(fullscreen, kwargs)
+  require("siefe").toggle_git_status()
+  require("siefe").gitstash(fullscreen, kwargs)
+  require("siefe").gitbranch(fullscreen)
+  require("siefe").historyoldfiles(fullscreen, kwargs)
+  require("siefe").buffers(fullscreen, kwargs)
+  require("siefe").marks(fullscreen, kwargs)
+  require("siefe").jumps(fullscreen, kwargs)
+  require("siefe").registers(fullscreen, kwargs)
+  require("siefe").maps(fullscreen, query, modes)

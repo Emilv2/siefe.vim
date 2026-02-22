@@ -27,22 +27,22 @@ use diffgrep::{filter_diff, Regex};
 // ── Git colour helpers ────────────────────────────────────────────────────────
 
 struct Colors {
-    frag:  String, // @@ header
-    func:  String, // context after @@ (function name)
-    meta:  String, // diff/index/---/+++ header lines
-    new:   String, // added lines (+)
-    old:   String, // removed lines (-)
+    frag: String, // @@ header
+    func: String, // context after @@ (function name)
+    meta: String, // diff/index/---/+++ header lines
+    new: String,  // added lines (+)
+    old: String,  // removed lines (-)
     reset: String,
 }
 
 impl Colors {
     fn from_git() -> Self {
         Colors {
-            frag:  git_color("color.diff.frag",  "cyan"),
-            func:  git_color("color.diff.func",  ""),
-            meta:  git_color("color.diff.meta",  "normal bold"),
-            new:   git_color("color.diff.new",   "green"),
-            old:   git_color("color.diff.old",   "red"),
+            frag: git_color("color.diff.frag", "cyan"),
+            func: git_color("color.diff.func", ""),
+            meta: git_color("color.diff.meta", "normal bold"),
+            new: git_color("color.diff.new", "green"),
+            old: git_color("color.diff.old", "red"),
             reset: "\x1b[m".to_owned(),
         }
     }
@@ -92,7 +92,7 @@ fn highlight_matches(text: &str, regex: &Regex) -> String {
     let mut last = 0;
     for m in regex.find_iter(text) {
         result.push_str(&text[last..m.start()]);
-        result.push_str("\x1b[7m");  // reverse video on
+        result.push_str("\x1b[7m"); // reverse video on
         result.push_str(m.as_str());
         result.push_str("\x1b[27m"); // reverse video off
         last = m.end();
@@ -121,6 +121,7 @@ fn format_content_line(line: &str, regex: &Regex, colors: &Colors) -> String {
 /// Write the filtered and coloured diff to `out`, preceded by the standard
 /// `diff --git … / index … / --- / +++` meta-header constructed from the
 /// git diff-driver arguments.
+#[allow(clippy::too_many_arguments)]
 fn emit_output(
     path: &str,
     old_file: &str,
@@ -203,11 +204,11 @@ mod tests {
     /// no ANSI bytes appear in the expected strings.
     fn no_colors() -> Colors {
         Colors {
-            frag:  String::new(),
-            func:  String::new(),
-            meta:  String::new(),
-            new:   String::new(),
-            old:   String::new(),
+            frag: String::new(),
+            func: String::new(),
+            meta: String::new(),
+            new: String::new(),
+            old: String::new(),
             reset: String::new(),
         }
     }
@@ -230,16 +231,22 @@ mod tests {
     #[test]
     fn hunk_header_applies_colors() {
         let c = Colors {
-            frag:  "\x1b[36m".to_owned(),
-            func:  "\x1b[90m".to_owned(),
-            meta:  String::new(),
-            new:   String::new(),
-            old:   String::new(),
+            frag: "\x1b[36m".to_owned(),
+            func: "\x1b[90m".to_owned(),
+            meta: String::new(),
+            new: String::new(),
+            old: String::new(),
             reset: "\x1b[m".to_owned(),
         };
         let r = format_hunk_header("@@ -1,1 +1,1 @@ fn foo()", &c);
-        assert!(r.contains("\x1b[36m@@ -1,1 +1,1 @@\x1b[m"), "frag should be colored");
-        assert!(r.contains("\x1b[90m fn foo()\x1b[m"), "func should be colored");
+        assert!(
+            r.contains("\x1b[36m@@ -1,1 +1,1 @@\x1b[m"),
+            "frag should be colored"
+        );
+        assert!(
+            r.contains("\x1b[90m fn foo()\x1b[m"),
+            "func should be colored"
+        );
     }
 
     // ── highlight_matches ─────────────────────────────────────────────────────
@@ -294,13 +301,10 @@ mod tests {
     }
 }
 
-
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.len() != 7 {
-        eprintln!(
-            "usage: pickaxe-diff path old_file old_hex old_mode new_file new_hex new_mode"
-        );
+        eprintln!("usage: pickaxe-diff path old_file old_hex old_mode new_file new_hex new_mode");
         process::exit(1);
     }
 
@@ -342,8 +346,17 @@ fn main() {
 
     let stdout = io::stdout();
     emit_output(
-        path, old_file, old_hex, old_mode, new_file, new_hex, new_mode,
-        &regex, &diff_text, &colors, &mut stdout.lock(),
+        path,
+        old_file,
+        old_hex,
+        old_mode,
+        new_file,
+        new_hex,
+        new_mode,
+        &regex,
+        &diff_text,
+        &colors,
+        &mut stdout.lock(),
     )
     .unwrap_or_else(|e| {
         eprintln!("pickaxe-diff: write error: {e}");

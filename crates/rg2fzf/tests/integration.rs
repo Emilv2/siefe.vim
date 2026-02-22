@@ -88,8 +88,7 @@ fn binary_ansi_in_filename() {
     let input = b"\x1b[32mfile.lua\x1b[0m\x001:1:text\n";
     let out = run(input);
     assert_eq!(
-        out,
-        b"\x1b[32mfile.lua\x1b[0m\x011:1:text\0",
+        out, b"\x1b[32mfile.lua\x1b[0m\x011:1:text\0",
         "ANSI codes round-trip; SOH replaces NUL"
     );
 }

@@ -51,12 +51,8 @@ function M.gitlogfzf(fullscreen, kwargs)
     return utils.git_file_existed(p) or vim.fn.isdirectory(p) == 1
   end, kwargs.paths)
 
-  local follow_key = ''
-  local follow_help = ''
   local follow = ''
   if #kwargs.paths == 1 and #kwargs.line_range == 0 and #valid_paths == 1 then
-    follow_key = config.gitlog_follow_key .. ','
-    follow_help = ' ╱ ' .. utils.prettify_header(config.gitlog_follow_key, 'follow')
     follow = kwargs.follow and '--follow ' or ''
   end
 
@@ -102,8 +98,6 @@ function M.gitlogfzf(fullscreen, kwargs)
   local cmd_fmt
   local initial_command
   local reload_command
-  local sg_expect
-  local sg_help
   local line_range_str = ''
 
   if #kwargs.line_range > 0 then
@@ -126,8 +120,6 @@ function M.gitlogfzf(fullscreen, kwargs)
       .. remove_nl
     reload_command = ''
     query_file = '/dev/null'
-    sg_expect = ''
-    sg_help = ''
     G_prompt = ''
   else
     cmd_fmt = git_SG
@@ -166,31 +158,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       .. ' -- '
       .. paths_str
       .. remove_nl
-
-    sg_expect = config.gitlog_sg_key
-      .. ','
-      .. config.gitlog_ignore_case_key
-      .. ','
-      .. config.gitlog_type_key
-      .. ','
-      .. config.gitlog_pickaxe_regex_key
-      .. ','
-      .. follow_key
-      .. config.gitlog_dir_key
-
-    sg_help = '\n '
-      .. utils.prettify_header(config.gitlog_sg_key, 'toggle S/G')
-      .. ' ╱ '
-      .. utils.prettify_header(config.gitlog_ignore_case_key, 'ignore case:' .. (kwargs.ignore_case and 'off' or 'on'))
-      .. ' ╱ '
-      .. utils.prettify_header(config.gitlog_fzf_key, 'fzf messages')
-      .. ' ╱ '
-      .. utils.prettify_header(config.gitlog_pickaxe_regex_key, 'regex')
-      .. ' ╱ '
-      .. utils.prettify_header(config.gitlog_dir_key, 'pathspec')
   end
-
-  -- Preview commands
   local pa = 'echo -e "\\033[0;35mgit show all\\033[0m" && git -C '
     .. git_root_cmd
     .. ' show --color=always -O'

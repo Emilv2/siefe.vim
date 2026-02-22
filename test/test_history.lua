@@ -72,7 +72,7 @@ T.group('make_history_entry / parse_entry round-trip', function()
 
   -- Entry whose filename contains spaces
   local e3 = make_entry(7, 0, 'my docs/file.md')
-  local l3, c3, f3 = parse(e3)
+  local l3, _, f3 = parse(e3)
   T.eq(l3, 7, 'spaces in filename: lnum')
   T.eq(f3, 'my docs/file.md', 'spaces in filename: filename')
 

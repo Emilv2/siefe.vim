@@ -54,12 +54,10 @@ function M.historyoldfiles(fullscreen, kwargs)
   local bufdir = utils.bufdir()
   local git_root = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
   local in_git = vim.v.shell_error == 0
-
-  local git_expect = ''
   local git_help = ''
+
   if in_git then
     local toggle = kwargs.project and 'off' or 'on'
-    git_expect = config.history_git_key .. ','
     git_help = ' ╱ ' .. utils.prettify_header(config.history_git_key, 'project history:' .. toggle)
   end
 

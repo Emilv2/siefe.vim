@@ -291,9 +291,9 @@ const MARK_DOUBLE_QUOTE: i64 = 34; // '"' — last cursor position per file
 /// One decoded position entry from shada.
 #[derive(Debug)]
 struct PosEntry {
-    filename:  String,
-    line:      i64,
-    col:       i64,
+    filename: String,
+    line: i64,
+    col: i64,
     timestamp: u64,
 }
 
@@ -332,7 +332,7 @@ fn parse_shada(data: &[u8]) -> Vec<PosEntry> {
         if entry_type == SHADA_LOCAL_MARK {
             if let Some(entry) = decode_local_mark(data_slice, timestamp) {
                 let cur = best.get(&entry.filename);
-                if cur.map_or(true, |c| entry.timestamp > c.timestamp) {
+                if cur.is_none_or(|c| entry.timestamp > c.timestamp) {
                     best.insert(entry.filename.clone(), entry);
                 }
             }
@@ -430,7 +430,7 @@ fn main() -> io::Result<()> {
         // one on Linux but are legal).  The Lua consumer uses
         // `table.concat(parts[3..], "//")` to rejoin any such filenames
         // correctly, so the round-trip is lossless.
-        writeln!(out, "{}//{}//{}",  e.line, e.col, e.filename)?;
+        writeln!(out, "{}//{}//{}", e.line, e.col, e.filename)?;
     }
     out.flush()
 }
@@ -604,7 +604,7 @@ mod tests {
     fn parse_deduplicates_same_file_keeps_latest() {
         // Same file appears twice; the entry with the higher timestamp wins
         let mut data = make_local_mark_record("dup.lua", 34, 5, 0, 100); // old
-        data.extend(make_local_mark_record("dup.lua", 34, 99, 3, 200));  // new
+        data.extend(make_local_mark_record("dup.lua", 34, 99, 3, 200)); // new
         let entries = parse_shada(&data);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].line, 99);
@@ -646,9 +646,9 @@ mod tests {
     #[test]
     fn parse_mru_order() {
         // Three files written in chronological order; output should be newest first
-        let mut data = make_local_mark_record("old.lua",    34, 1, 0, 1000);
+        let mut data = make_local_mark_record("old.lua", 34, 1, 0, 1000);
         data.extend(make_local_mark_record("middle.lua", 34, 2, 0, 2000));
-        data.extend(make_local_mark_record("new.lua",    34, 3, 0, 3000));
+        data.extend(make_local_mark_record("new.lua", 34, 3, 0, 3000));
         let entries = parse_shada(&data);
         assert_eq!(entries[0].filename, "new.lua");
         assert_eq!(entries[1].filename, "middle.lua");
@@ -657,7 +657,18 @@ mod tests {
 
     #[test]
     fn pack_uint_roundtrip() {
-        for &v in &[0u64, 1, 127, 128, 255, 256, 65535, 65536, 0xffff_ffff, 0x1_0000_0000] {
+        for &v in &[
+            0u64,
+            1,
+            127,
+            128,
+            255,
+            256,
+            65535,
+            65536,
+            0xffff_ffff,
+            0x1_0000_0000,
+        ] {
             let packed = pack_uint(v);
             let mut r = Reader::new(&packed);
             assert_eq!(r.read_uint(), Some(v), "roundtrip failed for {v}");

@@ -48,23 +48,20 @@ fn run(data: &[u8], suffix: &str) -> (String, bool) {
 //   0x02          value 2  (fixint)
 
 const A_RECORD: &[u8] = &[
-    0x0b, 0x64, 0x12,
-    0x84,
-    0xa1, 0x66, 0xa5, 0x61, 0x2e, 0x6c, 0x75, 0x61,  // "f" → "a.lua"
-    0xa1, 0x6e, 0x22,                                  // "n" → 34
-    0xa1, 0x6c, 0x0a,                                  // "l" → 10
-    0xa1, 0x63, 0x02,                                  // "c" → 2
+    0x0b, 0x64, 0x12, 0x84, 0xa1, 0x66, 0xa5, 0x61, 0x2e, 0x6c, 0x75, 0x61, // "f" → "a.lua"
+    0xa1, 0x6e, 0x22, // "n" → 34
+    0xa1, 0x6c, 0x0a, // "l" → 10
+    0xa1, 0x63, 0x02, // "c" → 2
 ];
 
 // Record B: type=11, ts=200, data = fixmap4{f:"b.lua", n:34, l:5, c:1}
 // ts=200 requires uint8 encoding: 0xcc 0xc8
 const B_RECORD: &[u8] = &[
-    0x0b, 0xcc, 0xc8, 0x12,
-    0x84,
-    0xa1, 0x66, 0xa5, 0x62, 0x2e, 0x6c, 0x75, 0x61,  // "f" → "b.lua"
-    0xa1, 0x6e, 0x22,                                  // "n" → 34
-    0xa1, 0x6c, 0x05,                                  // "l" → 5
-    0xa1, 0x63, 0x01,                                  // "c" → 1
+    0x0b, 0xcc, 0xc8, 0x12, 0x84, 0xa1, 0x66, 0xa5, 0x62, 0x2e, 0x6c, 0x75,
+    0x61, // "f" → "b.lua"
+    0xa1, 0x6e, 0x22, // "n" → 34
+    0xa1, 0x6c, 0x05, // "l" → 5
+    0xa1, 0x63, 0x01, // "c" → 1
 ];
 
 // Record A_DUP: type=11, ts=200 (uint8), same filename "a.lua" as A_RECORD but
@@ -79,12 +76,11 @@ const B_RECORD: &[u8] = &[
 //   0xa1 'l'  → 0x63 (99)
 //   0xa1 'c'  → 0x03 (3)
 const A_DUP_RECORD: &[u8] = &[
-    0x0b, 0xcc, 0xc8, 0x12,
-    0x84,
-    0xa1, 0x66, 0xa5, 0x61, 0x2e, 0x6c, 0x75, 0x61,  // "f" → "a.lua"
-    0xa1, 0x6e, 0x22,                                  // "n" → 34
-    0xa1, 0x6c, 0x63,                                  // "l" → 99
-    0xa1, 0x63, 0x03,                                  // "c" → 3
+    0x0b, 0xcc, 0xc8, 0x12, 0x84, 0xa1, 0x66, 0xa5, 0x61, 0x2e, 0x6c, 0x75,
+    0x61, // "f" → "a.lua"
+    0xa1, 0x6e, 0x22, // "n" → 34
+    0xa1, 0x6c, 0x63, // "l" → 99
+    0xa1, 0x63, 0x03, // "c" → 3
 ];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -114,8 +110,16 @@ fn binary_mru_ordering() {
 
     let lines: Vec<&str> = out.lines().collect();
     assert_eq!(lines.len(), 2, "two entries");
-    assert!(lines[0].ends_with("b.lua"), "b.lua (ts=200) first; got {:?}", lines[0]);
-    assert!(lines[1].ends_with("a.lua"), "a.lua (ts=100) second; got {:?}", lines[1]);
+    assert!(
+        lines[0].ends_with("b.lua"),
+        "b.lua (ts=200) first; got {:?}",
+        lines[0]
+    );
+    assert!(
+        lines[1].ends_with("a.lua"),
+        "a.lua (ts=100) second; got {:?}",
+        lines[1]
+    );
 }
 
 #[test]
@@ -137,7 +141,11 @@ fn binary_deduplication() {
     assert!(ok, "exit 0");
 
     let lines: Vec<&str> = out.lines().collect();
-    assert_eq!(lines.len(), 1, "only one entry for a.lua after deduplication");
+    assert_eq!(
+        lines.len(),
+        1,
+        "only one entry for a.lua after deduplication"
+    );
     assert!(lines[0].contains("a.lua"), "filename present");
     assert!(
         lines[0].starts_with("99//3//"),
@@ -158,5 +166,8 @@ fn binary_nonexistent_file_exits_nonzero() {
         .stderr(Stdio::null())
         .status()
         .expect("failed to run shada2fzf");
-    assert!(!status.success(), "exit non-zero for non-existent shada file");
+    assert!(
+        !status.success(),
+        "exit non-zero for non-existent shada file"
+    );
 }

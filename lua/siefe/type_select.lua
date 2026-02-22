@@ -22,7 +22,6 @@ function M.type_select(func, fullscreen, ...)
       return
     end
     -- selected[1] = query (--print-query), rest = chosen types
-    local query = selected[1] or ''
     local items = vim.list_slice(selected, 2)
 
     local type_flag = ''
@@ -48,7 +47,6 @@ function M.type_select(func, fullscreen, ...)
         -- Convert rg type globs into git pathspecs (git understands rg --type-list globs)
         local type_globs = {}
         for _, item in ipairs(items) do
-          local type_name = vim.split(item, ':')[1]
           local globs_raw = vim.split((vim.split(item, ':')[2] or ''), ',')
           for _, g in ipairs(globs_raw) do
             table.insert(type_globs, vim.trim(g))
@@ -72,7 +70,6 @@ function M.type_select(func, fullscreen, ...)
     [config.toggle_down_key] = 'toggle+down',
   }, {})
 
-  local default_size, _ = utils.preview_window_size()
   fzf_lua.fzf_exec(
     utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' rg --color=always --type-list',
     {

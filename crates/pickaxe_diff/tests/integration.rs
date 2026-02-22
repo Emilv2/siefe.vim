@@ -98,16 +98,16 @@ fn binary_matching_pattern_shows_hunks() {
     let text = String::from_utf8_lossy(&out.stdout);
     assert!(out.status.success(), "pickaxe-diff should exit 0");
     // Meta-header is always emitted
-    assert!(text.contains("diff --git"),  "meta header present");
-    assert!(text.contains("src/foo.rs"),  "logical path in header");
-    assert!(text.contains("---"),         "--- line present");
-    assert!(text.contains("+++"),         "++ line present");
+    assert!(text.contains("diff --git"), "meta header present");
+    assert!(text.contains("src/foo.rs"), "logical path in header");
+    assert!(text.contains("---"), "--- line present");
+    assert!(text.contains("+++"), "++ line present");
     // Hunk header must be present (needle_fn was added).
     // Note: pattern matches are highlighted with reverse-video, so "needle_fn"
     // may appear split as "\x1b[7mneedle\x1b[27m_fn" — check for "@@" and
     // the pattern text separately.
-    assert!(text.contains("@@"),          "hunk header present");
-    assert!(text.contains("needle"),      "needle pattern text in hunk");
+    assert!(text.contains("@@"), "hunk header present");
+    assert!(text.contains("needle"), "needle pattern text in hunk");
 
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -185,7 +185,10 @@ fn binary_empty_regex_env_shows_all_hunks() {
     // character.  highlight_matches wraps each char individually, so the
     // plain text "added" won't appear literally.  Just check the hunk header
     // is present — that confirms all-hunks-shown behaviour.
-    assert!(text.contains("@@"), "hunk present when pattern matches everything");
+    assert!(
+        text.contains("@@"),
+        "hunk present when pattern matches everything"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }

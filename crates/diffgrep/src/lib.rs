@@ -84,14 +84,16 @@ pub fn filter_diff<R: BufRead>(reader: R, regex: &Regex) -> io::Result<Vec<FileD
                 if hunk_matches(&hunk_lines, regex) {
                     matching_hunks.push(Hunk {
                         header: std::mem::take(&mut hunk_header),
-                        lines:  std::mem::take(&mut hunk_lines),
+                        lines: std::mem::take(&mut hunk_lines),
                     });
                 } else {
                     hunk_header.clear();
                     hunk_lines.clear();
                 }
                 #[allow(unused_assignments)]
-                { in_hunk = false; }
+                {
+                    in_hunk = false;
+                }
             }
         };
     }
@@ -103,14 +105,16 @@ pub fn filter_diff<R: BufRead>(reader: R, regex: &Regex) -> io::Result<Vec<FileD
                 if !matching_hunks.is_empty() {
                     result.push(FileDiff {
                         header: std::mem::take(&mut file_header),
-                        hunks:  std::mem::take(&mut matching_hunks),
+                        hunks: std::mem::take(&mut matching_hunks),
                     });
                 } else {
                     file_header.clear();
                     matching_hunks.clear();
                 }
                 #[allow(unused_assignments)]
-                { in_file = false; }
+                {
+                    in_file = false;
+                }
             }
         };
     }
@@ -233,8 +237,10 @@ mod tests {
              +unrelated\n\
              -unrelated\n"
         );
-        assert!(run(&diff, "needle").is_empty(),
-            "file header lines must not trigger a match");
+        assert!(
+            run(&diff, "needle").is_empty(),
+            "file header lines must not trigger a match"
+        );
     }
 
     // ── Multi-hunk filtering ───────────────────────────────────────────────
@@ -321,7 +327,10 @@ mod tests {
     fn regex_is_not_literal() {
         // Make sure we use full regex matching, not a substring literal
         let diff = single_file_diff("+fn foo_bar()\n");
-        assert!(!run(&diff, "foo.bar").is_empty(), "regex dot should match underscore");
+        assert!(
+            !run(&diff, "foo.bar").is_empty(),
+            "regex dot should match underscore"
+        );
         assert!(!run(&diff, "foo_bar").is_empty(), "literal also matches");
     }
 
@@ -330,6 +339,9 @@ mod tests {
         // Pattern anchored at start of content (after the + prefix)
         let diff = single_file_diff("+hello world\n");
         assert!(!run(&diff, "^hello").is_empty(), "anchored match");
-        assert!(run(&diff, "^world").is_empty(), "wrong anchor should not match");
+        assert!(
+            run(&diff, "^world").is_empty(),
+            "wrong anchor should not match"
+        );
     }
 }

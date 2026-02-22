@@ -534,7 +534,6 @@ end
 local _fd_cmd = nil
 function M.fd_command()
   if _fd_cmd == nil then
-    local cfg = require('siefe.config')
     local blue_dotdot = '"\x1b[34m..\x1b[0m"'
     if vim.fn.executable('fdfind') == 1 then
       _fd_cmd = 'echo -e ' .. blue_dotdot .. '; fdfind'
@@ -556,7 +555,7 @@ function M.rg_delimiter()
 end
 
 -- Build preview commands for rg / files / buffers / marks / jumps / history
-function M.make_preview_commands(preview_slot, bat_opts)
+function M.make_preview_commands(bat_opts)
   local preview = M.bin_path('preview')
   local bat = M.bat_command()
   local bat_args = bat ~= ''

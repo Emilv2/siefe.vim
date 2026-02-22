@@ -67,8 +67,14 @@ index abc..def 100644\n\
 
     let (out, found) = run(diff, "needle");
     assert!(found, "exit 0 when match found");
-    assert!(out.contains("+added needle line"), "matching hunk in output");
-    assert!(!out.contains("+unrelated addition"), "non-matching hunk excluded");
+    assert!(
+        out.contains("+added needle line"),
+        "matching hunk in output"
+    );
+    assert!(
+        !out.contains("+unrelated addition"),
+        "non-matching hunk excluded"
+    );
 }
 
 #[test]
@@ -130,7 +136,10 @@ index abc..def 100644\n\
 
     let (out, found) = run(diff, "needle");
     assert!(!found, "file-header match must not count as a hunk match");
-    assert!(out.is_empty(), "no output when only filename contains the pattern");
+    assert!(
+        out.is_empty(),
+        "no output when only filename contains the pattern"
+    );
 }
 
 #[test]
@@ -152,8 +161,11 @@ index 222..333 100644\n\
 
     let (out, found) = run(diff, "needle");
     assert!(found, "exit 0 when at least one file matches");
-    assert!(out.contains("match.rs"),    "matching file present in output");
-    assert!(!out.contains("nomatch.rs"), "non-matching file absent from output");
+    assert!(out.contains("match.rs"), "matching file present in output");
+    assert!(
+        !out.contains("nomatch.rs"),
+        "non-matching file absent from output"
+    );
 }
 
 // ── Integration test with a real git repository ───────────────────────────────
@@ -177,9 +189,14 @@ fn with_real_git() {
     // First commit (empty, to establish HEAD)
     Command::new("git")
         .args([
-            "-c", "user.email=test@test.com",
-            "-c", "user.name=Test",
-            "commit", "--allow-empty", "-m", "init",
+            "-c",
+            "user.email=test@test.com",
+            "-c",
+            "user.name=Test",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "init",
         ])
         .current_dir(&dir)
         .output()
@@ -194,9 +211,13 @@ fn with_real_git() {
         .unwrap();
     Command::new("git")
         .args([
-            "-c", "user.email=test@test.com",
-            "-c", "user.name=Test",
-            "commit", "-m", "add foo",
+            "-c",
+            "user.email=test@test.com",
+            "-c",
+            "user.name=Test",
+            "commit",
+            "-m",
+            "add foo",
         ])
         .current_dir(&dir)
         .output()
@@ -224,7 +245,10 @@ fn with_real_git() {
     // Filter through diffgrep
     let (out, found) = run(&diff_out, "needle_fn");
     assert!(found, "should find needle_fn in diff");
-    assert!(out.contains("+fn needle_fn()"), "output should contain the added needle line");
+    assert!(
+        out.contains("+fn needle_fn()"),
+        "output should contain the added needle line"
+    );
     // The unrelated function is in the same hunk, so it will also appear —
     // but the file header must be present
     assert!(out.contains("diff --git"), "file header must be present");

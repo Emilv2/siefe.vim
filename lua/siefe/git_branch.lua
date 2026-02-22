@@ -39,18 +39,6 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 
   local default_size, other_size = utils.preview_window_size()
 
-  -- Build extra keys/help
-  local extra_help = ''
-  if standalone then
-    extra_help = utils.prettify_header(config.branches_switch_key, 'switch')
-      .. ' ╱ '
-      .. utils.prettify_header(config.branches_merge_key, 'merge')
-      .. ' ╱ '
-      .. utils.prettify_header(config.branches_rebase_interactive_key, 'rebase -i')
-  elseif has_all then
-    extra_help = ' ╱ ' .. utils.prettify_header(config.branches_all_key, '--all')
-  end
-
   local header = (is_not and '^' or '') .. 'branches' .. (standalone and '' or (has_all and ' ╱ --all' or ''))
 
   local br_km, br_cli = utils.make_binds({

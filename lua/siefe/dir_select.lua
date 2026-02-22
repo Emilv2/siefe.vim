@@ -80,16 +80,6 @@ function M.dir_select(
   vim.cmd('cd ' .. vim.fn.fnameescape(dir))
 
   local actions = {}
-
-  local function dispatch(sel)
-    -- sel[1] = query (print-query), sel[2] = key, sel[3:] = selected paths
-    local query = sel[1] or ''
-    local key = sel[2] or ''
-    local paths = vim.list_slice(sel, 3)
-    kwargs.fd_query = query
-    callback_fn(fullscreen, dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, { query, key, unpack(paths) })
-  end
-
   actions['default'] = {
     fn = function(selected, opts)
       local query = (opts and opts.last_query) or (selected[1] or '')

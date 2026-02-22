@@ -104,7 +104,10 @@ mod tests {
 
     #[test]
     fn basic_record() {
-        assert_eq!(run(b"file.lua\x001:5:hello world\n"), b"file.lua\x011:5:hello world\0");
+        assert_eq!(
+            run(b"file.lua\x001:5:hello world\n"),
+            b"file.lua\x011:5:hello world\0"
+        );
     }
 
     #[test]

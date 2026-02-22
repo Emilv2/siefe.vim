@@ -16,7 +16,6 @@ function M.gitstatus(fullscreen, kwargs)
   kwargs.paths = kwargs.paths or {}
   kwargs.uno = kwargs.uno ~= nil and kwargs.uno or false
 
-  local uno_flag = kwargs.uno and ' -uno ' or ''
   local rel_paths = table.concat(
     vim.tbl_map(
       function(p)
