@@ -260,7 +260,6 @@ function M.gitstash(fullscreen, kwargs)
       ['--read0'] = '',
       ['--print-query'] = '',
       ['--disabled'] = '',
-      ['--layout'] = 'reverse-list',
       ['--delimiter'] = '•',
       ['--preview-window'] = default_size,
       ['--header'] = header,
