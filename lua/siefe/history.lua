@@ -184,7 +184,6 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--delimiter'] = '\t',
     ['--preview-window'] = '+{1}-/2,' .. default_size,
     ['--header-lines'] = tostring(header_lines),
-    ['--header'] = header,
     ['--prompt'] = project_prefix .. 'Hist> ',
   }
 

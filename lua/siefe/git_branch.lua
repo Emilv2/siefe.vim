@@ -62,7 +62,6 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
     ['--ansi'] = '',
     ['--delimiter'] = ':',
     ['--preview-window'] = '~1,' .. default_size,
-    ['--header'] = header,
     ['--prompt'] = not_prefix .. 'branches> ',
   }
 
@@ -179,7 +178,6 @@ function M.author_select(callback, fullscreen)
       ['--history'] = utils.data_path() .. '/rg_author_history',
       ['--multi'] = '',
       ['--ansi'] = '',
-      ['--header'] = 'authors',
     },
     keymap = au_km,
     _fzf_cli_args = au_cli,

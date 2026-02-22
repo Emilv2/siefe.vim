@@ -51,6 +51,8 @@ function M.dir_select(
   local fd_cmd = utils.fd_command()
   local source = utils.bin_path('logger')
     .. ' '
+    .. vim.fn.shellescape(utils.log_path())
+    .. ' '
     .. fd_cmd
     .. ' --exclude ".git/" --color=always '
     .. fd_hidden_flag
@@ -234,7 +236,6 @@ function M.dir_select(
     ['--print-query'] = '',
     ['--query'] = kwargs.fd_query or '',
     ['--scheme'] = 'path',
-    ['--header'] = header,
     ['--prompt'] = prompt,
   }, multi_opt)
 

@@ -262,7 +262,6 @@ function M.gitstash(fullscreen, kwargs)
       ['--disabled'] = '',
       ['--delimiter'] = '•',
       ['--preview-window'] = default_size,
-      ['--header'] = header,
     },
     keymap = stash_km,
     _fzf_cli_args = stash_cli,

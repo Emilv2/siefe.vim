@@ -308,7 +308,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- progressively extend the filename candidate across each ':' boundary
     -- until an existing file is found — handling colons in both filenames and
     -- match text without any fzf-side field index.
-    ['--header'] = header,
     ['--prompt'] = build_prompt(kwargs, mode),
     -- For files mode, '+{}' tells fzf to scroll the preview to the selected
     -- file's position (a no-op for file lists, but harmless).  For search/fzf
@@ -655,7 +654,12 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- it internally adds --disabled (disables fzf fuzzy matching) and a
     -- change:reload bind so the rg command reruns on every keystroke with {q}
     -- expanded to the current query text.
-    fzl.fzf_live(string.format(cmd_fmt, '{q}'), picker_opts)
+    -- shellescape() wraps the query in single quotes, neutralising all shell
+    -- metacharacters.  The '-- %s' placement after rg's end-of-options marker
+    -- also ensures the query can never be mistaken for an rg flag.
+    fzl.fzf_live(function(q)
+      return string.format(cmd_fmt, vim.fn.shellescape(q or ''))
+    end, picker_opts)
   else
     -- Files mode or fzf-filter-over-rg-results: static source.
     local source = mode == 'files' and files_cmd or string.format(cmd_fmt, vim.fn.shellescape(kwargs.query))

@@ -84,7 +84,7 @@ function M.buffers(fullscreen, kwargs)
 
   local project_prefix = (git_dir ~= '' and kwargs.project) and (utils.get_git_basename_or_bufdir() .. ' ') or ''
   local header_lines = (vim.fn.bufnr('') == (sorted[1] or 0)) and 1 or 0
-  local tabstop = (math.max(table.unpack(#sorted > 0 and sorted or { 0 })) or 0) >= 1000 and 9 or 8
+  local tabstop = (math.max((table.unpack or unpack)(#sorted > 0 and sorted or { 0 })) or 0) >= 1000 and 9 or 8
 
   local previews = utils.make_preview_commands()
   local p0 = previews.buffers[1]
@@ -263,7 +263,6 @@ function M.buffers(fullscreen, kwargs)
       ['--tabstop'] = tostring(tabstop),
       ['--header-lines'] = tostring(header_lines),
       ['--preview-window'] = '+{2}-/2,' .. default_size,
-      ['--header'] = header,
     },
     keymap = buf_km,
     _fzf_cli_args = buf_cli,

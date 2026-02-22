@@ -226,7 +226,6 @@ function M.marks(fullscreen, kwargs)
       ['--delimiter'] = '//://',
       ['--with-nth'] = '6..',
       ['--preview-window'] = '+{2}-/2,' .. default_size,
-      ['--header'] = header,
     },
     keymap = marks_km,
     _fzf_cli_args = marks_cli,

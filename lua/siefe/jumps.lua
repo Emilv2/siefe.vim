@@ -209,7 +209,6 @@ function M.jumps(fullscreen, kwargs)
       ['--delimiter'] = '//://',
       ['--with-nth'] = '5..',
       ['--preview-window'] = '+{2}-/2,' .. default_size,
-      ['--header'] = header,
     },
     keymap = jumps_km,
     _fzf_cli_args = jumps_cli,

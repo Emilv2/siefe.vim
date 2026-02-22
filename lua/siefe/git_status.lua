@@ -363,7 +363,6 @@ function M.gitstatus(fullscreen, kwargs)
       ['--with-nth'] = '4..',
       ['--delimiter'] = '//',
       ['--preview-window'] = default_size,
-      ['--header'] = header,
     },
     keymap = gs_km,
     _fzf_cli_args = gs_cli,

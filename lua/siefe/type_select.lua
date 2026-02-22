@@ -80,7 +80,6 @@ function M.type_select(func, fullscreen, ...)
         ['--multi'] = '',
         ['--ansi'] = '',
         ['--history'] = utils.data_path() .. '/type_fzf_history',
-        ['--header'] = 'file types',
         ['--print-query'] = '',
       },
       keymap = ts_km,

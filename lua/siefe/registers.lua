@@ -161,7 +161,6 @@ function M.registers(fullscreen, kwargs)
       ['--ansi'] = '',
       ['--sync'] = '',
       ['--delimiter'] = ' ',
-      ['--header'] = header,
     },
     keymap = regs_km,
     _fzf_cli_args = regs_cli,

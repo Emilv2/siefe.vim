@@ -292,7 +292,6 @@ function M.gitlogfzf(fullscreen, kwargs)
     ['--layout'] = 'reverse-list',
     ['--delimiter'] = '•',
     ['--preview-window'] = default_size,
-    ['--header'] = header,
     ['--prompt'] = prompt,
   }
 
