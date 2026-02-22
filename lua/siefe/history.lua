@@ -124,7 +124,7 @@ function M.historyoldfiles(fullscreen, kwargs)
           for line in f:lines() do
             -- Extract the filename (third //-field) and convert to 4-field display format
             local parts = vim.split(line, '//', { plain = true })
-            local fname = #parts >= 3 and parts[3] or nil
+            local fname = #parts >= 3 and table.concat(vim.list_slice(parts, 3), '//') or nil
             if fname and fname ~= '' and not vis[fname] then
               local lnum = tonumber(parts[1]) or 0
               local col = tonumber(parts[2]) or 0
@@ -284,7 +284,10 @@ function M.historyoldfiles(fullscreen, kwargs)
     fn = function(selected, opts)
       kwargs.query = get_query(selected, opts)
       kwargs.prompt = utils.get_relative_git_or_bufdir()
-      kwargs.paths = source
+      -- Compute recent plain file paths (same as rg.lua's rg_history_key action).
+      -- `source` here is a display-entry list or coroutine — not suitable as rg paths.
+      local git_root = utils.get_git_root()
+      kwargs.paths = utils.recent_files(git_root ~= '' and git_root or nil)
       kwargs.files = false
       local rg = require('siefe.rg')
       rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)

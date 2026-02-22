@@ -129,7 +129,7 @@ function M.marks(fullscreen, kwargs)
     end
     if selected and #selected > 0 then
       -- Check if first item looks like a mark line
-      if not selected[1]:match('//', 1, true) then
+      if not selected[1]:find('//', 1, true) then
         return vim.list_slice(selected, 2)
       end
     end

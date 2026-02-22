@@ -13,15 +13,8 @@ M.config = nil
 function M.setup(opts)
   -- Pass the Lua table directly into the config module
   require('siefe.config').setup(opts)
-
-  -- Set up buffer tracking autocmd
-  vim.api.nvim_create_augroup('siefe_buffer_tracker', { clear = true })
-  vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
-    group = 'siefe_buffer_tracker',
-    callback = function(args)
-      M.buffers_tracker[args.buf] = vim.loop.hrtime()
-    end,
-  })
+  -- Buffer tracker autocmd is already registered unconditionally by plugin/siefe.lua.
+  -- Do NOT re-register it here: calling setup() must not cause BufEnter to fire twice.
 end
 
 -- ── Delegate to sub-modules ──────────────────────────────────────────────────
