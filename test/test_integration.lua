@@ -6,14 +6,16 @@
 
 vim.opt.rtp:prepend(vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':h:h'))
 
-local T     = require('test.helpers')
+local T = require('test.helpers')
 local utils = require('siefe.utils')
 
 -- Helper: run `bin` with `input` as stdin; return stdout string.
 -- Uses vim.fn.system which passes the second argument as stdin.
 local function run_bin(bin_path, input, extra_args)
   local cmd = { bin_path }
-  for _, a in ipairs(extra_args or {}) do table.insert(cmd, a) end
+  for _, a in ipairs(extra_args or {}) do
+    table.insert(cmd, a)
+  end
   local out = vim.fn.system(cmd, input or '')
   return out
 end
@@ -23,13 +25,12 @@ end
 -- unavailable (E976).  This helper writes input to a temp file and reads
 -- output via io.popen/io.open in binary mode, bypassing Vim's Blob handling.
 local function run_bin_binary(bin_path, input)
-  local tmpin  = os.tmpname()
+  local tmpin = os.tmpname()
   local tmpout = os.tmpname()
   local f = assert(io.open(tmpin, 'wb'))
   f:write(input or '')
   f:close()
-  os.execute(vim.fn.shellescape(bin_path)
-             .. ' <' .. tmpin .. ' >' .. tmpout .. ' 2>/dev/null')
+  os.execute(vim.fn.shellescape(bin_path) .. ' <' .. tmpin .. ' >' .. tmpout .. ' 2>/dev/null')
   local of = assert(io.open(tmpout, 'rb'))
   local out = of:read('*a')
   of:close()
@@ -49,10 +50,10 @@ T.group('rg2fzf binary', function()
 
   -- Basic NUL→SOH translation: filename\0rest\n → filename\x01rest\0
   local out1 = run_bin_binary(bin, 'file.lua\x001:5:hello world\n')
-  T.ok(out1:find('\x01', 1, true),        'output contains SOH separator')
-  T.ok(out1:find('file.lua', 1, true),    'output contains filename')
+  T.ok(out1:find('\x01', 1, true), 'output contains SOH separator')
+  T.ok(out1:find('file.lua', 1, true), 'output contains filename')
   T.ok(out1:find('hello world', 1, true), 'output contains match text')
-  T.ok(out1:sub(-1) == '\0',              'record is NUL-terminated')
+  T.ok(out1:sub(-1) == '\0', 'record is NUL-terminated')
 
   -- Multiple records
   local out2 = run_bin_binary(bin, 'a.lua\x001:1:foo\nb.lua\x002:3:bar\n')
@@ -61,12 +62,11 @@ T.group('rg2fzf binary', function()
   -- Passthrough for lines without NUL (logger output etc.)
   local out3 = run_bin_binary(bin, 'log line without nul\n')
   T.ok(out3:find('log line', 1, true), 'passthrough line preserved')
-  T.ok(out3:sub(-1) == '\0',           'passthrough line NUL-terminated')
+  T.ok(out3:sub(-1) == '\0', 'passthrough line NUL-terminated')
 
   -- Colons in both filename and match text: SOH is the unambiguous separator
   local out4 = run_bin_binary(bin, 'server:8080/api.go\x001:1:http://host:9090/\n')
-  T.ok(out4:find('server:8080/api.go\x01', 1, true),
-       'colon-in-filename preserved before SOH')
+  T.ok(out4:find('server:8080/api.go\x01', 1, true), 'colon-in-filename preserved before SOH')
 
   -- Empty input → empty output
   local out5 = run_bin_binary(bin, '')
@@ -97,13 +97,13 @@ T.group('diffgrep binary', function()
     '+unrelated addition',
   }, '\n') .. '\n'
 
-  local out1 = run_bin(bin, diff, {'needle'})
-  T.ok(vim.v.shell_error == 0,                      'exit 0 when match found')
-  T.ok(out1:find('+added needle here', 1, true),    'matching hunk included')
-  T.ok(not out1:find('+unrelated addition', 1, true),'non-matching hunk excluded')
+  local out1 = run_bin(bin, diff, { 'needle' })
+  T.ok(vim.v.shell_error == 0, 'exit 0 when match found')
+  T.ok(out1:find('+added needle here', 1, true), 'matching hunk included')
+  T.ok(not out1:find('+unrelated addition', 1, true), 'non-matching hunk excluded')
 
   -- No match: empty output, non-zero exit
-  run_bin(bin, diff, {'NOTFOUND'})
+  run_bin(bin, diff, { 'NOTFOUND' })
   T.ok(vim.v.shell_error ~= 0, 'exit non-zero when no match')
 
   -- Context lines never trigger a match
@@ -116,7 +116,7 @@ T.group('diffgrep binary', function()
     ' needle in context',
     '+unrelated',
   }, '\n') .. '\n'
-  run_bin(bin, ctx_diff, {'needle'})
+  run_bin(bin, ctx_diff, { 'needle' })
   T.ok(vim.v.shell_error ~= 0, 'context-only match does not count')
 end)
 
@@ -145,22 +145,21 @@ T.group('shada2fzf binary', function()
   --   0x0a          — value 10 (fixint)
   --   0xa1 'c'      — key "c" (fixstr len 1)
   --   0x02          — value 2 (fixint)
-  local shada_bytes =
-      '\x0b' ..           -- type 11
-      '\x64' ..           -- timestamp 100
-      '\x12' ..           -- data length 18
-      '\x84' ..           -- fixmap 4 pairs
-      '\xa1f' ..          -- key "f"
-      '\xa5a.lua' ..      -- value "a.lua"
-      '\xa1n' ..          -- key "n"
-      '\x22' ..           -- value 34
-      '\xa1l' ..          -- key "l"
-      '\x0a' ..           -- value 10
-      '\xa1c' ..          -- key "c"
-      '\x02'              -- value 2
+  local shada_bytes = '\x0b' -- type 11
+    .. '\x64' -- timestamp 100
+    .. '\x12' -- data length 18
+    .. '\x84' -- fixmap 4 pairs
+    .. '\xa1f' -- key "f"
+    .. '\xa5a.lua' -- value "a.lua"
+    .. '\xa1n' -- key "n"
+    .. '\x22' -- value 34
+    .. '\xa1l' -- key "l"
+    .. '\x0a' -- value 10
+    .. '\xa1c' -- key "c"
+    .. '\x02' -- value 2
 
   local tmp = '/tmp/siefe_test_integration.shada'
-  local wf  = io.open(tmp, 'wb')
+  local wf = io.open(tmp, 'wb')
   if not wf then
     io.stdout:write('  SKIP cannot write temp file ' .. tmp .. '\n')
     return
@@ -169,9 +168,8 @@ T.group('shada2fzf binary', function()
   wf:close()
 
   local out = vim.fn.system({ bin, tmp })
-  T.ok(vim.v.shell_error == 0,                 'shada2fzf exits 0 for valid shada')
-  T.ok(out:find('10//2//a.lua', 1, true),
-       'output is line//col//filename, got: ' .. vim.inspect(out))
+  T.ok(vim.v.shell_error == 0, 'shada2fzf exits 0 for valid shada')
+  T.ok(out:find('10//2//a.lua', 1, true), 'output is line//col//filename, got: ' .. vim.inspect(out))
 
   -- Empty shada → empty output, exit 0
   local empty_tmp = '/tmp/siefe_test_empty.shada'

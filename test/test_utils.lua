@@ -24,14 +24,14 @@ T.group('parse_rg_line', function()
   -- Standard rg --column output: file:line:col:text
   local r = utils.parse_rg_line('src/foo.lua:10:5:hello world')
   T.eq(r.filename, 'src/foo.lua', 'filename')
-  T.eq(r.lnum,     10,            'lnum')
-  T.eq(r.col,      5,             'col')
-  T.eq(r.text,     'hello world', 'text')
+  T.eq(r.lnum, 10, 'lnum')
+  T.eq(r.col, 5, 'col')
+  T.eq(r.text, 'hello world', 'text')
 
   -- Colons inside text are preserved
   local r2 = utils.parse_rg_line('a.lua:1:1:foo:bar:baz')
-  T.eq(r2.filename, 'a.lua',       'filename with colons in text')
-  T.eq(r2.text,     'foo:bar:baz', 'text with colons preserved')
+  T.eq(r2.filename, 'a.lua', 'filename with colons in text')
+  T.eq(r2.text, 'foo:bar:baz', 'text with colons preserved')
 
   -- Non-matching line returns nil
   local r3 = utils.parse_rg_line('not a match')
@@ -41,16 +41,16 @@ T.group('parse_rg_line', function()
   local ansi_line = 'file.lua:3:1:\27[31mhello\27[0m'
   local r4 = utils.parse_rg_line(ansi_line)
   T.eq(r4.filename, 'file.lua', 'filename with ANSI in text')
-  T.eq(r4.lnum, 3,              'lnum with ANSI in text')
+  T.eq(r4.lnum, 3, 'lnum with ANSI in text')
 end)
 
 -- ── detect_dups ───────────────────────────────────────────────────────────────
 
 T.group('detect_dups', function()
-  T.eq(utils.detect_dups({'a', 'b', 'c'}),       '',    'no duplicates')
-  T.eq(utils.detect_dups({'a', 'b', 'a'}),       'a',   'one duplicate')
-  T.eq(utils.detect_dups({'x', 'x', 'y', 'y'}), 'x y', 'two duplicates')
-  T.eq(utils.detect_dups({}),                    '',    'empty list')
+  T.eq(utils.detect_dups({ 'a', 'b', 'c' }), '', 'no duplicates')
+  T.eq(utils.detect_dups({ 'a', 'b', 'a' }), 'a', 'one duplicate')
+  T.eq(utils.detect_dups({ 'x', 'x', 'y', 'y' }), 'x y', 'two duplicates')
+  T.eq(utils.detect_dups({}), '', 'empty list')
 end)
 
 -- ── preview_window_size ───────────────────────────────────────────────────────
@@ -59,16 +59,16 @@ T.group('preview_window_size', function()
   -- Narrow window: preview should be hidden by default, other_size visible
   package.loaded['siefe.config'] = nil
   require('siefe.config').setup({ preview_hide_threshold = 200, default_preview_size = 40 })
-  vim.o.columns = 100  -- below threshold
+  vim.o.columns = 100 -- below threshold
 
   local def, other = utils.preview_window_size()
-  T.eq(def,   '0%',    'narrow: default_size is 0% (hidden)')
-  T.eq(other, '40%',   'narrow: other_size shows preview')
+  T.eq(def, '0%', 'narrow: default_size is 0% (hidden)')
+  T.eq(other, '40%', 'narrow: other_size shows preview')
 
   -- Wide window: preview visible by default
-  vim.o.columns = 300  -- above threshold
+  vim.o.columns = 300 -- above threshold
   def, other = utils.preview_window_size()
-  T.eq(def,   '40%',    'wide: default_size shows preview')
+  T.eq(def, '40%', 'wide: default_size shows preview')
   T.eq(other, 'hidden', 'wide: other_size is hidden')
 
   -- Reset
@@ -112,8 +112,7 @@ T.group('shada_path', function()
   -- Should always return a non-empty string ending with the shada filename
   local p = utils.shada_path()
   T.ok(type(p) == 'string' and #p > 0, 'shada_path returns non-empty string')
-  T.ok(p:match('%.shada$') or p:match('main%.shada$'),
-       'shada_path ends with .shada: ' .. p)
+  T.ok(p:match('%.shada$') or p:match('main%.shada$'), 'shada_path ends with .shada: ' .. p)
 
   -- Respects vim.o.shadafile when set to a custom path
   local orig = vim.o.shadafile
@@ -132,11 +131,11 @@ end)
 
 T.group('csi', function()
   -- Hex color, foreground: 38;2;r;g;b
-  T.eq(utils.csi('#ff0080', true),  '38;2;255;0;128', 'hex fg: 38;2;r;g;b')
+  T.eq(utils.csi('#ff0080', true), '38;2;255;0;128', 'hex fg: 38;2;r;g;b')
   -- Hex color, background: 48;2;r;g;b
   T.eq(utils.csi('#ff0080', false), '48;2;255;0;128', 'hex bg: 48;2;r;g;b')
   -- Named/256-index color, fg: 38;5;N
-  T.eq(utils.csi('42', true),  '38;5;42', 'indexed fg: 38;5;N')
+  T.eq(utils.csi('42', true), '38;5;42', 'indexed fg: 38;5;N')
   -- Named/256-index color, bg: 48;5;N
   T.eq(utils.csi('42', false), '48;5;42', 'indexed bg: 48;5;N')
   -- Black (#000000)
@@ -150,8 +149,7 @@ end)
 T.group('prettify_help', function()
   local h = utils.prettify_help('ctrl-a')
   -- Key must be uppercased in the output
-  T.ok(h:find('CTRL%-A', 1) ~= nil or h:find('CTRL-A', 1, true) ~= nil,
-    'key uppercased')
+  T.ok(h:find('CTRL%-A', 1) ~= nil or h:find('CTRL-A', 1, true) ~= nil, 'key uppercased')
   -- Must contain an ANSI escape sequence
   T.ok(h:find('\27%[', 1) ~= nil, 'has ANSI escape')
   -- Must end with reset
@@ -181,29 +179,28 @@ end)
 
 T.group('preview_help', function()
   -- Consecutive range: f1,f2,f3 → "f1-3" (algorithm: fSTART-END, no second f)
-  local r1 = utils.preview_help({'f1', 'f2', 'f3'})
+  local r1 = utils.preview_help({ 'f1', 'f2', 'f3' })
   T.ok(r1:find('f1', 1, true) ~= nil, 'consecutive: start present (f1)')
   -- Range end is the bare number (not f3): 'f1-3'
   T.ok(r1:find('-3', 1, true) ~= nil, 'consecutive: end number present (-3)')
   T.ok(r1:find('-', 1, true) ~= nil, 'consecutive: hyphen used')
 
   -- Non-consecutive: f1, f3 — both should appear, separated
-  local r2 = utils.preview_help({'f1', 'f3'})
+  local r2 = utils.preview_help({ 'f1', 'f3' })
   T.ok(r2:find('f1', 1, true) ~= nil, 'non-consecutive: f1 present')
   T.ok(r2:find('f3', 1, true) ~= nil, 'non-consecutive: f3 present')
 
   -- Non-f key only: returned with leading ", "
-  local r3 = utils.preview_help({'ctrl-p'})
-  T.ok(r3:find('ctrl%-p', 1) ~= nil or r3:find('ctrl-p', 1, true) ~= nil,
-    'non-f key included')
+  local r3 = utils.preview_help({ 'ctrl-p' })
+  T.ok(r3:find('ctrl%-p', 1) ~= nil or r3:find('ctrl-p', 1, true) ~= nil, 'non-f key included')
 
   -- Mixed: f keys + non-f keys both appear
-  local r4 = utils.preview_help({'f1', 'f2', 'ctrl-p'})
-  T.ok(r4:find('f', 1, true) ~= nil,   'mixed: f keys present')
+  local r4 = utils.preview_help({ 'f1', 'f2', 'ctrl-p' })
+  T.ok(r4:find('f', 1, true) ~= nil, 'mixed: f keys present')
   T.ok(r4:find('ctrl', 1, true) ~= nil, 'mixed: non-f key present')
 
   -- Single f key: rendered as "fN-fN" (current algorithm repeats)
-  local r5 = utils.preview_help({'f2'})
+  local r5 = utils.preview_help({ 'f2' })
   T.ok(r5:find('f2', 1, true) ~= nil, 'single f key present')
 
   -- Empty list → empty string
@@ -214,27 +211,26 @@ end)
 
 T.group('make_binds', function()
   -- Simple binds go into keymap.fzf; complex into --bind= cli args
-  local km, cli = utils.make_binds({['ctrl-a'] = 'abort'}, {'ctrl-b:up'})
-  T.ok(type(km.fzf) == 'table',           'keymap.fzf is a table')
-  T.eq(km.fzf['ctrl-a'], 'abort',         'simple bind in keymap.fzf')
-  T.eq(#cli, 1,                           'one complex bind in cli list')
+  local km, cli = utils.make_binds({ ['ctrl-a'] = 'abort' }, { 'ctrl-b:up' })
+  T.ok(type(km.fzf) == 'table', 'keymap.fzf is a table')
+  T.eq(km.fzf['ctrl-a'], 'abort', 'simple bind in keymap.fzf')
+  T.eq(#cli, 1, 'one complex bind in cli list')
   T.ok(cli[1]:find('--bind=', 1, true) ~= nil, 'complex bind has --bind= prefix')
-  T.ok(cli[1]:find('ctrl-b:up', 1, true) ~= nil or
-       cli[1]:find('ctrl%-b:up', 1) ~= nil, 'complex bind value present')
+  T.ok(cli[1]:find('ctrl-b:up', 1, true) ~= nil or cli[1]:find('ctrl%-b:up', 1) ~= nil, 'complex bind value present')
 
   -- Nil inputs → empty structures (no error)
   local km2, cli2 = utils.make_binds()
   T.eq(km2.fzf, {}, 'nil simple → empty keymap table')
-  T.eq(cli2,    {}, 'nil complex → empty cli list')
+  T.eq(cli2, {}, 'nil complex → empty cli list')
 
   -- Multiple complex binds
-  local _, cli3 = utils.make_binds(nil, {'a:up', 'b:down', 'c:abort'})
+  local _, cli3 = utils.make_binds(nil, { 'a:up', 'b:down', 'c:abort' })
   T.eq(#cli3, 3, 'three complex binds produce three --bind= entries')
 
   -- Multiple simple binds all stored
-  local km4, _ = utils.make_binds({['ctrl-x'] = 'clear-query', ['ctrl-y'] = 'yank'}, {})
+  local km4, _ = utils.make_binds({ ['ctrl-x'] = 'clear-query', ['ctrl-y'] = 'yank' }, {})
   T.eq(km4.fzf['ctrl-x'], 'clear-query', 'second simple bind stored')
-  T.eq(km4.fzf['ctrl-y'], 'yank',        'third simple bind stored')
+  T.eq(km4.fzf['ctrl-y'], 'yank', 'third simple bind stored')
 end)
 
 -- ── log_path ──────────────────────────────────────────────────────────────────
@@ -242,7 +238,7 @@ end)
 T.group('log_path', function()
   local p = utils.log_path()
   T.ok(type(p) == 'string' and #p > 0, 'log_path returns non-empty string')
-  T.ok(p:find('/siefe%.log$') ~= nil,   'log_path ends with /siefe.log')
+  T.ok(p:find('/siefe%.log$') ~= nil, 'log_path ends with /siefe.log')
   -- Prefix must be data_path()
   local dp = utils.data_path()
   T.eq(p:sub(1, #dp), dp, 'log_path starts with data_path()')

@@ -17,7 +17,7 @@ function M.setup(opts)
   -- Set up buffer tracking autocmd
   vim.api.nvim_create_augroup('siefe_buffer_tracker', { clear = true })
   vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
-    group    = 'siefe_buffer_tracker',
+    group = 'siefe_buffer_tracker',
     callback = function(args)
       M.buffers_tracker[args.buf] = vim.loop.hrtime()
     end,

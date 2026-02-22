@@ -1,24 +1,26 @@
 -- plugin/siefe.lua
 -- Command definitions, <Plug> mappings, and autocmds for siefe.vim (Lua rewrite)
 
-if vim.g.loaded_siefe_lua then return end
+if vim.g.loaded_siefe_lua then
+  return
+end
 vim.g.loaded_siefe_lua = 1
 
 local map_keys = vim.g.siefe_map_keys ~= nil and vim.g.siefe_map_keys or true
 
 local siefe = require('siefe')
-local utils  = require('siefe.utils')
+local utils = require('siefe.utils')
 
 -- Ensure the buffer tracker autocmd is set up even without explicit setup()
 vim.api.nvim_create_augroup('siefe_buffer_tracker', { clear = true })
 vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter' }, {
-  group    = 'siefe_buffer_tracker',
+  group = 'siefe_buffer_tracker',
   callback = function(args)
     siefe.buffers_tracker[args.buf] = vim.loop.hrtime()
   end,
 })
 vim.api.nvim_create_autocmd('BufDelete', {
-  group    = 'siefe_buffer_tracker',
+  group = 'siefe_buffer_tracker',
   callback = function(args)
     siefe.buffers_tracker[args.buf] = nil
   end,
@@ -27,9 +29,14 @@ vim.api.nvim_create_autocmd('BufDelete', {
 -- ── Helper for buffer list ───────────────────────────────────────────────────
 
 local function buf_paths()
-  return vim.tbl_map(function(info)
-    return vim.fn.fnamemodify(info.name, ':p:~:.')
-  end, vim.tbl_filter(function(info) return info.listed == 1 end, vim.fn.getbufinfo()))
+  return vim.tbl_map(
+    function(info)
+      return vim.fn.fnamemodify(info.name, ':p:~:.')
+    end,
+    vim.tbl_filter(function(info)
+      return info.listed == 1
+    end, vim.fn.getbufinfo())
+  )
 end
 
 -- ── Conflict regex ───────────────────────────────────────────────────────────
@@ -40,199 +47,199 @@ local git_conflict_regex = '^(<{7} .*|={7}$|\\|{7}$|>{7} .*)'
 
 vim.api.nvim_create_user_command('SiefeRg', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = args.args,
+    query = args.args,
     prompt = utils.get_relative_git_or_bufdir(),
   })
 end, { nargs = '*', bang = true })
 
 vim.api.nvim_create_user_command('SiefeRgVisual', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query         = utils.visual_selection(),
-    prompt        = utils.get_relative_git_or_bufdir(),
+    query = utils.visual_selection(),
+    prompt = utils.get_relative_git_or_bufdir(),
     fixed_strings = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeRgWord', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.fn.expand('<cword>'),
+    query = vim.fn.expand('<cword>'),
     prompt = utils.get_relative_git_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeRgWORD', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.fn.expand('<cWORD>'),
+    query = vim.fn.expand('<cWORD>'),
     prompt = utils.get_relative_git_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeRgLine', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.trim(vim.fn.getline('.')),
+    query = vim.trim(vim.fn.getline('.')),
     prompt = utils.get_relative_git_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeRgConflict', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = git_conflict_regex,
+    query = git_conflict_regex,
     prompt = utils.get_relative_git_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRg', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = args.args,
+    query = args.args,
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = '*', bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRgVisual', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = utils.visual_selection(),
+    query = utils.visual_selection(),
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRgWord', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cword>'),
+    query = vim.fn.expand('<cword>'),
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRgWORD', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cWORD>'),
+    query = vim.fn.expand('<cWORD>'),
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRgLine', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.trim(vim.fn.getline('.')),
+    query = vim.trim(vim.fn.getline('.')),
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectRgConflict', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = git_conflict_regex,
+    query = git_conflict_regex,
     prompt = utils.get_git_basename_or_bufdir(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeBuffersRg', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = args.args,
+    query = args.args,
     prompt = utils.get_git_basename_or_bufdir(),
-    paths  = buf_paths(),
+    paths = buf_paths(),
   })
 end, { nargs = '*', bang = true })
 
 vim.api.nvim_create_user_command('SiefeBuffersRgWord', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cword>'),
+    query = vim.fn.expand('<cword>'),
     prompt = utils.get_git_basename_or_bufdir(),
-    paths  = buf_paths(),
+    paths = buf_paths(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeBuffersRgWORD', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cWORD>'),
+    query = vim.fn.expand('<cWORD>'),
     prompt = utils.get_git_basename_or_bufdir(),
-    paths  = buf_paths(),
+    paths = buf_paths(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeBuffersRgLine', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.trim(vim.fn.getline('.')),
+    query = vim.trim(vim.fn.getline('.')),
     prompt = utils.get_git_basename_or_bufdir(),
-    paths  = buf_paths(),
+    paths = buf_paths(),
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeFiles', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = args.args,
+    query = args.args,
     prompt = utils.get_relative_git_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = '*', bang = true })
 
 vim.api.nvim_create_user_command('SiefeFilesVisual', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query         = utils.visual_selection(),
-    prompt        = utils.get_relative_git_or_bufdir(),
+    query = utils.visual_selection(),
+    prompt = utils.get_relative_git_or_bufdir(),
     fixed_strings = true,
-    files         = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeFilesWord', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.fn.expand('<cword>'),
+    query = vim.fn.expand('<cword>'),
     prompt = utils.get_relative_git_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeFilesWORD', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.fn.expand('<cWORD>'),
+    query = vim.fn.expand('<cWORD>'),
     prompt = utils.get_relative_git_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeFilesLine', function(args)
   siefe.ripgrepfzf(args.bang, utils.bufdir(), {
-    query  = vim.trim(vim.fn.getline('.')),
+    query = vim.trim(vim.fn.getline('.')),
     prompt = utils.get_relative_git_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectFiles', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = args.args,
+    query = args.args,
     prompt = utils.get_git_basename_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = '*', bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectFilesVisual', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = utils.visual_selection(),
+    query = utils.visual_selection(),
     prompt = utils.get_git_basename_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectFilesWord', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cword>'),
+    query = vim.fn.expand('<cword>'),
     prompt = utils.get_git_basename_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectFilesWORD', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.fn.expand('<cWORD>'),
+    query = vim.fn.expand('<cWORD>'),
     prompt = utils.get_git_basename_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
 vim.api.nvim_create_user_command('SiefeProjectFilesLine', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
-    query  = vim.trim(vim.fn.getline('.')),
+    query = vim.trim(vim.fn.getline('.')),
     prompt = utils.get_git_basename_or_bufdir(),
-    files  = true,
+    files = true,
   })
 end, { nargs = 0, bang = true })
 
@@ -295,8 +302,8 @@ end, { nargs = 0, bang = true })
 vim.api.nvim_create_user_command('SiefeGitLLog', function(args)
   local lines = utils.visual_line_nu()
   siefe.gitlogfzf(args.bang, {
-    query      = vim.trim(vim.fn.getline('.')),
-    paths      = { vim.fn.fnamemodify(vim.fn.expand('%'), ':p') },
+    query = vim.trim(vim.fn.getline('.')),
+    paths = { vim.fn.fnamemodify(vim.fn.expand('%'), ':p') },
     line_range = lines,
   })
 end, { nargs = 0, bang = true })
@@ -340,58 +347,58 @@ local function plug(lhs, rhs_cmd, mode)
   vim.keymap.set(mode, lhs, rhs_cmd, { silent = true })
 end
 
-plug('<Plug>SiefeRG',                 '<cmd>SiefeRg<CR>')
-plug('<Plug>SiefeRgWord',             '<cmd>SiefeRgWord<CR>')
-plug('<Plug>SiefeRgWORD',             '<cmd>SiefeRgWORD<CR>')
-plug('<Plug>SiefeRgLine',             '<cmd>SiefeRgLine<CR>')
-plug('<Plug>SiefeRgConflict',         '<cmd>SiefeRgConflict<CR>')
-plug('<Plug>SiefeRgVisual',           ':<c-u>SiefeRgVisual<CR>', 'x')
-plug('<Plug>SiefeFiless',             '<cmd>SiefeFiles<CR>')
-plug('<Plug>SiefeFilesWord',          '<cmd>SiefeFilesWord<CR>')
-plug('<Plug>SiefeFilesWORD',          '<cmd>SiefeFilesWORD<CR>')
-plug('<Plug>SiefeFilesLine',          ':<c-u>SiefeFilesLine<CR>')
-plug('<Plug>SiefeFilesVisual',        ':<c-u>SiefeFilesVisual<CR>', 'x')
+plug('<Plug>SiefeRG', '<cmd>SiefeRg<CR>')
+plug('<Plug>SiefeRgWord', '<cmd>SiefeRgWord<CR>')
+plug('<Plug>SiefeRgWORD', '<cmd>SiefeRgWORD<CR>')
+plug('<Plug>SiefeRgLine', '<cmd>SiefeRgLine<CR>')
+plug('<Plug>SiefeRgConflict', '<cmd>SiefeRgConflict<CR>')
+plug('<Plug>SiefeRgVisual', ':<c-u>SiefeRgVisual<CR>', 'x')
+plug('<Plug>SiefeFiless', '<cmd>SiefeFiles<CR>')
+plug('<Plug>SiefeFilesWord', '<cmd>SiefeFilesWord<CR>')
+plug('<Plug>SiefeFilesWORD', '<cmd>SiefeFilesWORD<CR>')
+plug('<Plug>SiefeFilesLine', ':<c-u>SiefeFilesLine<CR>')
+plug('<Plug>SiefeFilesVisual', ':<c-u>SiefeFilesVisual<CR>', 'x')
 
-plug('<Plug>SiefeProjectRG',          '<cmd>SiefeProjectRg<CR>')
-plug('<Plug>SiefeProjectRgWord',      '<cmd>SiefeProjectRgWord<CR>')
-plug('<Plug>SiefeProjectRgWORD',      '<cmd>SiefeProjectRgWORD<CR>')
-plug('<Plug>SiefeProjectRgLine',      '<cmd>SiefeProjectRgLine<CR>')
-plug('<Plug>SiefeProjectRgConflict',  '<cmd>SiefeProjectRgConflict<CR>')
-plug('<Plug>SiefeProjectRgVisual',    ':<c-u>SiefeProjectRgVisual<CR>', 'x')
-plug('<Plug>SiefeProjectFiless',      '<cmd>SiefeProjectFiles<CR>')
-plug('<Plug>SiefeProjectFilesWord',   '<cmd>SiefeProjectFilesWord<CR>')
-plug('<Plug>SiefeProjectFilesWORD',   '<cmd>SiefeProjectFilesWORD<CR>')
-plug('<Plug>SiefeProjectFilesLine',   '<cmd>SiefeProjectFilesLine<CR>')
+plug('<Plug>SiefeProjectRG', '<cmd>SiefeProjectRg<CR>')
+plug('<Plug>SiefeProjectRgWord', '<cmd>SiefeProjectRgWord<CR>')
+plug('<Plug>SiefeProjectRgWORD', '<cmd>SiefeProjectRgWORD<CR>')
+plug('<Plug>SiefeProjectRgLine', '<cmd>SiefeProjectRgLine<CR>')
+plug('<Plug>SiefeProjectRgConflict', '<cmd>SiefeProjectRgConflict<CR>')
+plug('<Plug>SiefeProjectRgVisual', ':<c-u>SiefeProjectRgVisual<CR>', 'x')
+plug('<Plug>SiefeProjectFiless', '<cmd>SiefeProjectFiles<CR>')
+plug('<Plug>SiefeProjectFilesWord', '<cmd>SiefeProjectFilesWord<CR>')
+plug('<Plug>SiefeProjectFilesWORD', '<cmd>SiefeProjectFilesWORD<CR>')
+plug('<Plug>SiefeProjectFilesLine', '<cmd>SiefeProjectFilesLine<CR>')
 plug('<Plug>SiefeProjectFilesVisual', ':<c-u>SiefeProjectFilesVisual<CR>', 'x')
 
-plug('<Plug>SiefeBuffersRG',          '<cmd>SiefeBuffersRg<CR>')
-plug('<Plug>SiefeBuffersRgWord',      '<cmd>SiefeBuffersRgWord<CR>')
-plug('<Plug>SiefeBuffersRgWORD',      '<cmd>SiefeBuffersRgWORD<CR>')
-plug('<Plug>SiefeBuffersRgLine',      '<cmd>SiefeBuffersRgLine<CR>')
+plug('<Plug>SiefeBuffersRG', '<cmd>SiefeBuffersRg<CR>')
+plug('<Plug>SiefeBuffersRgWord', '<cmd>SiefeBuffersRgWord<CR>')
+plug('<Plug>SiefeBuffersRgWORD', '<cmd>SiefeBuffersRgWORD<CR>')
+plug('<Plug>SiefeBuffersRgLine', '<cmd>SiefeBuffersRgLine<CR>')
 
-plug('<Plug>SiefeRgP',                '<cmd>SiefeRg <c-r>+<CR>')
-plug('<Plug>SiefeProjectRgP',         '<cmd>SiefeProjectRg <c-r>+<CR>')
+plug('<Plug>SiefeRgP', '<cmd>SiefeRg <c-r>+<CR>')
+plug('<Plug>SiefeProjectRgP', '<cmd>SiefeProjectRg <c-r>+<CR>')
 
-plug('<Plug>SiefeMarks',              '<cmd>SiefeMarks<CR>')
-plug('<Plug>SiefeJumps',              '<cmd>SiefeJumps<CR>')
-plug('<Plug>SiefeHistory',            '<cmd>SiefeHistory<CR>')
-plug('<Plug>SiefeProjectHistory',     '<cmd>SiefeProjectHistory<CR>')
-plug('<Plug>SiefeBufferS',            '<cmd>SiefeBuffers<CR>')
-plug('<Plug>SiefeToggleGitStatus',    '<cmd>SiefeToggleGitStatus<CR>')
-plug('<Plug>SiefeGitStash',           '<cmd>SiefeGitStash<CR>')
-plug('<Plug>SiefeGitBufferLogg',      '<cmd>SiefeGitBufferLog<CR>')
+plug('<Plug>SiefeMarks', '<cmd>SiefeMarks<CR>')
+plug('<Plug>SiefeJumps', '<cmd>SiefeJumps<CR>')
+plug('<Plug>SiefeHistory', '<cmd>SiefeHistory<CR>')
+plug('<Plug>SiefeProjectHistory', '<cmd>SiefeProjectHistory<CR>')
+plug('<Plug>SiefeBufferS', '<cmd>SiefeBuffers<CR>')
+plug('<Plug>SiefeToggleGitStatus', '<cmd>SiefeToggleGitStatus<CR>')
+plug('<Plug>SiefeGitStash', '<cmd>SiefeGitStash<CR>')
+plug('<Plug>SiefeGitBufferLogg', '<cmd>SiefeGitBufferLog<CR>')
 plug('<Plug>SiefeGitBufferLogVisual', ':<c-u>SiefeGitBufferLogVisual<CR>', 'x')
-plug('<Plug>SiefeGitLLog',            ':<c-u>SiefeGitLLog<CR>', 'x')
-plug('<Plug>SiefeGitBufferLogWord',   '<cmd>SiefeGitBufferLogWord<CR>')
-plug('<Plug>SiefeGitBufferLogWORD',   '<cmd>SiefeGitBufferLogWORD<CR>')
-plug('<Plug>SiefeGitLogg',            '<cmd>SiefeGitLog<CR>')
-plug('<Plug>SiefeGitLogVisual',       ':<c-u>SiefeGitLogVisual<CR>', 'x')
-plug('<Plug>SiefeGitLogWord',         '<cmd>SiefeGitLogWord<CR>')
-plug('<Plug>SiefeGitLogWORD',         '<cmd>SiefeGitLogWORD<CR>')
-plug('<Plug>SiefeGitStatus',          '<cmd>SiefeGitStatus<CR>')
-plug('<Plug>SiefeRegisters',          ':<c-u>SiefeRegisters<CR>')
-plug('<Plug>SiefeMaps',               '<cmd>SiefeMaps<CR>')
-plug('<Plug>SiefeGitBranch',          '<cmd>SiefeGitBranch<CR>')
+plug('<Plug>SiefeGitLLog', ':<c-u>SiefeGitLLog<CR>', 'x')
+plug('<Plug>SiefeGitBufferLogWord', '<cmd>SiefeGitBufferLogWord<CR>')
+plug('<Plug>SiefeGitBufferLogWORD', '<cmd>SiefeGitBufferLogWORD<CR>')
+plug('<Plug>SiefeGitLogg', '<cmd>SiefeGitLog<CR>')
+plug('<Plug>SiefeGitLogVisual', ':<c-u>SiefeGitLogVisual<CR>', 'x')
+plug('<Plug>SiefeGitLogWord', '<cmd>SiefeGitLogWord<CR>')
+plug('<Plug>SiefeGitLogWORD', '<cmd>SiefeGitLogWORD<CR>')
+plug('<Plug>SiefeGitStatus', '<cmd>SiefeGitStatus<CR>')
+plug('<Plug>SiefeRegisters', ':<c-u>SiefeRegisters<CR>')
+plug('<Plug>SiefeMaps', '<cmd>SiefeMaps<CR>')
+plug('<Plug>SiefeGitBranch', '<cmd>SiefeGitBranch<CR>')
 
 -- ── Default key mappings (if enabled) ────────────────────────────────────────
 
@@ -436,11 +443,11 @@ if map_keys then
   maybe_map('n', '<leader>BW', '<Plug>SiefeBuffersRgWORD')
   maybe_map('n', '<leader>Bl', '<Plug>SiefeBuffersRgLine')
 
-  maybe_map('n', '<leader>m',  '<Plug>SiefeMarks')
-  maybe_map('n', '<leader>j',  '<Plug>SiefeJumps')
+  maybe_map('n', '<leader>m', '<Plug>SiefeMarks')
+  maybe_map('n', '<leader>j', '<Plug>SiefeJumps')
   maybe_map('n', '<leader>hH', '<Plug>SiefeHistory')
   maybe_map('n', '<leader>hh', '<Plug>SiefeProjectHistory')
-  maybe_map('n', '<leader>b',  '<Plug>SiefeBufferS')
+  maybe_map('n', '<leader>b', '<Plug>SiefeBufferS')
   maybe_map('n', '<leader>gg', '<Plug>SiefeToggleGitStatus')
   maybe_map('n', '<leader>gs', '<Plug>SiefeGitStash')
   maybe_map('n', '<leader>gl', '<Plug>SiefeGitBufferLogg')
@@ -453,7 +460,7 @@ if map_keys then
   maybe_map('n', '<leader>Gw', '<Plug>SiefeGitLogWord')
   maybe_map('n', '<leader>GW', '<Plug>SiefeGitLogWORD')
   maybe_map('n', '<leader>RR', '<Plug>SiefeRegisters')
-  maybe_map('n', '<leader>M',  '<Plug>SiefeMaps')
+  maybe_map('n', '<leader>M', '<Plug>SiefeMaps')
   maybe_map('n', '<leader>g?', '<Plug>SiefeGitStatus')
   maybe_map('n', '<leader>gf', '<Plug>SiefeGitBranch')
 end

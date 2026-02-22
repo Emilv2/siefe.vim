@@ -38,8 +38,7 @@ function M.eq(actual, expected, desc)
     pass(desc)
   else
     fail_count = fail_count + 1
-    fmt_fail(desc, string.format('expected %s, got %s',
-      vim.inspect(expected), vim.inspect(actual)))
+    fmt_fail(desc, string.format('expected %s, got %s', vim.inspect(expected), vim.inspect(actual)))
   end
 end
 

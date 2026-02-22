@@ -15,14 +15,14 @@ end
 
 -- ── ANSI colour helpers ──────────────────────────────────────────────────────
 
-local ansi_codes = { black=30, red=31, green=32, yellow=33, blue=34, magenta=35, cyan=36 }
+local ansi_codes = { black = 30, red = 31, green = 32, yellow = 33, blue = 34, magenta = 35, cyan = 36 }
 
 function M.csi(color, fg)
   local prefix = fg and '38;' or '48;'
-  if color:sub(1,1) == '#' then
-    local r = tonumber(color:sub(2,3), 16)
-    local g = tonumber(color:sub(4,5), 16)
-    local b = tonumber(color:sub(6,7), 16)
+  if color:sub(1, 1) == '#' then
+    local r = tonumber(color:sub(2, 3), 16)
+    local g = tonumber(color:sub(4, 5), 16)
+    local b = tonumber(color:sub(6, 7), 16)
     return prefix .. '2;' .. r .. ';' .. g .. ';' .. b
   end
   return prefix .. '5;' .. color
@@ -30,9 +30,9 @@ end
 
 function M.get_color(attr, ...)
   local gui = vim.o.termguicolors
-  local fam  = gui and 'gui' or 'cterm'
-  local pat  = gui and '^#[a-fA-F0-9]+' or '^%d+$'
-  for _, group in ipairs({...}) do
+  local fam = gui and 'gui' or 'cterm'
+  local pat = gui and '^#[a-fA-F0-9]+' or '^%d+$'
+  for _, group in ipairs({ ... }) do
     local code = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(group)), attr, fam)
     if code and code:match(pat) then
       return code
@@ -45,15 +45,25 @@ function M.ansi(str, group, default, bold)
   local fg = M.get_color('fg', group)
   local bg = M.get_color('bg', group)
   local color = (fg == '' and tostring(ansi_codes[default] or ansi_codes.magenta) or M.csi(fg, true))
-              .. (bg == '' and '' or ';' .. M.csi(bg, false))
+    .. (bg == '' and '' or ';' .. M.csi(bg, false))
   return string.format('\x1b[%s%sm%s\x1b[m', color, bold and ';1' or '', str)
 end
 
-function M.magenta(str, group) return M.ansi(str, group or '', 'magenta') end
-function M.blue(str, group)    return M.ansi(str, group or '', 'blue') end
-function M.red(str, group)     return M.ansi(str, group or '', 'red') end
-function M.green(str, group)   return M.ansi(str, group or '', 'green') end
-function M.yellow(str, group)  return M.ansi(str, group or '', 'yellow') end
+function M.magenta(str, group)
+  return M.ansi(str, group or '', 'magenta')
+end
+function M.blue(str, group)
+  return M.ansi(str, group or '', 'blue')
+end
+function M.red(str, group)
+  return M.ansi(str, group or '', 'red')
+end
+function M.green(str, group)
+  return M.ansi(str, group or '', 'green')
+end
+function M.yellow(str, group)
+  return M.ansi(str, group or '', 'yellow')
+end
 
 -- ── Header helpers ───────────────────────────────────────────────────────────
 
@@ -63,18 +73,18 @@ end
 
 function M.prettify_header(key, text)
   local char = vim.split(key, '-')[#vim.split(key, '-')]
-  if char == text:sub(1,1) then
+  if char == text:sub(1, 1) then
     return M.magenta(key:upper(), 'Special') .. ' ' .. text
   else
     local replaced = text:sub(2):gsub(char, '\x1b[3m' .. char .. '\x1b[m', 1)
-    return M.magenta(key:upper(), 'Special') .. ' ' .. text:sub(1,1) .. replaced
+    return M.magenta(key:upper(), 'Special') .. ' ' .. text:sub(1, 1) .. replaced
   end
 end
 
 function M.preview_help(preview_keys)
   local f_keys, non_f = {}, {}
   for _, k in ipairs(preview_keys) do
-    if k:sub(1,1):lower() == 'f' then
+    if k:sub(1, 1):lower() == 'f' then
       table.insert(f_keys, tonumber(k:sub(2)) or 0)
     else
       table.insert(non_f, k)
@@ -82,11 +92,16 @@ function M.preview_help(preview_keys)
   end
   table.sort(f_keys)
   if #f_keys == 0 then
-    return table.concat(vim.tbl_map(function(k) return ', ' .. k end, non_f), '')
+    return table.concat(
+      vim.tbl_map(function(k)
+        return ', ' .. k
+      end, non_f),
+      ''
+    )
   end
   local result = ''
   local val_start = f_keys[1]
-  local last_val  = f_keys[1]
+  local last_val = f_keys[1]
   for i = 2, #f_keys do
     local val = f_keys[i]
     if val ~= last_val + 1 then
@@ -100,7 +115,9 @@ function M.preview_help(preview_keys)
     last_val = val
   end
   result = result .. 'f' .. val_start .. '-' .. last_val
-  for _, k in ipairs(non_f) do result = result .. ', ' .. k end
+  for _, k in ipairs(non_f) do
+    result = result .. ', ' .. k
+  end
   return result
 end
 
@@ -111,7 +128,9 @@ function M.fill_quickfix(list, cmd)
     vim.fn.setqflist(list)
     vim.cmd('copen')
     vim.cmd('wincmd p')
-    if cmd then vim.cmd(cmd) end
+    if cmd then
+      vim.cmd(cmd)
+    end
   end
 end
 
@@ -120,7 +139,9 @@ function M.fill_loc(list, cmd)
     vim.fn.setloclist(0, list)
     vim.cmd('lopen')
     vim.cmd('wincmd p')
-    if cmd then vim.cmd(cmd) end
+    if cmd then
+      vim.cmd(cmd)
+    end
   end
 end
 
@@ -135,7 +156,7 @@ end
 -- ── Warning ──────────────────────────────────────────────────────────────────
 
 function M.warn(msg)
-  vim.api.nvim_echo({{ msg, 'WarningMsg' }}, true, {})
+  vim.api.nvim_echo({ { msg, 'WarningMsg' } }, true, {})
 end
 
 -- ── Duplicate key detection ──────────────────────────────────────────────────
@@ -143,7 +164,9 @@ end
 function M.detect_dups(lst)
   local dict, dups = {}, {}
   for _, item in ipairs(lst) do
-    if dict[item] then table.insert(dups, item) end
+    if dict[item] then
+      table.insert(dups, item)
+    end
     dict[item] = true
   end
   return table.concat(dups, ' ')
@@ -156,20 +179,26 @@ function M.bufdir()
     return vim.fn.FugitiveFind(':/')
   elseif vim.bo.filetype == 'oil' then
     local ok, oil = pcall(require, 'oil')
-    if ok then return oil.get_current_dir() or vim.fn.expand('%:p:h') end
+    if ok then
+      return oil.get_current_dir() or vim.fn.expand('%:p:h')
+    end
   end
   return vim.fn.expand('%:p:h')
 end
 
 function M.get_git_root()
   local ok, result = pcall(vim.fn.FugitiveFind, ':/')
-  if ok then return result or '' end
+  if ok then
+    return result or ''
+  end
   return ''
 end
 
 function M.get_git_basename_or_bufdir()
   local root = M.get_git_root()
-  if root == '' then return vim.fn.expand('%:p:h') end
+  if root == '' then
+    return vim.fn.expand('%:p:h')
+  end
   return vim.fn.fnamemodify(root, ':t')
 end
 
@@ -178,15 +207,24 @@ function M.get_relative_git_or_bufdir(dir, git_dir)
   if dir == nil then
     -- No argument: return prompt-style relative path for current buffer dir
     local rel = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-prefix'))
-    if vim.v.shell_error ~= 0 then return bufdir end
-    local base = vim.split(vim.fn.system('basename `git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel`'), '\n')[1]
+    if vim.v.shell_error ~= 0 then
+      return bufdir
+    end
+    local base = vim.split(
+      vim.fn.system('basename `git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel`'),
+      '\n'
+    )[1]
     return '#' .. base .. '/' .. rel
   else
     -- With argument: return relative path from git root to dir
-    local gd = git_dir or vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
-    if vim.v.shell_error ~= 0 then return dir end
+    local gd = git_dir
+      or vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
+    if vim.v.shell_error ~= 0 then
+      return dir
+    end
     local prefix = M.get_git_basename_or_bufdir() .. '/'
-    return prefix .. vim.trim(vim.fn.system('realpath --relative-to=' .. vim.fn.shellescape(gd) .. ' ' .. vim.fn.shellescape(dir)))
+    return prefix
+      .. vim.trim(vim.fn.system('realpath --relative-to=' .. vim.fn.shellescape(gd) .. ' ' .. vim.fn.shellescape(dir)))
   end
 end
 
@@ -197,19 +235,21 @@ function M.visual_selection()
   local line_start, col_start, line_end, col_end
   if mode == 'v' then
     line_start, col_start = unpack(vim.fn.getpos('v'), 2, 3)
-    line_end, col_end     = unpack(vim.fn.getpos('.'), 2, 3)
+    line_end, col_end = unpack(vim.fn.getpos('.'), 2, 3)
   else
     line_start, col_start = unpack(vim.fn.getpos("'<"), 2, 3)
-    line_end, col_end     = unpack(vim.fn.getpos("'>"), 2, 3)
+    line_end, col_end = unpack(vim.fn.getpos("'>"), 2, 3)
   end
   -- Normalise so start < end
   if (vim.fn.line2byte(line_start) + col_start) > (vim.fn.line2byte(line_end) + col_end) then
     line_start, col_start, line_end, col_end = line_end, col_end, line_start, col_start
   end
   local lines = vim.fn.getline(line_start, line_end)
-  if #lines == 0 then return '' end
+  if #lines == 0 then
+    return ''
+  end
   lines[#lines] = lines[#lines]:sub(1, col_end)
-  lines[1]      = lines[1]:sub(col_start)
+  lines[1] = lines[1]:sub(col_start)
   return table.concat(lines, '\n')
 end
 
@@ -218,10 +258,10 @@ function M.visual_line_nu()
   local line_start, line_end
   if mode == 'v' then
     line_start = vim.fn.getpos('v')[2]
-    line_end   = vim.fn.getpos('.')[2]
+    line_end = vim.fn.getpos('.')[2]
   else
     line_start = vim.fn.getpos("'<")[2]
-    line_end   = vim.fn.getpos("'>")[2]
+    line_end = vim.fn.getpos("'>")[2]
   end
   local t = { line_start, line_end }
   table.sort(t)
@@ -315,7 +355,10 @@ function M.recent_git_files_info()
   local cur = vim.fn.expand('%')
   if cur ~= '' then
     local real = vim.fn.FugitiveReal and vim.fn.FugitiveReal() or vim.fn.expand('%:p')
-    table.insert(items, vim.fn.line('.') .. '//0//' .. real:gsub(git_dir:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1))
+    table.insert(
+      items,
+      vim.fn.line('.') .. '//0//' .. real:gsub(git_dir:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1)
+    )
   end
 
   for _, b in ipairs(M.buflisted_sorted()) do
@@ -349,10 +392,14 @@ function M.recent_files(dir)
   if d == '' then
     -- All files, relative to cwd
     local cur = vim.fn.expand('%')
-    if cur ~= '' then table.insert(items, vim.fn.fnamemodify(cur, ':~:.')) end
+    if cur ~= '' then
+      table.insert(items, vim.fn.fnamemodify(cur, ':~:.'))
+    end
     for _, b in ipairs(M.buflisted_sorted()) do
       local name = vim.fn.bufname(b)
-      if name ~= '' then table.insert(items, vim.fn.fnamemodify(vim.fn.expand(name), ':~:.')) end
+      if name ~= '' then
+        table.insert(items, vim.fn.fnamemodify(vim.fn.expand(name), ':~:.'))
+      end
     end
     for _, of in ipairs(M.oldfiles()) do
       if vim.fn.filereadable(vim.fn.fnamemodify(vim.fn.expand(of.name), ':p')) == 1 then
@@ -389,8 +436,13 @@ end
 -- ── Git helpers ──────────────────────────────────────────────────────────────
 
 function M.git_file_existed(file)
-  if file == '' then return false end
-  local out = vim.fn.system('git -C `git rev-parse --show-toplevel` log --pretty=format: --name-only --diff-filter=A -- ' .. vim.fn.shellescape(file))
+  if file == '' then
+    return false
+  end
+  local out = vim.fn.system(
+    'git -C `git rev-parse --show-toplevel` log --pretty=format: --name-only --diff-filter=A -- '
+      .. vim.fn.shellescape(file)
+  )
   return out ~= '' and vim.v.shell_error == 0
 end
 
@@ -433,7 +485,6 @@ function M.shada_path()
   end
   return vim.fn.stdpath('state') .. '/shada/main.shada'
 end
-
 
 local _data_path = nil
 function M.data_path()
@@ -506,42 +557,60 @@ end
 
 -- Build preview commands for rg / files / buffers / marks / jumps / history
 function M.make_preview_commands(preview_slot, bat_opts)
-  local preview  = M.bin_path('preview')
-  local bat      = M.bat_command()
-  local bat_args = bat ~= '' and (bat .. ' --color=always --pager=never ' .. (bat_opts or require('siefe.config').bat_options) .. ' -- ') or nil
+  local preview = M.bin_path('preview')
+  local bat = M.bat_command()
+  local bat_args = bat ~= ''
+      and (bat .. ' --color=always --pager=never ' .. (bat_opts or require('siefe.config').bat_options) .. ' -- ')
+    or nil
 
   -- rg: {1}=file, {2}=line
-  local rg_preview  = bat_args and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} ')) or (preview .. ' {1} cat')
-  local rg_fast     = preview .. ' {1} cat | awk \'' .. '{ if (NR == {2}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }' .. '\''
-  local rg_faster   = preview .. ' {1} cat'
+  local rg_preview = bat_args
+      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
+    or (preview .. ' {1} cat')
+  local rg_fast = preview
+    .. " {1} cat | awk '"
+    .. '{ if (NR == {2}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }'
+    .. "'"
+  local rg_faster = preview .. ' {1} cat'
 
   -- files: {} = file
   local files_preview = bat_args and (preview .. ' {} ' .. bat_args) or (preview .. ' {} cat')
 
   -- history: {1}=line, {2}=col, {3}=file
-  local hist_preview  = bat_args and (preview .. ' {3} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={1} ')) or (preview .. ' {3} cat')
-  local hist_fast     = preview .. ' {3} cat | awk \'' .. '{ if (NR == {1}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }' .. '\''
-  local hist_faster   = preview .. ' {3} cat'
+  local hist_preview = bat_args
+      and (preview .. ' {3} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={1} '))
+    or (preview .. ' {3} cat')
+  local hist_fast = preview
+    .. " {3} cat | awk '"
+    .. '{ if (NR == {1}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }'
+    .. "'"
+  local hist_faster = preview .. ' {3} cat'
 
   -- buffers: {1}=file, {2}=line
-  local buf_preview   = bat_args and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} ')) or (preview .. ' {1} cat')
-  local buf_fast      = preview .. ' {1} cat'
+  local buf_preview = bat_args
+      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
+    or (preview .. ' {1} cat')
+  local buf_fast = preview .. ' {1} cat'
 
   -- marks: {2}=file, {3}=line
-  local marks_preview = bat_args and (preview .. ' {2} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={3} ')) or (preview .. ' {2} cat')
-  local marks_fast    = preview .. ' {2} cat'
+  local marks_preview = bat_args
+      and (preview .. ' {2} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={3} '))
+    or (preview .. ' {2} cat')
+  local marks_fast = preview .. ' {2} cat'
 
   -- jumps: {1}=file, {2}=line
-  local jumps_preview = bat_args and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} ')) or (preview .. ' {1} cat')
-  local jumps_fast    = preview .. ' {1} cat'
+  local jumps_preview = bat_args
+      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
+    or (preview .. ' {1} cat')
+  local jumps_fast = preview .. ' {1} cat'
 
   return {
-    rg      = { rg_preview,    rg_fast,    rg_faster },
-    files   = files_preview,
-    hist    = { hist_preview,  hist_fast,  hist_faster },
-    buffers = { buf_preview,   buf_fast },
-    marks   = { marks_preview, marks_fast },
-    jumps   = { jumps_preview, jumps_fast },
+    rg = { rg_preview, rg_fast, rg_faster },
+    files = files_preview,
+    hist = { hist_preview, hist_fast, hist_faster },
+    buffers = { buf_preview, buf_fast },
+    marks = { marks_preview, marks_fast },
+    jumps = { jumps_preview, jumps_fast },
   }
 end
 
@@ -550,7 +619,10 @@ end
 -- Open a file, then move cursor
 function M.open_file(cmd, filename, lnum, col)
   local ok, err = pcall(vim.cmd, (cmd or 'edit') .. ' ' .. vim.fn.fnameescape(filename))
-  if not ok then M.warn(err) return end
+  if not ok then
+    M.warn(err)
+    return
+  end
   if lnum and lnum > 0 then
     vim.fn.cursor(lnum, col or 1)
     vim.cmd('normal! zvzz')
@@ -564,9 +636,9 @@ function M.parse_rg_line(line)
   if #parts >= 4 then
     return {
       filename = parts[1],
-      lnum     = tonumber(parts[2]) or 1,
-      col      = tonumber(parts[3]) or 1,
-      text     = table.concat(vim.list_slice(parts, 4), delim),
+      lnum = tonumber(parts[2]) or 1,
+      col = tonumber(parts[3]) or 1,
+      text = table.concat(vim.list_slice(parts, 4), delim),
     }
   end
   return nil
