@@ -411,8 +411,14 @@ function M.recent_files(dir)
     -- Files within d
     local cur = vim.fn.expand('%')
     if cur ~= '' then
-      local real = vim.fn.FugitiveReal and vim.fn.FugitiveReal() or vim.fn.expand('%:p')
-      table.insert(items, (real:gsub(d:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1)))
+      local real = vim.fn.expand('%:p')
+      if vim.fn.exists('*FugitiveReal') == 1 then
+        local r = vim.fn.FugitiveReal(real)
+        -- FugitiveReal returns a string normally, but {path, lnum} on fugitive:// buffers
+        real = (type(r) == 'table' and r[1]) or (type(r) == 'string' and r ~= '' and r) or real
+      end
+      -- Strip d/ prefix to get a relative path; fall back to the full path
+      table.insert(items, real:sub(1, #d + 1) == d .. '/' and real:sub(#d + 2) or real)
     end
     for _, b in ipairs(M.buflisted_sorted()) do
       local name = vim.fn.fnameescape(vim.fn.bufname(b))
