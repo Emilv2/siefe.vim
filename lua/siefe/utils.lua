@@ -279,6 +279,11 @@ function M.buflisted_sorted()
   table.sort(listed, function(a, b)
     local ta = tracker[a] or a
     local tb = tracker[b] or b
+    local term_a = vim.bo[a].buftype == 'terminal'
+    local term_b = vim.bo[b].buftype == 'terminal'
+    if term_a ~= term_b then
+      return not term_a -- non-terminals before terminals
+    end
     return ta > tb
   end)
   return listed
