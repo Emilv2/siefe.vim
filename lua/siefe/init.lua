@@ -67,6 +67,10 @@ function M.maps(fullscreen, query, modes)
   require('siefe.maps').maps(fullscreen, query, modes)
 end
 
+function M.windows(fullscreen, kwargs)
+  require('siefe.windows').windows(fullscreen, kwargs or {})
+end
+
 function M.mode_select(fullscreen, query)
   require('siefe.maps').mode_select(fullscreen, query)
 end

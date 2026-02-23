@@ -151,6 +151,9 @@ local function make_defaults()
   d.stash_preview_4_key = 'f5'
   d.stash_default_preview_command = 0
 
+  -- Window keys
+  d.windows_close_key = 'del'
+
   -- Buffer keys
   d.buffers_delete_key = 'del'
   d.buffers_git_key = 'ctrl-p'

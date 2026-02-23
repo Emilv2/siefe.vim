@@ -340,6 +340,10 @@ vim.api.nvim_create_user_command('SiefeMaps', function(args)
   siefe.maps(args.bang, '', { 'n' })
 end, { nargs = 0, bang = true })
 
+vim.api.nvim_create_user_command('SiefeWindows', function(args)
+  siefe.windows(args.bang, { query = args.args })
+end, { nargs = '*', bang = true })
+
 -- ── <Plug> Mappings ───────────────────────────────────────────────────────────
 
 local function plug(lhs, rhs_cmd, mode)
@@ -399,6 +403,7 @@ plug('<Plug>SiefeGitStatus', '<cmd>SiefeGitStatus<CR>')
 plug('<Plug>SiefeRegisters', ':<c-u>SiefeRegisters<CR>')
 plug('<Plug>SiefeMaps', '<cmd>SiefeMaps<CR>')
 plug('<Plug>SiefeGitBranch', '<cmd>SiefeGitBranch<CR>')
+plug('<Plug>SiefeWindows', '<cmd>SiefeWindows<CR>')
 
 -- ── Default key mappings (if enabled) ────────────────────────────────────────
 
@@ -463,4 +468,5 @@ if map_keys then
   maybe_map('n', '<leader>M', '<Plug>SiefeMaps')
   maybe_map('n', '<leader>g?', '<Plug>SiefeGitStatus')
   maybe_map('n', '<leader>gf', '<Plug>SiefeGitBranch')
+  maybe_map('n', '<leader>W', '<Plug>SiefeWindows')
 end
