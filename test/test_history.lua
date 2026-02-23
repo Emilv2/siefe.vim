@@ -53,6 +53,16 @@ T.group('parse_entry (legacy // format)', function()
   T.eq(f6, 'file.lua', 'non-numeric lnum: filename still parsed')
 end)
 
+-- ── parse_entry: intermediate \t format (backward compat) ─────────────────────
+
+T.group('parse_entry (intermediate tab format)', function()
+  -- Intermediate format: lnum\tcol\tfname\tdisplay
+  local l, c, f = parse('15\t3\tsome/file.rs\tdisplay text')
+  T.eq(l, 15, 'tab lnum')
+  T.eq(c, 3, 'tab col')
+  T.eq(f, 'some/file.rs', 'tab filename')
+end)
+
 -- ── make_history_entry + parse_entry round-trip ───────────────────────────────
 
 T.group('make_history_entry / parse_entry round-trip', function()
@@ -76,12 +86,12 @@ T.group('make_history_entry / parse_entry round-trip', function()
   T.eq(l3, 7, 'spaces in filename: lnum')
   T.eq(f3, 'my docs/file.md', 'spaces in filename: filename')
 
-  -- The tab-separated entry has four fields
-  local parts = vim.split(e1, '\t', { plain = true })
-  T.eq(#parts, 4, 'make_history_entry produces 4 tab-fields')
-  T.eq(parts[1], '42', 'field 1 = lnum string')
-  T.eq(parts[2], '5', 'field 2 = col string')
-  T.eq(parts[3], 'src/main.lua', 'field 3 = raw filename')
+  -- New SOH-separated format: fname\x01lnum\x01col\x01display
+  local parts = vim.split(e1, '\x01', { plain = true })
+  T.eq(#parts, 4, 'make_history_entry produces 4 SOH-fields')
+  T.eq(parts[1], 'src/main.lua', 'field 1 = raw filename')
+  T.eq(parts[2], '42', 'field 2 = lnum string')
+  T.eq(parts[3], '5', 'field 3 = col string')
   -- field 4 is the ANSI-colored display; just check it contains the filename
   T.ok(parts[4]:find('src/main.lua', 1, true), 'field 4 (display) contains filename')
 end)

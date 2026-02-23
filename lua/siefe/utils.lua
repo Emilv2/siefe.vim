@@ -523,20 +523,6 @@ end
 
 -- ── Preview commands ──────────────────────────────────────────────────────────
 
-local _bat_cmd = nil
-function M.bat_command()
-  if _bat_cmd == nil then
-    if vim.fn.executable('batcat') == 1 then
-      _bat_cmd = 'batcat'
-    elseif vim.fn.executable('bat') == 1 then
-      _bat_cmd = 'bat'
-    else
-      _bat_cmd = ''
-    end
-  end
-  return _bat_cmd
-end
-
 local _fd_cmd = nil
 function M.fd_command()
   if _fd_cmd == nil then
@@ -558,65 +544,6 @@ end
 -- (`file:rest\0`), enabling fzf --read0 without changing the per-field format.
 function M.rg_delimiter()
   return ':'
-end
-
--- Build preview commands for rg / files / buffers / marks / jumps / history
-function M.make_preview_commands(bat_opts)
-  local preview = M.bin_path('preview')
-  local bat = M.bat_command()
-  local bat_args = bat ~= ''
-      and (bat .. ' --color=always --pager=never ' .. (bat_opts or require('siefe.config').bat_options) .. ' -- ')
-    or nil
-
-  -- rg: {1}=file, {2}=line
-  local rg_preview = bat_args
-      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
-    or (preview .. ' {1} cat')
-  local rg_fast = preview
-    .. " {1} cat | awk '"
-    .. '{ if (NR == {2}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }'
-    .. "'"
-  local rg_faster = preview .. ' {1} cat'
-
-  -- files: {} = file
-  local files_preview = bat_args and (preview .. ' {} ' .. bat_args) or (preview .. ' {} cat')
-
-  -- history: {1}=line, {2}=col, {3}=file
-  local hist_preview = bat_args
-      and (preview .. ' {3} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={1} '))
-    or (preview .. ' {3} cat')
-  local hist_fast = preview
-    .. " {3} cat | awk '"
-    .. '{ if (NR == {1}) { printf("\\x1b[7m%s\\n\\x1b[m", $0) } else printf("\\x1b[m%s\\n", $0) }'
-    .. "'"
-  local hist_faster = preview .. ' {3} cat'
-
-  -- buffers: {1}=file, {2}=line
-  local buf_preview = bat_args
-      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
-    or (preview .. ' {1} cat')
-  local buf_fast = preview .. ' {1} cat'
-
-  -- marks: {2}=file, {3}=line
-  local marks_preview = bat_args
-      and (preview .. ' {2} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={3} '))
-    or (preview .. ' {2} cat')
-  local marks_fast = preview .. ' {2} cat'
-
-  -- jumps: {1}=file, {2}=line
-  local jumps_preview = bat_args
-      and (preview .. ' {1} ' .. bat_args:gsub('--pager=never ', '--pager=never --highlight-line={2} '))
-    or (preview .. ' {1} cat')
-  local jumps_fast = preview .. ' {1} cat'
-
-  return {
-    rg = { rg_preview, rg_fast, rg_faster },
-    files = files_preview,
-    hist = { hist_preview, hist_fast, hist_faster },
-    buffers = { buf_preview, buf_fast },
-    marks = { marks_preview, marks_fast },
-    jumps = { jumps_preview, jumps_fast },
-  }
 end
 
 -- ── Misc ─────────────────────────────────────────────────────────────────────

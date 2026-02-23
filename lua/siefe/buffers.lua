@@ -1,5 +1,18 @@
 -- lua/siefe/buffers.lua
 -- Buffer listing picker
+--
+-- Pickers using the fzf-lua BUILTIN previewer: buffers, history, marks, jumps, windows
+--   Entry format: fname\x01lnum\x010\x01display
+--   \x01 (SOH) is the delimiter: never valid in POSIX filenames, so fzf-lua's
+--   entry_to_file() can parse fname unambiguously without fs_stat calls.
+--   fzf-lua propagates fzf_opts['--delimiter'] to opts.__delim which is read by
+--   entry_to_file(), so the builtin previewer opens the correct file and scrolls
+--   to the saved cursor line without any extra configuration.
+--
+-- Pickers that CANNOT use the builtin previewer (kept as shell preview):
+--   git_log, git_stash, git_status, git_branch: preview shows git show/diff/log
+--     diffs — raw ANSI diff output, not a file path the builtin previewer can open.
+--   registers, maps, dir_select, type_select: no file path in the entry at all.
 local M = {}
 
 local config = require('siefe.config')
@@ -21,10 +34,15 @@ local function find_open_window(b)
 end
 
 local function format_buffer(b, git_dir)
-  local name = vim.fn.fnameescape(vim.fn.bufname(b))
+  local bname = vim.fn.bufname(b)
   local info = vim.fn.getbufinfo(b)[1] or {}
   local line = info.lnum or 0
-  name = name == '' and '[No Name]' or vim.fn.fnamemodify(name, ':p:~:.')
+  -- Absolute path for the builtin previewer; fall back gracefully for [No Name].
+  local abs_name = ''
+  if bname ~= '' then
+    abs_name = vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(bname)), ':p')
+  end
+  local name = abs_name ~= '' and vim.fn.fnamemodify(abs_name, ':p:~:.') or '[No Name]'
   local flag = b == vim.fn.bufnr('') and utils.blue('%', 'Conditional')
     or (b == vim.fn.bufnr('#') and utils.magenta('#', 'Special') or ' ')
   local modified = vim.fn.getbufvar(b, '&modified') == 1 and utils.red('+', 'Exception') or ''
@@ -34,25 +52,18 @@ local function format_buffer(b, git_dir)
   extra = extra == '' and readonly
     or (utils.red(' [', 'Exception') .. modified .. modifiable .. utils.red('] ', 'Exception') .. readonly)
   local rel_name
-  if git_dir ~= '' then
-    local full = vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(vim.fn.bufname(b))), ':p')
-    rel_name = utils.green('√') .. '/' .. full:sub(#git_dir + 2)
+  if git_dir ~= '' and abs_name ~= '' then
+    rel_name = utils.green('√') .. '/' .. abs_name:sub(#git_dir + 2)
   else
     rel_name = name
   end
   local line_text = line == 0 and '' or ' line ' .. line
-  return vim.trim(
-    string.format(
-      '%s//%d//[%s] %s\t%s%s\t%s',
-      name,
-      line,
-      utils.yellow(tostring(b), 'Number'),
-      flag,
-      rel_name,
-      extra,
-      line_text
-    )
+  -- Entry: fname\x01lnum\x010\x01display
+  -- Field 1 (abs_name) hidden; field 4+ (display) shown via --with-nth=4..
+  local display = vim.trim(
+    string.format('[%s] %s\t%s%s\t%s', utils.yellow(tostring(b), 'Number'), flag, rel_name, extra, line_text)
   )
+  return string.format('%s\x01%d\x010\x01%s', abs_name ~= '' and abs_name or name, line, display)
 end
 
 function M.buffers(fullscreen, kwargs)
@@ -86,14 +97,7 @@ function M.buffers(fullscreen, kwargs)
   local header_lines = (vim.fn.bufnr('') == (sorted[1] or 0)) and 1 or 0
   local tabstop = (math.max((table.unpack or unpack)(#sorted > 0 and sorted or { 0 })) or 0) >= 1000 and 9 or 8
 
-  local previews = utils.make_preview_commands()
-  local p0 = previews.buffers[1]
-  local p1 = previews.buffers[2]
-  local default_preview = previews.buffers[(config.buffers_default_preview_command or 0) + 1] or p0
-
   local default_size, other_size = utils.preview_window_size()
-
-  local header = (kwargs.project and 'project ' or '') .. 'buffers' .. git_help
 
   local buf_km = utils.make_binds({
     ['change'] = 'first',
@@ -103,30 +107,19 @@ function M.buffers(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.buffers_preview_key] = 'change-preview(' .. p0 .. ')',
-    [config.buffers_fast_preview_key] = 'change-preview(' .. p1 .. ')',
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   -- ── Helpers ─────────────────────────────────────────────────────────────────
 
   local function get_query(selected, opts)
-    if opts and opts.last_query then
-      return opts.last_query
-    end
-    if selected and #selected > 0 and not selected[1]:match('%[%d') then
-      return selected[1]
-    end
-    return kwargs.query or ''
+    return (opts and opts.last_query) or kwargs.query or ''
   end
 
   local function get_items(selected, opts)
-    if opts and opts.last_query then
-      return selected
-    end
-    if selected and #selected > 0 and not selected[1]:match('%[%d') then
-      return vim.list_slice(selected, 2)
-    end
     return selected or {}
   end
 
@@ -249,19 +242,19 @@ function M.buffers(fullscreen, kwargs)
     prompt = project_prefix .. 'Buf> ',
     query = kwargs.query,
     winopts = utils.winopts(fullscreen),
-    previewer = false,
-    preview = default_preview,
+    previewer = 'builtin',
     fzf_opts = {
       ['--multi'] = '',
       ['--tiebreak'] = 'index',
       ['--ansi'] = '',
-      ['--print-query'] = '',
-      ['--delimiter'] = '//',
-      ['--with-nth'] = '3..',
-      ['-n'] = '2,1..2',
+      -- Entry format: fname\x01lnum\x010\x01display
+      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      ['--delimiter'] = '\x01',
+      ['--with-nth'] = '4..',
+      ['-n'] = '4..',
       ['--tabstop'] = tostring(tabstop),
       ['--header-lines'] = tostring(header_lines),
-      ['--preview-window'] = '+{2}-/2,' .. default_size,
+      ['--preview-window'] = default_size,
     },
     keymap = buf_km,
     actions = actions,

@@ -7,14 +7,20 @@ local utils = require('siefe.utils')
 
 -- Parse an entry returned by fzf.
 --
--- New format (produced by make_history_entry): lnum\tcol\tfname[\tdisplay]
---   Tab-separated so the display field can never collide with a filename.
+-- New SOH format (produced by make_history_entry): fname\x01lnum\x01col\x01display
+--   fname is field 1 so fzf-lua's entry_to_file() can parse it directly.
+-- Intermediate tab format (older sessions): lnum\tcol\tfname[\tdisplay]
 -- Legacy formats (from older entries / utils.recent_*_info):
 --   lnum//col//fname  (fname may itself contain "//")
 --   lnum//fname       (no col)
 local function parse_entry(line)
+  if line:find('\x01', 1, true) then
+    -- New SOH-separated format: fname\x01lnum\x01col\x01display
+    local parts = vim.split(line, '\x01', { plain = true })
+    return tonumber(parts[2]) or 0, tonumber(parts[3]) or 0, parts[1] or ''
+  end
   if line:find('\t', 1, true) then
-    -- New tab-separated format
+    -- Intermediate tab-separated format: lnum\tcol\tfname\tdisplay
     local parts = vim.split(line, '\t', { plain = true })
     return tonumber(parts[1]) or 0, tonumber(parts[2]) or 0, parts[3] or ''
   end
@@ -29,15 +35,15 @@ local function parse_entry(line)
 end
 
 -- Build a history source entry for fzf --with-nth=4..
--- Format: lnum\tcol\tfname\tDISPLAY
--- where DISPLAY = "lnum[:col] fname" (lnum colored green when > 0).
--- Tab is used as separator so it never clashes with path characters,
--- avoiding the "//" ambiguity with filenames that contain "//".
+-- Format: fname\x01lnum\x01col\x01DISPLAY
+-- fname is field 1 so fzf-lua's entry_to_file() (builtin previewer) parses it
+-- unambiguously using \x01 as delimiter — no fs_stat calls needed.
+-- DISPLAY = "lnum[:col] fname" (lnum colored green when > 0).
 local function make_history_entry(lnum, col, fname)
   local pos = (lnum > 0) and (utils.green(tostring(lnum)) .. (col > 0 and utils.green(':' .. tostring(col)) or ''))
     or ''
   local display = pos ~= '' and (pos .. ' ' .. fname) or fname
-  return tostring(lnum) .. '\t' .. tostring(col) .. '\t' .. fname .. '\t' .. display
+  return fname .. '\x01' .. tostring(lnum) .. '\x01' .. tostring(col) .. '\x01' .. display
 end
 
 function M.historyoldfiles(fullscreen, kwargs)
@@ -49,7 +55,6 @@ function M.historyoldfiles(fullscreen, kwargs)
 
   kwargs.query = kwargs.query or ''
   kwargs.project = kwargs.project ~= nil and kwargs.project or false
-  kwargs.preview = kwargs.preview ~= nil and kwargs.preview or config.history_default_preview_command
 
   local bufdir = utils.bufdir()
   local git_root = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
@@ -145,15 +150,7 @@ function M.historyoldfiles(fullscreen, kwargs)
     end, utils.recent_files_info())
   end
 
-  local previews = utils.make_preview_commands()
-  local p0 = previews.hist[1]
-  local p1 = previews.hist[2]
-  local p2 = previews.hist[3]
-  local preview_cmd = previews.hist[(kwargs.preview or 0) + 1] or p0
-
   local default_size, other_size = utils.preview_window_size()
-
-  local header = (kwargs.project and 'project ' or '') .. 'history' .. git_help
 
   local hist_km = utils.make_binds({
     ['change'] = 'first',
@@ -163,10 +160,10 @@ function M.historyoldfiles(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.history_preview_key] = 'change-preview(' .. p0 .. ')',
-    [config.history_fast_preview_key] = 'change-preview(' .. p1 .. ')',
-    [config.history_faster_preview_key] = 'change-preview(' .. p2 .. ')',
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   -- Shows current buffer at top as a "header line"
@@ -176,12 +173,11 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--history'] = utils.data_path() .. '/rg_history_history',
     ['--ansi'] = '',
     ['--multi'] = '',
-    ['--print-query'] = '',
-    -- Entry format: lnum\tcol\tfname\tdisplay  (tab-separated)
-    -- {1}=lnum, {2}=col, {3}=fname, {4}=display (shown to user via --with-nth=4..)
+    -- Entry format: fname\x01lnum\x01col\x01display
+    -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
     ['--with-nth'] = '4..',
-    ['--delimiter'] = '\t',
-    ['--preview-window'] = '+{1}-/2,' .. default_size,
+    ['--delimiter'] = '\x01',
+    ['--preview-window'] = default_size,
     ['--header-lines'] = tostring(header_lines),
     ['--prompt'] = project_prefix .. 'Hist> ',
   }
@@ -189,22 +185,10 @@ function M.historyoldfiles(fullscreen, kwargs)
   -- ── Helpers ─────────────────────────────────────────────────────────────────
 
   local function get_query(selected, opts)
-    if opts and opts.last_query then
-      return opts.last_query
-    end
-    if selected and #selected > 0 and not selected[1]:match('\t') then
-      return selected[1]
-    end
-    return kwargs.query or ''
+    return (opts and opts.last_query) or kwargs.query or ''
   end
 
   local function get_items(selected, opts)
-    if opts and opts.last_query then
-      return selected
-    end
-    if selected and #selected > 0 and not selected[1]:match('\t') then
-      return vim.list_slice(selected, 2)
-    end
     return selected or {}
   end
 
@@ -298,8 +282,7 @@ function M.historyoldfiles(fullscreen, kwargs)
     prompt = project_prefix .. 'Hist> ',
     query = kwargs.query,
     winopts = utils.winopts(fullscreen),
-    previewer = false,
-    preview = preview_cmd,
+    previewer = 'builtin',
     fzf_opts = fzf_opts,
     keymap = hist_km,
     actions = actions,

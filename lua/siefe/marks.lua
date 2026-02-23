@@ -47,12 +47,12 @@ function M.marks(fullscreen, kwargs)
     table.insert(
       source,
       string.format(
-        '%s//:///%s//:///%s//:///%s//:///%s//:///%s\t%s\t%s\t%s',
-        mark,
+        '%s\x01%s\x01%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
         vim.fn.fnameescape(file),
         lnum,
         col,
         bnr,
+        mark,
         utils.red(mark),
         lnum,
         col,
@@ -73,12 +73,12 @@ function M.marks(fullscreen, kwargs)
     table.insert(
       source,
       string.format(
-        '%s//:///%s//:///%s//:///%s//:///%s//:///%s\t%s\t%s\t%s',
-        mark,
+        '%s\x01%s\x01%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
         vim.fn.fnameescape(vim.fn.bufname()),
         lnum,
         col,
         bnr,
+        mark,
         utils.red(mark),
         lnum,
         col,
@@ -86,11 +86,6 @@ function M.marks(fullscreen, kwargs)
       )
     )
   end
-
-  local previews = utils.make_preview_commands()
-  local p0 = previews.marks[1]
-  local p1 = previews.marks[2]
-  local preview_cmd = previews.marks[(config.marks_default_preview_command or 0) + 1] or p0
 
   local default_size, other_size = utils.preview_window_size()
 
@@ -102,36 +97,28 @@ function M.marks(fullscreen, kwargs)
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.marks_preview_key] = 'change-preview(' .. p0 .. ')',
-    [config.marks_fast_preview_key] = 'change-preview(' .. p1 .. ')',
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   local function parse_mark_line(line)
-    -- format: mark//://filename//://lnum//://col//://bufnr//://display\t...
-    local parts = vim.split(line, '//://', { plain = true })
+    -- format: fname\x01lnum\x01col\x01bufnr\x01mark\x01display...
+    local parts = vim.split(line, '\x01', { plain = true })
     if #parts < 5 then
       return nil
     end
     return {
-      mark = parts[1],
-      filename = parts[2],
-      lnum = tonumber(parts[3]) or 0,
-      col = tonumber(parts[4]) or 0,
-      bufnr = tonumber(parts[5]) or 0,
+      filename = parts[1],
+      lnum = tonumber(parts[2]) or 0,
+      col = tonumber(parts[3]) or 0,
+      bufnr = tonumber(parts[4]) or 0,
+      mark = parts[5],
     }
   end
 
   local function get_items(selected, opts)
-    if opts and opts.last_query then
-      return selected
-    end
-    if selected and #selected > 0 then
-      -- Check if first item looks like a mark line
-      if not selected[1]:find('//', 1, true) then
-        return vim.list_slice(selected, 2)
-      end
-    end
     return selected or {}
   end
 
@@ -215,16 +202,17 @@ function M.marks(fullscreen, kwargs)
     prompt = 'Marks> ',
     query = kwargs.query,
     winopts = utils.winopts(fullscreen),
-    previewer = false,
-    preview = preview_cmd,
+    previewer = 'builtin',
     fzf_opts = {
       ['--tiebreak'] = 'begin',
       ['--ansi'] = '',
       ['--multi'] = '',
       ['--tabstop'] = '4',
-      ['--delimiter'] = '//://',
+      -- Entry: fname\x01lnum\x01col\x01bufnr\x01mark\x01display
+      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      ['--delimiter'] = '\x01',
       ['--with-nth'] = '6..',
-      ['--preview-window'] = '+{2}-/2,' .. default_size,
+      ['--preview-window'] = default_size,
     },
     keymap = marks_km,
     actions = actions,

@@ -14,7 +14,6 @@ local function make_defaults()
   d.marks_loclist = false
 
   d.delta_options = '--keep-plus-minus-markers'
-  d.bat_options = '--style=numbers,changes'
 
   -- Navigation / accept / help keys (common to all pickers)
   d.abort_key = 'esc'
@@ -58,13 +57,8 @@ local function make_defaults()
   d.rg_yank_key = 'ctrl-y'
   d.rg_history_key = 'ctrl-h'
   d.rg_depth1_key = 'ctrl-e'
-  d.rg_preview_key = 'f1'
-  d.rg_fast_preview_key = 'f2'
-  d.rg_faster_preview_key = 'f3'
-
   -- Ripgrep defaults
   d.rg_fzf_default = false
-  d.rg_default_preview_command = 0
   d.rg_default_word = false
   d.rg_default_depth1 = false
   d.rg_default_case_sensitive = 1
@@ -82,10 +76,6 @@ local function make_defaults()
   d.history_rg_key = 'ctrl-s'
   d.history_delete_key = 'del'
   d.history_edit_key = 'ctrl-e'
-  d.history_preview_key = d.rg_preview_key
-  d.history_fast_preview_key = d.rg_fast_preview_key
-  d.history_faster_preview_key = d.rg_faster_preview_key
-  d.history_default_preview_command = d.rg_default_preview_command
 
   -- Git log keys
   d.gitlog_ignore_case_key = 'alt-i'
@@ -158,24 +148,15 @@ local function make_defaults()
   d.buffers_delete_key = 'del'
   d.buffers_git_key = 'ctrl-p'
   d.buffers_history_key = 'ctrl-h'
-  d.buffers_default_preview_command = d.rg_default_preview_command
-  d.buffers_preview_key = d.rg_preview_key
-  d.buffers_fast_preview_key = d.rg_fast_preview_key
   d.buffers_jump = false
 
   -- Mark keys
   d.marks_delete_key = 'del'
   d.marks_yank_key = 'ctrl-y'
-  d.marks_default_preview_command = d.rg_default_preview_command
-  d.marks_preview_key = d.rg_preview_key
-  d.marks_fast_preview_key = d.rg_fast_preview_key
 
   -- Jump keys
   d.jumps_yank_key = 'ctrl-y'
   d.jumps_clear_key = 'del'
-  d.jumps_preview_key = d.rg_preview_key
-  d.jumps_fast_preview_key = d.rg_fast_preview_key
-  d.jumps_default_preview_command = d.rg_default_preview_command
 
   -- Register keys
   d.registers_paste_key = 'ctrl-p'

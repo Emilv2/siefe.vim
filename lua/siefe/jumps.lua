@@ -19,7 +19,7 @@ end
 
 local function printjump(git_dir, current, jump_max, lnum_max_len, index, jump)
   if jump.bufnr == -1 then
-    return ' //://' .. ' //://' .. ' //://0//://'
+    return ' \x01 \x01 \x010\x01'
   end
   local bufname = vim.fn.bufname(jump.bufnr) or ''
   local rel_offset = index - current
@@ -39,14 +39,10 @@ local function printjump(git_dir, current, jump_max, lnum_max_len, index, jump)
       .. utils.blue(line:sub(jump.col + 2))
   end
   return bufname
-    .. '//://'
-    .. (jump.lnum or 0)
-    .. '//://'
-    .. (jump.col or 0)
-    .. '//://'
-    .. rel_offset
-    .. '//://'
-    .. math.abs(rel_offset)
+    .. '\x01' .. (jump.lnum or 0)
+    .. '\x01' .. (jump.col or 0)
+    .. '\x01' .. rel_offset
+    .. '\x01' .. math.abs(rel_offset)
     .. string.rep(' ', jump_max - #tostring(math.abs(rel_offset)) + 1)
     .. (jump.lnum or 0)
     .. string.rep(' ', lnum_max_len - #tostring(jump.lnum or 0) + 1)
@@ -85,11 +81,6 @@ function M.jumps(fullscreen, kwargs)
     table.insert(source, printjump(git_dir, current, jump_max, lnum_max_len, i - 1, jump))
   end
 
-  local previews = utils.make_preview_commands()
-  local p0 = previews.jumps[1]
-  local p1 = previews.jumps[2]
-  local preview_cmd = previews.jumps[(config.jumps_default_preview_command or 0) + 1] or p0
-
   local default_size, other_size = utils.preview_window_size()
 
   local header = 'jumps  current:' .. current
@@ -101,14 +92,16 @@ function M.jumps(fullscreen, kwargs)
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.jumps_preview_key] = 'change-preview(' .. p0 .. ')',
-    [config.jumps_fast_preview_key] = 'change-preview(' .. p1 .. ')',
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   local function parse_jump_line(line)
-    local parts = vim.split(line, '//://', { plain = true })
-    if #parts < 5 then
+    -- format: fname\x01lnum\x01col\x01rel_offset\x01display
+    local parts = vim.split(line, '\x01', { plain = true })
+    if #parts < 4 then
       return nil
     end
     return {
@@ -120,12 +113,6 @@ function M.jumps(fullscreen, kwargs)
   end
 
   local function get_items(selected, opts)
-    if opts and opts.last_query then
-      return selected
-    end
-    if selected and #selected > 0 and not selected[1]:match('//', 1, true) then
-      return vim.list_slice(selected, 2)
-    end
     return selected or {}
   end
 
@@ -181,8 +168,8 @@ function M.jumps(fullscreen, kwargs)
       for _, line in ipairs(items) do
         local j = parse_jump_line(line)
         if j then
-          -- Get the text (last field after the 5th //://)
-          local parts = vim.split(line, '//://', { plain = true })
+          -- Display text is field 5 (after 4 \x01 separators)
+          local parts = vim.split(line, '\x01', { plain = true })
           if #parts >= 5 then
             table.insert(texts, parts[5])
           end
@@ -197,17 +184,18 @@ function M.jumps(fullscreen, kwargs)
     prompt = 'Jumps> ',
     query = kwargs.query,
     winopts = utils.winopts(fullscreen),
-    previewer = false,
-    preview = preview_cmd,
+    previewer = 'builtin',
     fzf_opts = {
       ['--ansi'] = '',
       ['--tac'] = '',
       ['--sync'] = '',
       ['--cycle'] = '',
       ['--scroll-off'] = '999',
-      ['--delimiter'] = '//://',
+      -- Entry: fname\x01lnum\x01col\x01rel_offset\x01display
+      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      ['--delimiter'] = '\x01',
       ['--with-nth'] = '5..',
-      ['--preview-window'] = '+{2}-/2,' .. default_size,
+      ['--preview-window'] = default_size,
     },
     keymap = jumps_km,
     actions = actions,

@@ -30,14 +30,12 @@ T.group('defaults', function()
   T.eq(cfg.marks_loclist, false, 'marks_loclist')
 
   T.eq(cfg.delta_options, '--keep-plus-minus-markers', 'delta_options')
-  T.eq(cfg.bat_options, '--style=numbers,changes', 'bat_options')
 
   T.eq(cfg.preview_hide_threshold, 80, 'preview_hide_threshold')
   T.eq(cfg.default_preview_size, 50, 'default_preview_size')
   T.eq(cfg.second_preview_size, 80, 'second_preview_size')
 
   T.eq(cfg.rg_fzf_default, false, 'rg_fzf_default')
-  T.eq(cfg.rg_default_preview_command, 0, 'rg_default_preview_command')
   T.eq(cfg.rg_default_case_sensitive, 1, 'rg_default_case_sensitive')
   T.eq(cfg.rg_default_hidden, false, 'rg_default_hidden')
   T.eq(cfg.rg_default_no_ignore, 0, 'rg_default_no_ignore')
@@ -45,23 +43,18 @@ T.group('defaults', function()
   T.eq(cfg.buffers_jump, false, 'buffers_jump')
 end)
 
--- ── Derived defaults: keys inherited from rg_* ───────────────────────────────
+-- ── Derived defaults: keys inherited from common config ───────────────────────
 
 T.group('derived defaults', function()
   reset()
   local cfg = require('siefe.config')
 
-  -- preview keys derive from rg_*
-  T.eq(cfg.history_preview_key, cfg.rg_preview_key, 'history_preview_key')
-  T.eq(cfg.history_fast_preview_key, cfg.rg_fast_preview_key, 'history_fast_preview_key')
-  T.eq(cfg.buffers_preview_key, cfg.rg_preview_key, 'buffers_preview_key')
-  T.eq(cfg.marks_preview_key, cfg.rg_preview_key, 'marks_preview_key')
-  T.eq(cfg.jumps_preview_key, cfg.rg_preview_key, 'jumps_preview_key')
+  -- fd_depth1_key derives from rg_depth1_key
   T.eq(cfg.fd_depth1_key, cfg.rg_depth1_key, 'fd_depth1_key')
 
-  -- default_preview_command derives from rg_*
-  T.eq(cfg.history_default_preview_command, cfg.rg_default_preview_command, 'history_default_preview_command')
-  T.eq(cfg.buffers_default_preview_command, cfg.rg_default_preview_command, 'buffers_default_preview_command')
+  -- git_log/stash still have preview commands (shell-based, not builtin)
+  T.eq(cfg.gitlog_default_preview_command, 0, 'gitlog_default_preview_command')
+  T.eq(cfg.stash_default_preview_command, 0, 'stash_default_preview_command')
 end)
 
 -- ── setup() overrides ────────────────────────────────────────────────────────

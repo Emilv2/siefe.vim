@@ -5,9 +5,10 @@ local M = {}
 local config = require('siefe.config')
 local utils = require('siefe.utils')
 
--- Format: bufname//lnum//display
--- Field 1 (bufname) and 2 (lnum) are hidden by --with-nth=3..
--- They are used by the preview command ({1}) and scroll hint (+{2}-/2).
+-- Format: fname\x01lnum\x010\x01display
+-- Field 1 (fname) and 2 (lnum) are hidden by --with-nth=4..
+-- They are used by the builtin previewer via entry_to_file() (no fs_stat needed:
+-- \x01 is the delimiter, never valid in POSIX filenames).
 -- The display contains [T{t}:W{w}] so the action can parse back tab/win.
 local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local name = vim.fn.bufname(bufnr)
@@ -33,18 +34,12 @@ local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local mod_flag = modified and utils.red('+', 'Exception') or ''
   local lnum_text = lnum > 0 and ('  line ' .. lnum) or ''
   local tab_text = utils.magenta('T' .. tabnr, 'Number') .. ':' .. utils.blue('W' .. winnr, 'Identifier')
-  local preview_name = name ~= '' and name or '[No Name]'
+  -- Absolute path for the builtin previewer; empty string for bufferless windows
+  -- (builtin previewer gracefully handles empty filename).
+  local abs_name = name ~= '' and vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(name)), ':p') or ''
 
-  return string.format(
-    '%s//%d//[%s] %s%s%s%s',
-    preview_name,
-    lnum,
-    tab_text,
-    flag,
-    display_name,
-    mod_flag,
-    lnum_text
-  )
+  local display = string.format('[%s] %s%s%s%s', tab_text, flag, display_name, mod_flag, lnum_text)
+  return string.format('%s\x01%d\x010\x01%s', abs_name, lnum, display)
 end
 
 local function get_tab_win(line)
@@ -62,11 +57,6 @@ function M.windows(fullscreen, kwargs)
 
   kwargs = kwargs or {}
   kwargs.query = kwargs.query or ''
-
-  local previews = utils.make_preview_commands()
-  local p0 = previews.buffers[1]
-  local p1 = previews.buffers[2]
-  local default_preview = previews.buffers[(config.buffers_default_preview_command or 0) + 1] or p0
 
   local default_size, other_size = utils.preview_window_size()
 
@@ -108,9 +98,10 @@ function M.windows(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.buffers_preview_key] = 'change-preview(' .. p0 .. ')',
-    [config.buffers_fast_preview_key] = 'change-preview(' .. p1 .. ')',
+    [config.toggle_preview_key] = {
+      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
+      desc = 'cycle-preview',
+    },
   })
 
   local actions = {}
@@ -168,15 +159,16 @@ function M.windows(fullscreen, kwargs)
     prompt = 'Win> ',
     query = kwargs.query,
     winopts = utils.winopts(fullscreen),
-    previewer = false,
-    preview = default_preview,
+    previewer = 'builtin',
     fzf_opts = {
       ['--multi'] = '',
       ['--tiebreak'] = 'index',
       ['--ansi'] = '',
-      ['--delimiter'] = '//',
-      ['--with-nth'] = '3..',
-      ['--preview-window'] = '+{2}-/2,' .. default_size,
+      -- Entry: fname\x01lnum\x010\x01display
+      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      ['--delimiter'] = '\x01',
+      ['--with-nth'] = '4..',
+      ['--preview-window'] = default_size,
       ['--header-lines'] = tostring(header_lines),
     },
     keymap = win_km,
