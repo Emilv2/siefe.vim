@@ -254,7 +254,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     ['--history'] = utils.data_path() .. '/rg_fzf_history',
     ['--ansi'] = '',
     ['--multi'] = '',
-    ['--print-query'] = '',
     -- Use NUL as the output record separator.  fzf-lua detects --print0 in
     -- fzf.lua (get_EOL("print0")) and splits fzf's output on NUL instead of
     -- newline, so multiline match text or special characters in entries are
@@ -290,19 +289,25 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- ── Helpers for actions ──────────────────────────────────────────────────────
 
-  -- With --print-query, selected[1] is always the current fzf query and
-  -- selected[2:] are the actual rg / file entries.
-  local function get_query(selected)
-    return selected and selected[1] or kwargs.query or ''
+  -- fzf-lua's fzf_wrap() adds --print-query internally and, before calling our
+  -- action, strips selected[1] (the query) and stores it in opts.__call_opts.
+  -- So when our fn(selected, opts) is called:
+  --   selected[1] = first actual file/rg entry  (NOT the query)
+  --   opts.__call_opts.search = current typed query (live/rg mode)
+  --   opts.__call_opts.query  = current typed query (exec/files/fzf mode)
+  local function get_query(_selected, opts)
+    return (opts and opts.__call_opts and (opts.__call_opts.search or opts.__call_opts.query))
+      or kwargs.query
+      or ''
   end
 
   local function get_entries(selected)
-    return selected and #selected > 1 and vim.list_slice(selected, 2) or {}
+    return selected or {}
   end
 
   -- Reopen picker after a toggle, preserving the current query.
-  local function reopen(selected, changes)
-    kwargs.query = get_query(selected)
+  local function reopen(selected, opts, changes)
+    kwargs.query = get_query(selected, opts)
     if changes then
       for k, v in pairs(changes) do
         kwargs[k] = v
@@ -318,16 +323,16 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   local actions = {}
 
   -- Open: first entry in current window; populate qf/ll for multi-select.
-  -- When rg2fzf is active entries are `filename\x01line:col:text` — parsed
-  -- without fs_stat.  Fallback entries are `file:line:col:text` — parsed via
-  -- fzl_actions which calls entry_to_file() / fs_stat internally.
+  -- In rg/fzf mode with rg2fzf: entries are `filename\x01line:col:text` — parsed
+  -- without fs_stat.  In files mode or without rg2fzf: use fzl_actions which
+  -- calls entry_to_file() (fs_stat path) to handle plain filenames correctly.
   actions['default'] = {
     fn = function(selected, opts)
       local entries = get_entries(selected)
       if #entries == 0 then
         return
       end
-      if rg2fzf then
+      if rg2fzf and mode ~= 'files' then
         open_rg2fzf_entries(entries, 'edit', config.rg_loclist)
       else
         fzl_actions.file_edit({ entries[1] }, opts)
@@ -344,8 +349,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   }
 
   -- Window open actions.
-  -- rg2fzf path: parse \x01 format directly (no fs_stat).
-  -- Fallback path: native fzl_actions (uses entry_to_file / fs_stat).
+  -- rg/fzf mode with rg2fzf: parse \x01 format directly (no fs_stat).
+  -- Files mode or no rg2fzf: native fzl_actions (uses entry_to_file / fs_stat).
   local function make_open_action(win_cmd, desc)
     return {
       fn = function(selected, opts)
@@ -353,7 +358,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         if #entries == 0 then
           return
         end
-        if rg2fzf then
+        if rg2fzf and mode ~= 'files' then
           open_rg2fzf_entries(entries, win_cmd, false)
         else
           if win_cmd == 'split' then
@@ -397,11 +402,11 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- Toggle: fzf/rg mode
   -- header() always returns the current mode so it's always visible in --header.
   actions[config.rg_toggle_fzf_key] = {
-    fn = function(selected, _opts)
+    fn = function(selected, opts)
       if kwargs.files then
-        reopen(selected, { files = false })
+        reopen(selected, opts, { files = false })
       else
-        reopen(selected, { fzf = not kwargs.fzf })
+        reopen(selected, opts, { fzf = not kwargs.fzf })
       end
     end,
     desc = 'mode',
@@ -412,8 +417,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: rg/fzf combined filter
   actions[config.rg_rgfzf_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { fzf = not kwargs.fzf })
+    fn = function(selected, opts)
+      reopen(selected, opts, { fzf = not kwargs.fzf })
     end,
     desc = 'rg/fzf',
     header = function()
@@ -423,8 +428,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: files mode
   actions[config.rg_files_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { files = not kwargs.files })
+    fn = function(selected, opts)
+      reopen(selected, opts, { files = not kwargs.files })
     end,
     desc = 'files',
     header = function()
@@ -436,8 +441,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- available for Neovim window navigation when fzf is in files mode).
   if mode ~= 'files' then
     actions[config.rg_word_key] = {
-      fn = function(selected, _opts)
-        reopen(selected, { word = not kwargs.word })
+      fn = function(selected, opts)
+        reopen(selected, opts, { word = not kwargs.word })
       end,
       desc = '-w',
       header = function()
@@ -448,8 +453,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: depth-1
   actions[config.rg_depth1_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { depth1 = not kwargs.depth1 })
+    fn = function(selected, opts)
+      reopen(selected, opts, { depth1 = not kwargs.depth1 })
     end,
     desc = '-d1',
     header = function()
@@ -459,8 +464,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: case sensitivity (cycles smart → ignore → sensitive → smart)
   actions[config.rg_case_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { case_sensitive = (kwargs.case_sensitive + 1) % 3 })
+    fn = function(selected, opts)
+      reopen(selected, opts, { case_sensitive = (kwargs.case_sensitive + 1) % 3 })
     end,
     desc = 'case',
     header = function()
@@ -474,8 +479,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: hidden files
   actions[config.rg_hidden_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { hidden = not kwargs.hidden })
+    fn = function(selected, opts)
+      reopen(selected, opts, { hidden = not kwargs.hidden })
     end,
     desc = '-.',
     header = function()
@@ -485,8 +490,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: no-ignore (cycles 0 → -u → -uu → -uuu → 0)
   actions[config.rg_no_ignore_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { no_ignore = (kwargs.no_ignore + 1) % 4 })
+    fn = function(selected, opts)
+      reopen(selected, opts, { no_ignore = (kwargs.no_ignore + 1) % 4 })
     end,
     desc = '-u',
     header = function()
@@ -496,8 +501,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: fixed strings
   actions[config.rg_fixed_strings_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { fixed_strings = not kwargs.fixed_strings })
+    fn = function(selected, opts)
+      reopen(selected, opts, { fixed_strings = not kwargs.fixed_strings })
     end,
     desc = '-F',
     header = function()
@@ -507,8 +512,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: max-1
   actions[config.rg_max_1_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { max_1 = not kwargs.max_1 })
+    fn = function(selected, opts)
+      reopen(selected, opts, { max_1 = not kwargs.max_1 })
     end,
     desc = '-m1',
     header = function()
@@ -518,8 +523,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: search compressed files
   actions[config.rg_search_zip_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { search_zip = not kwargs.search_zip })
+    fn = function(selected, opts)
+      reopen(selected, opts, { search_zip = not kwargs.search_zip })
     end,
     desc = '-z',
     header = function()
@@ -529,8 +534,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: treat binary as text
   actions[config.rg_text_key] = {
-    fn = function(selected, _opts)
-      reopen(selected, { text = not kwargs.text })
+    fn = function(selected, opts)
+      reopen(selected, opts, { text = not kwargs.text })
     end,
     desc = '-a',
     header = function()
@@ -541,8 +546,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- Sub-picker: file type filter (-t / -T)
   -- vim.schedule defers until after the current fzf session closes.
   actions[config.rg_type_key] = {
-    fn = function(selected, _opts)
-      kwargs.query = get_query(selected)
+    fn = function(selected, opts)
+      kwargs.query = get_query(selected, opts)
       vim.schedule(function()
         require('siefe.type_select').type_select('rg', fullscreen, dir, kwargs)
       end)
@@ -554,8 +559,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   }
 
   actions[config.rg_type_not_key] = {
-    fn = function(selected, _opts)
-      kwargs.query = get_query(selected)
+    fn = function(selected, opts)
+      kwargs.query = get_query(selected, opts)
       vim.schedule(function()
         require('siefe.type_select').type_select('rg_not', fullscreen, dir, kwargs)
       end)
@@ -566,8 +571,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- Sub-picker: directory selection
   -- vim.schedule defers until after the current fzf session closes.
   actions[config.rg_dir_key] = {
-    fn = function(selected, _opts)
-      kwargs.query = get_query(selected)
+    fn = function(selected, opts)
+      kwargs.query = get_query(selected, opts)
       kwargs.fd_query = ''
       vim.schedule(function()
         local ds = require('siefe.dir_select')
@@ -582,7 +587,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
 
   -- Toggle: limit search to open buffers
   actions[config.rg_buffers_key] = {
-    fn = function(selected, _opts)
+    fn = function(selected, opts)
       local bufs = vim.tbl_map(
         function(b)
           return vim.fn.fnamemodify(vim.fn.expand(vim.fn.bufname(b)), ':p:~:.')
@@ -591,7 +596,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
           return vim.fn.buflisted(b) == 1
         end, vim.api.nvim_list_bufs())
       )
-      reopen(selected, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
+      reopen(selected, opts, { paths = vim.deep_equal(kwargs.paths, bufs) and {} or bufs })
     end,
     desc = 'buffers',
     header = function()
@@ -628,8 +633,8 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- May open a different picker (historyoldfiles) so can't use reopen(), but
   -- follows the same get_query() + vim.schedule pattern as all other actions.
   actions[config.rg_history_key] = {
-    fn = function(selected, _opts)
-      kwargs.query = get_query(selected)
+    fn = function(selected, opts)
+      kwargs.query = get_query(selected, opts)
       if kwargs.files then
         vim.schedule(function()
           require('siefe.history').historyoldfiles(fullscreen, kwargs)

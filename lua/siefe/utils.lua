@@ -412,7 +412,7 @@ function M.recent_files(dir)
     local cur = vim.fn.expand('%')
     if cur ~= '' then
       local real = vim.fn.FugitiveReal and vim.fn.FugitiveReal() or vim.fn.expand('%:p')
-      table.insert(items, real:gsub(d:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1))
+      table.insert(items, (real:gsub(d:gsub('[%(%)%.%%%+%-%*%?%[%^%$]', '%%%1') .. '/', '', 1)))
     end
     for _, b in ipairs(M.buflisted_sorted()) do
       local name = vim.fn.fnameescape(vim.fn.bufname(b))
