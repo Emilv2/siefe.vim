@@ -1,14 +1,20 @@
 -- lua/siefe/windows.lua
 -- Window listing picker
+--
+-- Same builtin-previewer entry format as buffers.lua:
+--   [bufnr]<EN-SPACE>fname:lnum:0<SOH>display
+-- [bufnr]+U+2002 EN SPACE prefix lets entry_to_file() extract bufnr and detect
+-- terminal windows (is_term_buffer), previewed via nvim_buf_get_lines (no fs_stat).
+-- SOH (\x01) is the fzf display delimiter: --with-nth=2.. shows only field 2+.
 local M = {}
 
 local config = require('siefe.config')
 local utils = require('siefe.utils')
 
--- Format: fname:lnum:0\x01display
--- entry_to_file() splits on ':' to find fname:lnum; \x01 separates display.
--- fzf shows field 2+ (--with-nth=2.. --delimiter=\x01) = display only.
--- The display contains [T{t}:W{w}] so the action can parse back tab/win.
+-- Format: [bufnr]<EN-SPACE>fname:lnum:0\x01display
+-- [bufnr]+EN-SPACE prefix lets entry_to_file() detect terminal buffers and
+-- preview them via nvim_buf_get_lines (no fs_stat). The display field after
+-- \x01 contains [T{t}:W{w}] so the action can parse back tab/win numbers.
 local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local name = vim.fn.bufname(bufnr)
   local btype = vim.fn.getbufvar(bufnr, '&buftype')
@@ -38,7 +44,10 @@ local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local abs_name = name ~= '' and vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(name)), ':p') or ''
 
   local display = string.format('[%s] %s%s%s%s', tab_text, flag, display_name, mod_flag, lnum_text)
-  return string.format('%s:%d:0\x01%s', abs_name, lnum, display)
+  -- [bufnr]+EN-SPACE prefix lets entry_to_file() detect terminal windows and
+  -- preview their scrollback via nvim_buf_get_lines (no fs_stat required).
+  local nbsp = '\xe2\x80\x82' -- U+2002 EN SPACE: fzf-lua's utils.nbsp separator
+  return string.format('[%d]%s%s:%d:0\x01%s', bufnr, nbsp, abs_name, lnum, display)
 end
 
 local function get_tab_win(line)

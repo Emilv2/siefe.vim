@@ -2,12 +2,14 @@
 -- Buffer listing picker
 --
 -- Pickers using the fzf-lua BUILTIN previewer: buffers, history, marks, jumps, windows
---   Entry format: fname\x01lnum\x010\x01display
---   \x01 (SOH) is the delimiter: never valid in POSIX filenames, so fzf-lua's
---   entry_to_file() can parse fname unambiguously without fs_stat calls.
---   fzf-lua propagates fzf_opts['--delimiter'] to opts.__delim which is read by
---   entry_to_file(), so the builtin previewer opens the correct file and scrolls
---   to the saved cursor line without any extra configuration.
+--   Entry format: [bufnr]<EN-SPACE>fname:lnum:0<SOH>display
+--   [bufnr] + U+2002 EN SPACE (fzf-lua's utils.nbsp) prefix: entry_to_file() in
+--   path.lua splits on this separator to extract bufnr, then calls is_term_buffer()
+--   to detect terminal buffers. For terminal buffers, populate_preview_buf() in
+--   builtin.lua reads lines directly via nvim_buf_get_lines() from the live buffer
+--   — no fs_stat, no external preview command, live scrollback content shown.
+--   SOH (\x01) is the fzf display delimiter: --with-nth=2.. hides field 1 (the
+--   [bufnr]+path metadata) and shows only field 2+ (human-readable display text).
 --
 -- Pickers that CANNOT use the builtin previewer (kept as shell preview):
 --   git_log, git_stash, git_status, git_branch: preview shows git show/diff/log
@@ -58,13 +60,16 @@ local function format_buffer(b, git_dir)
     rel_name = name
   end
   local line_text = line == 0 and '' or ' line ' .. line
-  -- Entry: fname:lnum:0\x01display
-  -- entry_to_file() splits on ':' to find fname:lnum:col; \x01 separates display.
-  -- fzf shows field 2+ (--with-nth=2.. --delimiter=\x01) = display only.
+  -- Entry: [b]<EN-SPACE>fname:lnum:0\x01display
+  -- [bufnr]+EN-SPACE prefix lets entry_to_file() extract bufnr and detect
+  -- terminal buffers (is_term_buffer), which are then previewed by copying
+  -- lines from the live buffer via nvim_buf_get_lines (no fs_stat needed).
+  -- fzf hides field 1 (--with-nth=2.. --delimiter=\x01) showing only display.
   local display = vim.trim(
     string.format('[%s] %s\t%s%s\t%s', utils.yellow(tostring(b), 'Number'), flag, rel_name, extra, line_text)
   )
-  return string.format('%s:%d:0\x01%s', abs_name ~= '' and abs_name or name, line, display)
+  local nbsp = '\xe2\x80\x82' -- U+2002 EN SPACE: fzf-lua's utils.nbsp separator
+  return string.format('[%d]%s%s:%d:0\x01%s', b, nbsp, abs_name ~= '' and abs_name or name, line, display)
 end
 
 function M.buffers(fullscreen, kwargs)
