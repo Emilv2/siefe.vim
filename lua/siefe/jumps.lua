@@ -19,7 +19,8 @@ end
 
 local function printjump(git_dir, current, jump_max, lnum_max_len, index, jump)
   if jump.bufnr == -1 then
-    return ' \x01 \x01 \x010\x01'
+    -- Placeholder entry for the current position slot; shows nothing in fzf.
+    return ': :\x010\x01 '
   end
   local bufname = vim.fn.bufname(jump.bufnr) or ''
   local rel_offset = index - current
@@ -38,15 +39,22 @@ local function printjump(git_dir, current, jump_max, lnum_max_len, index, jump)
       .. utils.red(line:sub(jump.col + 1, jump.col + 1))
       .. utils.blue(line:sub(jump.col + 2))
   end
-  return bufname
-    .. '\x01' .. (jump.lnum or 0)
-    .. '\x01' .. (jump.col or 0)
-    .. '\x01' .. rel_offset
-    .. '\x01' .. math.abs(rel_offset)
+  -- Entry: fname:lnum:col\x01rel_offset\x01display
+  -- entry_to_file() reads fname:lnum from ':' prefix; fzf shows field 3+ (display).
+  local display = math.abs(rel_offset)
     .. string.rep(' ', jump_max - #tostring(math.abs(rel_offset)) + 1)
     .. (jump.lnum or 0)
     .. string.rep(' ', lnum_max_len - #tostring(jump.lnum or 0) + 1)
     .. text
+  return bufname
+    .. ':'
+    .. (jump.lnum or 0)
+    .. ':'
+    .. (jump.col or 0)
+    .. '\x01'
+    .. rel_offset
+    .. '\x01'
+    .. display
 end
 
 function M.jumps(fullscreen, kwargs)
@@ -99,16 +107,22 @@ function M.jumps(fullscreen, kwargs)
   })
 
   local function parse_jump_line(line)
-    -- format: fname\x01lnum\x01col\x01rel_offset\x01display
+    -- format: fname:lnum:col\x01rel_offset\x01display
+    -- entry_to_file() reads fname:lnum from ':' prefix.
     local parts = vim.split(line, '\x01', { plain = true })
-    if #parts < 4 then
+    if #parts < 2 then
+      return nil
+    end
+    local ps = vim.split(parts[1], ':', { plain = true })
+    local fname = ps[1] or ''
+    if fname == '' or fname == ' ' then
       return nil
     end
     return {
-      filename = parts[1],
-      lnum = tonumber(parts[2]) or 0,
-      col = tonumber(parts[3]) or 0,
-      index = tonumber(parts[4]) or 0,
+      filename = fname,
+      lnum = tonumber(ps[2]) or 0,
+      col = tonumber(ps[3]) or 0,
+      index = tonumber(parts[2]) or 0,
     }
   end
 
@@ -168,10 +182,10 @@ function M.jumps(fullscreen, kwargs)
       for _, line in ipairs(items) do
         local j = parse_jump_line(line)
         if j then
-          -- Display text is field 5 (after 4 \x01 separators)
+          -- Display text is field 3 (after 2 \x01 separators)
           local parts = vim.split(line, '\x01', { plain = true })
-          if #parts >= 5 then
-            table.insert(texts, parts[5])
+          if #parts >= 3 then
+            table.insert(texts, parts[3])
           end
         end
       end
@@ -191,10 +205,10 @@ function M.jumps(fullscreen, kwargs)
       ['--sync'] = '',
       ['--cycle'] = '',
       ['--scroll-off'] = '999',
-      -- Entry: fname\x01lnum\x01col\x01rel_offset\x01display
-      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      -- Entry: fname:lnum:col\x01rel_offset\x01display
+      -- entry_to_file() reads fname:lnum:col from ':' prefix; fzf shows field 3+ (display).
       ['--delimiter'] = '\x01',
-      ['--with-nth'] = '5..',
+      ['--with-nth'] = '3..',
       ['--preview-window'] = default_size,
     },
     keymap = jumps_km,

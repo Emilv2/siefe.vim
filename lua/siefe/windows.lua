@@ -5,10 +5,9 @@ local M = {}
 local config = require('siefe.config')
 local utils = require('siefe.utils')
 
--- Format: fname\x01lnum\x010\x01display
--- Field 1 (fname) and 2 (lnum) are hidden by --with-nth=4..
--- They are used by the builtin previewer via entry_to_file() (no fs_stat needed:
--- \x01 is the delimiter, never valid in POSIX filenames).
+-- Format: fname:lnum:0\x01display
+-- entry_to_file() splits on ':' to find fname:lnum; \x01 separates display.
+-- fzf shows field 2+ (--with-nth=2.. --delimiter=\x01) = display only.
 -- The display contains [T{t}:W{w}] so the action can parse back tab/win.
 local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local name = vim.fn.bufname(bufnr)
@@ -39,7 +38,7 @@ local function format_window(tabnr, winnr, bufnr, cur_tab, cur_win)
   local abs_name = name ~= '' and vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(name)), ':p') or ''
 
   local display = string.format('[%s] %s%s%s%s', tab_text, flag, display_name, mod_flag, lnum_text)
-  return string.format('%s\x01%d\x010\x01%s', abs_name, lnum, display)
+  return string.format('%s:%d:0\x01%s', abs_name, lnum, display)
 end
 
 local function get_tab_win(line)
@@ -164,10 +163,10 @@ function M.windows(fullscreen, kwargs)
       ['--multi'] = '',
       ['--tiebreak'] = 'index',
       ['--ansi'] = '',
-      -- Entry: fname\x01lnum\x010\x01display
-      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      -- Entry: fname:lnum:0\x01display
+      -- entry_to_file() reads fname:lnum from ':' prefix; fzf shows field 2+ (display).
       ['--delimiter'] = '\x01',
-      ['--with-nth'] = '4..',
+      ['--with-nth'] = '2..',
       ['--preview-window'] = default_size,
       ['--header-lines'] = tostring(header_lines),
     },

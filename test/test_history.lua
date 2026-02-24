@@ -86,14 +86,15 @@ T.group('make_history_entry / parse_entry round-trip', function()
   T.eq(l3, 7, 'spaces in filename: lnum')
   T.eq(f3, 'my docs/file.md', 'spaces in filename: filename')
 
-  -- New SOH-separated format: fname\x01lnum\x01col\x01display
-  local parts = vim.split(e1, '\x01', { plain = true })
-  T.eq(#parts, 4, 'make_history_entry produces 4 SOH-fields')
-  T.eq(parts[1], 'src/main.lua', 'field 1 = raw filename')
-  T.eq(parts[2], '42', 'field 2 = lnum string')
-  T.eq(parts[3], '5', 'field 3 = col string')
-  -- field 4 is the ANSI-colored display; just check it contains the filename
-  T.ok(parts[4]:find('src/main.lua', 1, true), 'field 4 (display) contains filename')
+  -- New format: fname:lnum:col\x01display (entry_to_file reads ':'-separated prefix)
+  local sep = e1:find('\x01', 1, true)
+  T.ok(sep ~= nil, 'make_history_entry contains \\x01 separator')
+  local prefix = e1:sub(1, sep - 1)
+  local display = e1:sub(sep + 1)
+  -- prefix must be fname:lnum:col
+  T.ok(prefix == 'src/main.lua:42:5', 'prefix is fname:lnum:col')
+  -- display contains the filename
+  T.ok(display:find('src/main.lua', 1, true), 'display contains filename')
 end)
 
 T.finish()

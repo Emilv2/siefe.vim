@@ -7,16 +7,29 @@ local utils = require('siefe.utils')
 
 -- Parse an entry returned by fzf.
 --
--- New SOH format (produced by make_history_entry): fname\x01lnum\x01col\x01display
---   fname is field 1 so fzf-lua's entry_to_file() can parse it directly.
+-- Current format (produced by make_history_entry): fname:lnum:col\x01display
+--   entry_to_file() splits on ':' and reads fname:lnum:col from the prefix.
+-- Legacy SOH format: fname\x01lnum\x01col\x01display
 -- Intermediate tab format (older sessions): lnum\tcol\tfname[\tdisplay]
--- Legacy formats (from older entries / utils.recent_*_info):
+-- Legacy // formats (from older entries / utils.recent_*_info):
 --   lnum//col//fname  (fname may itself contain "//")
 --   lnum//fname       (no col)
 local function parse_entry(line)
   if line:find('\x01', 1, true) then
-    -- New SOH-separated format: fname\x01lnum\x01col\x01display
     local parts = vim.split(line, '\x01', { plain = true })
+    -- Current format: fname:lnum:col\x01display → parts[1]="fname:lnum:col"
+    local prefix = parts[1] or ''
+    if prefix:find(':', 1, true) then
+      local ps = vim.split(prefix, ':', { plain = true })
+      -- ps[1]=fname, ps[2]=lnum, ps[3]=col (fname is absolute path, no colons)
+      local fname = ps[1] or ''
+      local lnum = tonumber(ps[2]) or 0
+      local col = tonumber(ps[3]) or 0
+      if fname ~= '' then
+        return lnum, col, fname
+      end
+    end
+    -- Legacy SOH format: fname\x01lnum\x01col\x01display
     return tonumber(parts[2]) or 0, tonumber(parts[3]) or 0, parts[1] or ''
   end
   if line:find('\t', 1, true) then
@@ -34,16 +47,16 @@ local function parse_entry(line)
   return 0, 0, line
 end
 
--- Build a history source entry for fzf --with-nth=4..
--- Format: fname\x01lnum\x01col\x01DISPLAY
--- fname is field 1 so fzf-lua's entry_to_file() (builtin previewer) parses it
--- unambiguously using \x01 as delimiter — no fs_stat calls needed.
+-- Build a history source entry.
+-- Format: fname:lnum:col\x01DISPLAY
+-- entry_to_file() splits on ':' to extract fname:lnum:col from the prefix;
+-- \x01 separates it from the display shown by fzf (--with-nth=2..).
 -- DISPLAY = "lnum[:col] fname" (lnum colored green when > 0).
 local function make_history_entry(lnum, col, fname)
   local pos = (lnum > 0) and (utils.green(tostring(lnum)) .. (col > 0 and utils.green(':' .. tostring(col)) or ''))
     or ''
   local display = pos ~= '' and (pos .. ' ' .. fname) or fname
-  return fname .. '\x01' .. tostring(lnum) .. '\x01' .. tostring(col) .. '\x01' .. display
+  return fname .. ':' .. tostring(lnum) .. ':' .. tostring(col) .. '\x01' .. display
 end
 
 function M.historyoldfiles(fullscreen, kwargs)
@@ -173,9 +186,9 @@ function M.historyoldfiles(fullscreen, kwargs)
     ['--history'] = utils.data_path() .. '/rg_history_history',
     ['--ansi'] = '',
     ['--multi'] = '',
-    -- Entry format: fname\x01lnum\x01col\x01display
-    -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
-    ['--with-nth'] = '4..',
+    -- Entry format: fname:lnum:col\x01display
+    -- entry_to_file() reads fname:lnum:col from ':' prefix; fzf shows field 2+ (display).
+    ['--with-nth'] = '2..',
     ['--delimiter'] = '\x01',
     ['--preview-window'] = default_size,
     ['--header-lines'] = tostring(header_lines),

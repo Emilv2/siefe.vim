@@ -47,7 +47,7 @@ function M.marks(fullscreen, kwargs)
     table.insert(
       source,
       string.format(
-        '%s\x01%s\x01%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
+        '%s:%s:%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
         vim.fn.fnameescape(file),
         lnum,
         col,
@@ -73,7 +73,7 @@ function M.marks(fullscreen, kwargs)
     table.insert(
       source,
       string.format(
-        '%s\x01%s\x01%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
+        '%s:%s:%s\x01%s\x01%s\x01%s\t%s\t%s\t%s',
         vim.fn.fnameescape(vim.fn.bufname()),
         lnum,
         col,
@@ -104,17 +104,19 @@ function M.marks(fullscreen, kwargs)
   })
 
   local function parse_mark_line(line)
-    -- format: fname\x01lnum\x01col\x01bufnr\x01mark\x01display...
+    -- format: fname:lnum:col\x01bufnr\x01mark\x01display...
+    -- entry_to_file() reads fname:lnum from the ':' prefix.
     local parts = vim.split(line, '\x01', { plain = true })
-    if #parts < 5 then
+    if #parts < 3 then
       return nil
     end
+    local ps = vim.split(parts[1], ':', { plain = true })
     return {
-      filename = parts[1],
-      lnum = tonumber(parts[2]) or 0,
-      col = tonumber(parts[3]) or 0,
-      bufnr = tonumber(parts[4]) or 0,
-      mark = parts[5],
+      filename = ps[1] or '',
+      lnum = tonumber(ps[2]) or 0,
+      col = tonumber(ps[3]) or 0,
+      bufnr = tonumber(parts[2]) or 0,
+      mark = parts[3] or '',
     }
   end
 
@@ -208,10 +210,10 @@ function M.marks(fullscreen, kwargs)
       ['--ansi'] = '',
       ['--multi'] = '',
       ['--tabstop'] = '4',
-      -- Entry: fname\x01lnum\x01col\x01bufnr\x01mark\x01display
-      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
+      -- Entry: fname:lnum:col\x01bufnr\x01mark\x01display
+      -- entry_to_file() reads fname:lnum:col from ':' prefix; fzf shows field 4+ (display).
       ['--delimiter'] = '\x01',
-      ['--with-nth'] = '6..',
+      ['--with-nth'] = '4..',
       ['--preview-window'] = default_size,
     },
     keymap = marks_km,

@@ -58,12 +58,13 @@ local function format_buffer(b, git_dir)
     rel_name = name
   end
   local line_text = line == 0 and '' or ' line ' .. line
-  -- Entry: fname\x01lnum\x010\x01display
-  -- Field 1 (abs_name) hidden; field 4+ (display) shown via --with-nth=4..
+  -- Entry: fname:lnum:0\x01display
+  -- entry_to_file() splits on ':' to find fname:lnum:col; \x01 separates display.
+  -- fzf shows field 2+ (--with-nth=2.. --delimiter=\x01) = display only.
   local display = vim.trim(
     string.format('[%s] %s\t%s%s\t%s', utils.yellow(tostring(b), 'Number'), flag, rel_name, extra, line_text)
   )
-  return string.format('%s\x01%d\x010\x01%s', abs_name ~= '' and abs_name or name, line, display)
+  return string.format('%s:%d:0\x01%s', abs_name ~= '' and abs_name or name, line, display)
 end
 
 function M.buffers(fullscreen, kwargs)
@@ -247,11 +248,9 @@ function M.buffers(fullscreen, kwargs)
       ['--multi'] = '',
       ['--tiebreak'] = 'index',
       ['--ansi'] = '',
-      -- Entry format: fname\x01lnum\x010\x01display
-      -- \x01 delimiter lets entry_to_file() parse fname without fs_stat.
       ['--delimiter'] = '\x01',
-      ['--with-nth'] = '4..',
-      ['-n'] = '4..',
+      ['--with-nth'] = '2..',
+      ['-n'] = '2..',
       ['--tabstop'] = tostring(tabstop),
       ['--header-lines'] = tostring(header_lines),
       ['--preview-window'] = default_size,
