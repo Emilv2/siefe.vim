@@ -408,8 +408,25 @@ fn decode_local_mark(data: &[u8], timestamp: u64) -> Option<PosEntry> {
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
+const VERSION: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    " ",
+    env!("CARGO_PKG_VERSION"),
+    " (git:",
+    env!("SIEFE_GIT_HASH", "unknown"),
+    ")"
+);
+
 fn main() -> io::Result<()> {
-    let path = env::args().nth(1).unwrap_or_else(|| {
+    let mut args = env::args().skip(1).peekable();
+
+    // Handle --version / -V before anything else
+    if args.peek().map(|a| a == "--version" || a == "-V").unwrap_or(false) {
+        println!("{VERSION}");
+        return Ok(());
+    }
+
+    let path = args.next().unwrap_or_else(|| {
         eprintln!("usage: shada2fzf <shada-file>");
         std::process::exit(1);
     });

@@ -22,7 +22,7 @@
 use std::io::{self, BufReader, Cursor, Write};
 use std::process::{self, Command, Stdio};
 
-use diffgrep::{filter_diff, Regex};
+use diffgrep::{filter_diff, Match, Regex};
 
 // ── Git colour helpers ────────────────────────────────────────────────────────
 
@@ -130,7 +130,8 @@ fn emit_output(
     new_file: &str,
     new_hex: &str,
     new_mode: &str,
-    regex: &Regex,
+    match_pattern: &diffgrep::Match,
+    highlight_regex: &Regex,
     diff_text: &str,
     colors: &Colors,
     out: &mut impl Write,
@@ -179,14 +180,14 @@ fn emit_output(
 
     // Parse and filter the raw diff
     let reader = BufReader::new(Cursor::new(diff_text.as_bytes()));
-    let diffs = filter_diff(reader, regex).map_err(io::Error::other)?;
+    let diffs = filter_diff(reader, match_pattern).map_err(io::Error::other)?;
 
     for fd in &diffs {
         // Skip the file header lines — we already emitted our own above
         for hunk in &fd.hunks {
             writeln!(out, "{}", format_hunk_header(&hunk.header, colors))?;
             for line in &hunk.lines {
-                writeln!(out, "{}", format_content_line(line, regex, colors))?;
+                writeln!(out, "{}", format_content_line(line, highlight_regex, colors))?;
             }
         }
     }
@@ -303,6 +304,21 @@ mod tests {
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+
+    // Handle --version / -V before checking argument count
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        const VERSION: &str = concat!(
+            env!("CARGO_PKG_NAME"),
+            " ",
+            env!("CARGO_PKG_VERSION"),
+            " (git:",
+            env!("SIEFE_GIT_HASH", "unknown"),
+            ")"
+        );
+        println!("{VERSION}");
+        return;
+    }
+
     if args.len() != 7 {
         eprintln!("usage: pickaxe-diff path old_file old_hex old_mode new_file new_hex new_mode");
         process::exit(1);
@@ -316,10 +332,30 @@ fn main() {
     let pattern = std::env::var("GREPDIFF_REGEX").unwrap_or_default();
     // Empty pattern → match everything (show all hunks)
     let effective = if pattern.is_empty() { "." } else { &pattern };
-    let regex = Regex::new(effective).unwrap_or_else(|e| {
-        eprintln!("pickaxe-diff: invalid GREPDIFF_REGEX {effective:?}: {e}");
-        process::exit(1);
-    });
+
+    // Mode comes from GREPDIFF_MODE: "S" for pickaxe literal (-S), anything
+    // else (including unset) uses regex (-G) semantics.
+    let is_s_mode = std::env::var("GREPDIFF_MODE")
+        .map(|m| m == "S")
+        .unwrap_or(false);
+
+    // Build the Match pattern.  For -S mode we use literal counting; for
+    // highlighting in -S mode we escape the literal to a regex.
+    let (match_pattern, highlight_regex) = if is_s_mode {
+        let escaped = regex::escape(effective);
+        let re = Regex::new(&escaped).unwrap_or_else(|_| {
+            // Fallback: never-matching regex (should not happen after escape)
+            Regex::new("(?!x)x").unwrap()
+        });
+        (Match::Literal(effective.to_owned()), re)
+    } else {
+        let re = Regex::new(effective).unwrap_or_else(|e| {
+            eprintln!("pickaxe-diff: invalid GREPDIFF_REGEX {effective:?}: {e}");
+            process::exit(1);
+        });
+        let re2 = re.clone();
+        (Match::Regex(re), re2)
+    };
 
     // Run git diff to get the raw unified diff between the two file versions
     let output = Command::new("git")
@@ -353,7 +389,8 @@ fn main() {
         new_file,
         new_hex,
         new_mode,
-        &regex,
+        &match_pattern,
+        &highlight_regex,
         &diff_text,
         &colors,
         &mut stdout.lock(),

@@ -49,46 +49,61 @@ function M.gitstash(fullscreen, kwargs)
     .. vim.fn.shellescape(format)
     .. remove_nl
 
-  -- Preview commands
+  -- Preview commands as dispatcher/toggle scripts (F7 cycles 4 modes).
+  --   0 = all (patch+stat)   1 = matching files   2 = matching hunks   3 = diff
   local current =
     vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), (vim.fn.FugitiveFind(':/') or '') .. '/', '', '')
   local orderfile = vim.fn.tempname()
   vim.fn.writefile({ current }, orderfile)
   local suffix = vim.fn.executable('delta') == 1 and ('| delta ' .. config.delta_options) or ''
   local git_root_cmd = '`git rev-parse --show-toplevel`'
-
-  local pa = 'echo -e "\\033[0;35mgit show all\\033[0m" && git -C '
-    .. git_root_cmd
-    .. ' show --color=always -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' {1} '
-  local p0 = pa .. ' --patch --stat -- ' .. suffix
-  local p1 = pa .. ' --format=format: --patch -- ' .. suffix
-  local p2 = 'echo -e "\\033[0;35mgit show matching files\\033[0m" && '
-    .. git_SG
-    .. ' -C '
-    .. git_root_cmd
-    .. ' show '
-    .. G
-    .. '"`cat '
-    .. query_file
-    .. '`" -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' '
-    .. regex
-    .. '--color=always {1} --format=format: --patch --stat -- '
-    .. suffix
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
-  local p3
+  local mode_file = vim.fn.tempname()
+  vim.fn.writefile({ '0' }, mode_file)
+
+  local function write_script(lines)
+    local f = vim.fn.tempname()
+    vim.fn.writefile(lines, f)
+    vim.fn.setfperm(f, 'rwxr-xr-x')
+    return f
+  end
+
+  local p0_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit show all\\033[0m\\n"',
+    'git -C "$(git rev-parse --show-toplevel)"'
+      .. ' show --color=always -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' "$1" --patch --stat --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
+
+  local p2_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit show matching files\\033[0m\\n"',
+    'pattern=$(cat ' .. query_file .. ')',
+    git_SG
+      .. ' -C "$(git rev-parse --show-toplevel)"'
+      .. ' show '
+      .. G
+      .. '"$pattern" -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' '
+      .. regex
+      .. '--color=always "$1" --format=format: --patch --stat --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
+
+  local p3_script
   if vim.fn.executable(pickaxe_diff) == 1 then
-    -- Temp script avoids nested quoting/paren issues inside change-preview(...)
-    -- Receives stash ref as $1 via fzf {1} expansion. NOT the default preview.
-    local p3_script = vim.fn.tempname()
-    vim.fn.writefile({
+    p3_script = write_script({
       '#!/bin/sh',
       'printf "\\033[0;35mgit show matching hunks\\033[0m\\n"',
       'GREPDIFF_REGEX=$(cat ' .. query_file .. ')',
       'export GREPDIFF_REGEX',
+      -- Pass -S or -G mode so pickaxe-diff uses the correct matching semantics.
+      'GREPDIFF_MODE=' .. (kwargs.G and 'G' or 'S'),
+      'export GREPDIFF_MODE',
       'git -C "$(git rev-parse --show-toplevel)"'
         .. ' -c diff.external='
         .. vim.fn.shellescape(pickaxe_diff)
@@ -98,27 +113,49 @@ function M.gitstash(fullscreen, kwargs)
         .. regex
         .. G
         .. '"$GREPDIFF_REGEX"'
-        .. ' --format=format: --patch --stat --',
-    }, p3_script)
-    vim.fn.setfperm(p3_script, 'rwxr-xr-x')
-    p3 = p3_script .. ' {1}' .. (suffix ~= '' and (' ' .. suffix) or '')
+        .. ' --format=format: --patch --stat --'
+        .. (suffix ~= '' and (' ' .. suffix) or ''),
+    })
   else
-    p3 = 'echo "run make build to compile siefe.vim Rust binaries"'
+    p3_script = write_script({
+      '#!/bin/sh',
+      'echo "run make build to compile siefe.vim Rust binaries"',
+    })
   end
-  local p4 = 'echo -e "\\033[0;35mgit diff\\033[0m" && git -C '
-    .. git_root_cmd
-    .. ' diff --color=always -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' --patch --stat {1} -- '
-    .. suffix
 
-  local preview_cmds = { p0, p1, p2, p3, p4 }
-  local default_preview = preview_cmds[(config.stash_default_preview_command or 0) + 1] or p0
+  local p4_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit diff\\033[0m\\n"',
+    'git -C "$(git rev-parse --show-toplevel)"'
+      .. ' diff --color=always -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' --patch --stat "$1" --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
+
+  local toggle_script = write_script({
+    '#!/bin/sh',
+    'mode=$(cat ' .. mode_file .. ' 2>/dev/null || echo 0)',
+    'next=$(( (mode + 1) % 4 ))',
+    'printf "%s" "$next" > ' .. mode_file,
+  })
+
+  local dispatcher_script = write_script({
+    '#!/bin/sh',
+    'mode=$(cat ' .. mode_file .. ' 2>/dev/null || echo 0)',
+    'case $mode in',
+    '  0) exec ' .. p0_script .. ' "$1" ;;',
+    '  1) exec ' .. p2_script .. ' "$1" ;;',
+    '  2) exec ' .. p3_script .. ' "$1" ;;',
+    '  3) exec ' .. p4_script .. ' "$1" ;;',
+    '  *) exec ' .. p0_script .. ' "$1" ;;',
+    'esac',
+  })
+
+  local default_preview = dispatcher_script .. ' {1}'
 
   local default_size, other_size = utils.preview_window_size()
   local prompt = G_prompt .. regex .. ic_sym .. 'stash> '
-
-  local header = G_prompt .. regex .. ic_sym .. 'stash'
 
   local stash_km = utils.make_binds({
     [config.up_key] = 'up',
@@ -128,11 +165,11 @@ function M.gitstash(fullscreen, kwargs)
     [config.toggle_up_key] = 'toggle+down',
     [config.toggle_down_key] = 'toggle+up',
     [config.toggle_preview_key] = 'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-    [config.stash_preview_0_key] = 'change-preview(' .. p0 .. ')',
-    [config.stash_preview_1_key] = 'change-preview(' .. p1 .. ')',
-    [config.stash_preview_2_key] = 'change-preview(' .. p2 .. ')',
-    [config.stash_preview_3_key] = 'change-preview(' .. p3 .. ')',
-    [config.stash_preview_4_key] = 'change-preview(' .. p4 .. ')',
+    -- F7 cycles through 4 preview modes via execute-silent + refresh-preview.
+    [config.stash_preview_cycle_key] = {
+      'execute-silent(' .. toggle_script .. ')+refresh-preview',
+      desc = 'cycle-preview-mode',
+    },
     ['change'] = 'first+reload(' .. reload_cmd .. ')',
     [config.stash_fzf_key] = 'unbind(change,'
       .. config.stash_fzf_key

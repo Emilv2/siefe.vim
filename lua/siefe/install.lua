@@ -26,6 +26,25 @@ local function all_present(bin_dir)
   return true
 end
 
+-- Extract the git hash embedded by build.rs from a binary's --version output.
+-- Returns nil when the binary doesn't support --version or has no hash.
+local function binary_git_hash(bin_dir)
+  local out = vim.fn.system({ bin_dir .. "/rg2fzf", "--version" })
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+  return out:match("%(git:([a-f0-9]+)%)")
+end
+
+-- Return the short git hash of the plugin's current HEAD, or nil.
+local function plugin_git_hash(dir)
+  local out = vim.fn.system({ "git", "-C", dir, "rev-parse", "--short", "HEAD" })
+  if vim.v.shell_error == 0 then
+    return vim.trim(out)
+  end
+  return nil
+end
+
 --- Ensure binaries are present, building or downloading as needed.
 ---@param opts? { force?: boolean, silent?: boolean }
 ---   force  — re-install even if all binaries are already there (default: false)
@@ -37,6 +56,20 @@ function M.ensure_binaries(opts)
   local setup_script = dir .. "/scripts/setup.sh"
 
   if all_present(bin_dir) and not opts.force then
+    -- Cross-check embedded git hash against the plugin's current HEAD.
+    local bin_hash = binary_git_hash(bin_dir)
+    local plug_hash = plugin_git_hash(dir)
+    if bin_hash and plug_hash and bin_hash ~= plug_hash then
+      vim.notify(
+        "siefe: binaries are outdated (binary: "
+          .. bin_hash
+          .. ", plugin: "
+          .. plug_hash
+          .. "). Run :SiefeInstall! to update.",
+        vim.log.levels.WARN
+      )
+      return
+    end
     if not opts.silent then
       vim.notify("siefe: all binaries present in " .. bin_dir, vim.log.levels.DEBUG)
     end

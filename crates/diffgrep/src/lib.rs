@@ -30,6 +30,20 @@ pub use regex::Regex;
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
+/// The matching strategy, mirroring git's `-G` / `-S` pickaxe flags.
+///
+/// * `Regex` — (`-G`) a hunk matches if **any** added (`+`) or removed (`-`)
+///   content line contains a match for the regular expression.
+/// * `Literal` — (`-S`) a hunk matches if the **number of occurrences** of the
+///   literal string differs between the added lines and the removed lines.
+///   This matches git's pickaxe semantics: the string must be introduced or
+///   removed, not merely present on both sides.
+#[derive(Debug)]
+pub enum Match {
+    Regex(Regex),
+    Literal(String),
+}
+
 /// A single hunk from a unified diff (after filtering).
 #[derive(Debug, PartialEq)]
 pub struct Hunk {
@@ -51,23 +65,43 @@ pub struct FileDiff {
 
 // ── Core logic ────────────────────────────────────────────────────────────────
 
-/// Returns `true` if any added (`+`) or removed (`-`) content line in `lines`
-/// has content (after stripping the leading `+`/`-`) matching `regex`.
-fn hunk_matches(lines: &[String], regex: &Regex) -> bool {
-    lines.iter().any(|line| {
-        let b = line.as_bytes().first().copied();
-        (b == Some(b'+') || b == Some(b'-')) && regex.is_match(&line[1..])
-    })
+/// Returns `true` if a hunk's content lines match `pattern` according to the
+/// chosen mode:
+///
+/// * [`Match::Regex`] — any `+`/`-` line whose content (after the sigil)
+///   matches the regex triggers a match.
+/// * [`Match::Literal`] — the number of occurrences of the literal string in
+///   `+` lines must differ from the number in `-` lines (git `-S` semantics).
+fn hunk_matches(lines: &[String], pattern: &Match) -> bool {
+    match pattern {
+        Match::Regex(regex) => lines.iter().any(|line| {
+            let b = line.as_bytes().first().copied();
+            (b == Some(b'+') || b == Some(b'-')) && regex.is_match(&line[1..])
+        }),
+        Match::Literal(s) => {
+            let added: usize = lines
+                .iter()
+                .filter(|l| l.starts_with('+'))
+                .map(|l| l[1..].matches(s.as_str()).count())
+                .sum();
+            let removed: usize = lines
+                .iter()
+                .filter(|l| l.starts_with('-'))
+                .map(|l| l[1..].matches(s.as_str()).count())
+                .sum();
+            added != removed
+        }
+    }
 }
 
 /// Parse a unified diff from `reader` and return only the [`FileDiff`]s that
-/// contain at least one hunk matching `regex`.
+/// contain at least one hunk matching `pattern`.
 ///
 /// Input lines are read lazily; each hunk is buffered until the next `@@` or
 /// `diff` marker, then tested.  Only one file's header is held in memory at
 /// a time, so memory usage is proportional to the size of the largest single
 /// hunk/file-header rather than the whole diff.
-pub fn filter_diff<R: BufRead>(reader: R, regex: &Regex) -> io::Result<Vec<FileDiff>> {
+pub fn filter_diff<R: BufRead>(reader: R, pattern: &Match) -> io::Result<Vec<FileDiff>> {
     let mut result: Vec<FileDiff> = Vec::new();
 
     let mut file_header: Vec<String> = Vec::new();
@@ -81,7 +115,7 @@ pub fn filter_diff<R: BufRead>(reader: R, regex: &Regex) -> io::Result<Vec<FileD
     macro_rules! flush_hunk {
         () => {
             if in_hunk {
-                if hunk_matches(&hunk_lines, regex) {
+                if hunk_matches(&hunk_lines, pattern) {
                     matching_hunks.push(Hunk {
                         header: std::mem::take(&mut hunk_header),
                         lines: std::mem::take(&mut hunk_lines),
@@ -171,11 +205,12 @@ mod tests {
 
     fn run(input: &str, pattern: &str) -> Vec<FileDiff> {
         let regex = Regex::new(pattern).unwrap();
-        filter_diff(Cursor::new(input), &regex).unwrap()
+        filter_diff(Cursor::new(input), &Match::Regex(regex)).unwrap()
     }
 
     fn joined_output(input: &str, pattern: &str) -> String {
-        let diffs = run(input, pattern);
+        let regex = Regex::new(pattern).unwrap();
+        let diffs = filter_diff(Cursor::new(input), &Match::Regex(regex)).unwrap();
         let mut out = Vec::new();
         write_diff(&diffs, &mut out).unwrap();
         String::from_utf8(out).unwrap()
@@ -343,5 +378,42 @@ mod tests {
             run(&diff, "^world").is_empty(),
             "wrong anchor should not match"
         );
+    }
+
+    // ── Match::Literal (-S mode) ────────────────────────────────────────────
+
+    fn run_s(input: &str, literal: &str) -> Vec<FileDiff> {
+        filter_diff(Cursor::new(input), &Match::Literal(literal.to_owned())).unwrap()
+    }
+
+    #[test]
+    fn s_mode_count_changes_matches() {
+        // 1 occurrence added, 0 removed → count changed → match
+        let diff = single_file_diff("+line with needle here\n-unrelated removal\n");
+        assert!(!run_s(&diff, "needle").is_empty(), "count change should match");
+    }
+
+    #[test]
+    fn s_mode_count_equal_no_match() {
+        // 1 occurrence added AND 1 occurrence removed → net change = 0 → no match
+        let diff = single_file_diff("+added needle line\n-removed needle line\n");
+        assert!(run_s(&diff, "needle").is_empty(), "same count should not match");
+    }
+
+    #[test]
+    fn s_mode_treats_pattern_literally_not_as_regex() {
+        // "foo.bar" as a literal should NOT match "foo_bar" (dot is literal)
+        let diff = single_file_diff("+foo_bar\n");
+        assert!(run_s(&diff, "foo.bar").is_empty(), "literal dot must not match underscore");
+        // but the exact string should match
+        let diff2 = single_file_diff("+foo.bar\n");
+        assert!(!run_s(&diff2, "foo.bar").is_empty(), "exact literal should match");
+    }
+
+    #[test]
+    fn s_mode_multiple_occurrences() {
+        // 2 added, 1 removed → count changed → match
+        let diff = single_file_diff("+needle needle\n-needle\n");
+        assert!(!run_s(&diff, "needle").is_empty(), "2 vs 1 should match");
     }
 }

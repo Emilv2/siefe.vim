@@ -159,42 +159,59 @@ function M.gitlogfzf(fullscreen, kwargs)
       .. paths_str
       .. remove_nl
   end
-  local pa = 'echo -e "\\033[0;35mgit show all\\033[0m" && git -C '
-    .. git_root_cmd
-    .. ' show --color=always -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' {1} '
-  local p0 = pa .. ' --patch --stat -- ' .. suffix
-  local p1 = pa .. ' --format=format: -- ' .. suffix
-  local p2 = 'echo -e "\\033[0;35mgit show matching files\\033[0m" && '
-    .. git_SG
-    .. ' -C '
-    .. git_root_cmd
-    .. ' show '
-    .. G
-    .. '"`cat '
-    .. query_file
-    .. '`" -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' '
-    .. regex
-    .. '--color=always {1} --format=format: --patch --stat -- '
-    .. suffix
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
-  local p3
+
+  -- Build script-based dispatcher for F7 preview cycle (4 modes):
+  --   0 = all (patch+stat)   1 = matching files   2 = matching hunks   3 = diff
+  -- We write each mode-specific command as a temp script so that fzf's
+  -- change-preview() paren-counting cannot be confused by the shell commands,
+  -- and so {1} (fzf field reference) is only ever at the top level.
+  local mode_file = vim.fn.tempname()
+  vim.fn.writefile({ '0' }, mode_file)
+
+  local function write_script(lines)
+    local f = vim.fn.tempname()
+    vim.fn.writefile(lines, f)
+    vim.fn.setfperm(f, 'rwxr-xr-x')
+    return f
+  end
+
+  local p0_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit show all\\033[0m\\n"',
+    'git -C "$(git rev-parse --show-toplevel)"'
+      .. ' show --color=always -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' "$1" --patch --stat --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
+
+  local p2_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit show matching files\\033[0m\\n"',
+    'pattern=$(cat ' .. query_file .. ')',
+    git_SG
+      .. ' -C "$(git rev-parse --show-toplevel)"'
+      .. ' show '
+      .. G
+      .. '"$pattern" -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' '
+      .. regex
+      .. '--color=always "$1" --format=format: --patch --stat --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
+
+  local p3_script
   if vim.fn.executable(pickaxe_diff) == 1 then
-    -- Write to a temp script to avoid nested quoting/paren issues inside
-    -- change-preview(...). The script receives the commit hash as $1 via
-    -- fzf's {1} field expansion. GREPDIFF_REGEX is read from the query_file
-    -- (updated on every keystroke) so the preview always reflects the current
-    -- search term. This preview is NOT the default (gitlog_default_preview_command=0
-    -- → p0); it is available via the f6 key.
-    local p3_script = vim.fn.tempname()
-    vim.fn.writefile({
+    p3_script = write_script({
       '#!/bin/sh',
       'printf "\\033[0;35mgit show matching hunks\\033[0m\\n"',
       'GREPDIFF_REGEX=$(cat ' .. query_file .. ')',
       'export GREPDIFF_REGEX',
+      -- Pass -S or -G mode so pickaxe-diff uses the correct matching semantics.
+      'GREPDIFF_MODE=' .. (kwargs.G and 'G' or 'S'),
+      'export GREPDIFF_MODE',
       git_SG
         .. ' -C "$(git rev-parse --show-toplevel)"'
         .. ' -c diff.external='
@@ -205,32 +222,47 @@ function M.gitlogfzf(fullscreen, kwargs)
         .. regex
         .. G
         .. '"$GREPDIFF_REGEX"'
-        .. ' --format=format: --patch --stat --',
-    }, p3_script)
-    vim.fn.setfperm(p3_script, 'rwxr-xr-x')
-    p3 = p3_script .. ' {1}' .. (suffix ~= '' and (' ' .. suffix) or '')
+        .. ' --format=format: --patch --stat --'
+        .. (suffix ~= '' and (' ' .. suffix) or ''),
+    })
   else
-    p3 = 'echo "run make build to compile siefe.vim Rust binaries"'
+    p3_script = write_script({
+      '#!/bin/sh',
+      'echo "run make build to compile siefe.vim Rust binaries"',
+    })
   end
-  local p4 = 'echo -e "\\033[0;35mgit diff\\033[0m" && git -C '
-    .. git_root_cmd
-    .. ' diff --color=always -O'
-    .. vim.fn.shellescape(orderfile)
-    .. ' --patch --stat {1} -- '
-    .. suffix
 
-  local preview_cmds = { p0, p1, p2, p3, p4 }
-  local default_preview = preview_cmds[(config.gitlog_default_preview_command or 0) + 1] or p0
+  local p4_script = write_script({
+    '#!/bin/sh',
+    'printf "\\033[0;35mgit diff\\033[0m\\n"',
+    'git -C "$(git rev-parse --show-toplevel)"'
+      .. ' diff --color=always -O'
+      .. vim.fn.shellescape(orderfile)
+      .. ' --patch --stat "$1" --'
+      .. (suffix ~= '' and (' ' .. suffix) or ''),
+  })
 
-  -- Authors / paths info
-  local authors_info = #kwargs.authors == 0 and '' or ('\nauthors: ' .. table.concat(kwargs.authors, ' '))
-  local rel_paths = table.concat(
-    vim.tbl_map(function(p)
-      return utils.get_relative_git_or_bufdir(p)
-    end, valid_paths),
-    ' '
-  )
-  local paths_info = rel_paths == '' and '' or ('\npaths: ' .. rel_paths)
+  local toggle_script = write_script({
+    '#!/bin/sh',
+    'mode=$(cat ' .. mode_file .. ' 2>/dev/null || echo 0)',
+    'next=$(( (mode + 1) % 4 ))',
+    'printf "%s" "$next" > ' .. mode_file,
+  })
+
+  local dispatcher_script = write_script({
+    '#!/bin/sh',
+    'mode=$(cat ' .. mode_file .. ' 2>/dev/null || echo 0)',
+    'case $mode in',
+    '  0) exec ' .. p0_script .. ' "$1" ;;',
+    '  1) exec ' .. p2_script .. ' "$1" ;;',
+    '  2) exec ' .. p3_script .. ' "$1" ;;',
+    '  3) exec ' .. p4_script .. ' "$1" ;;',
+    '  *) exec ' .. p0_script .. ' "$1" ;;',
+    'esac',
+  })
+
+  -- In line-range mode only the "show all" preview makes sense (no pickaxe query).
+  local default_preview = (#kwargs.line_range > 0 and p0_script or dispatcher_script) .. ' {1}'
 
   local default_size, other_size = utils.preview_window_size()
 
@@ -243,16 +275,17 @@ function M.gitlogfzf(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+down',
     [config.toggle_down_key] = 'toggle+up',
-    -- Wrap complex fzf bind strings with desc so F1 help shows short labels.
     [config.toggle_preview_key] = {
       'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
       desc = 'cycle-preview',
     },
-    [config.gitlog_preview_0_key] = { 'change-preview(' .. p0 .. ')', desc = 'preview:patch+stat' },
-    [config.gitlog_preview_1_key] = { 'change-preview(' .. p1 .. ')', desc = 'preview:stat-only' },
-    [config.gitlog_preview_2_key] = { 'change-preview(' .. p2 .. ')', desc = 'preview:matching-files' },
-    [config.gitlog_preview_3_key] = { 'change-preview(' .. p3 .. ')', desc = 'preview:matching-hunks' },
-    [config.gitlog_preview_4_key] = { 'change-preview(' .. p4 .. ')', desc = 'preview:diff' },
+    -- F7 cycles through 4 preview modes (all / matching-files / matching-hunks / diff)
+    -- via a temp dispatcher script; execute-silent runs the toggle then refresh-preview
+    -- re-runs the dispatcher with the updated mode.
+    [config.gitlog_preview_cycle_key] = {
+      'execute-silent(' .. toggle_script .. ')+refresh-preview',
+      desc = 'cycle-preview-mode',
+    },
   }
 
   if #kwargs.line_range == 0 then

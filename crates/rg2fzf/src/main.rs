@@ -58,7 +58,21 @@
 
 use std::io::{self, BufRead, Write};
 
+const VERSION: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    " ",
+    env!("CARGO_PKG_VERSION"),
+    " (git:",
+    env!("SIEFE_GIT_HASH", "unknown"),
+    ")"
+);
+
 fn main() -> io::Result<()> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("{VERSION}");
+        return Ok(());
+    }
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut out = stdout.lock();

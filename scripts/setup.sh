@@ -44,11 +44,33 @@ all_present() {
   return 0
 }
 
+# Check whether the installed binaries match the current git HEAD.
+# Returns 0 (true) if up-to-date, 1 if stale or undetermined.
+binaries_up_to_date() {
+  local current_hash
+  current_hash="$(git -C "$PLUGIN_DIR" rev-parse --short HEAD 2>/dev/null)" || return 1
+  [[ -n "$current_hash" ]] || return 1
+
+  local binary_version
+  binary_version="$("$BIN_DIR/rg2fzf" --version 2>/dev/null)" || return 1
+
+  # Extract hash from "rg2fzf 0.1.0 (git:a1b2c3d)"
+  local binary_hash="${binary_version##*(git:}"
+  binary_hash="${binary_hash%)}"
+  [[ -n "$binary_hash" ]] || return 1
+
+  [[ "$current_hash" == "$binary_hash" ]]
+}
+
 # ── Already installed? ────────────────────────────────────────────────────────
 
 if all_present && [[ "${SIEFE_FORCE:-}" != "1" ]]; then
-  success "all binaries already present in $BIN_DIR — nothing to do."
-  exit 0
+  if binaries_up_to_date; then
+    success "all binaries present and up-to-date ($(git -C "$PLUGIN_DIR" rev-parse --short HEAD 2>/dev/null || echo '?')) — nothing to do."
+    exit 0
+  else
+    warn "binaries present but out-of-date — rebuilding..."
+  fi
 fi
 
 mkdir -p "$BIN_DIR"
