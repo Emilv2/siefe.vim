@@ -15,6 +15,13 @@ function M.setup(opts)
   require('siefe.config').setup(opts)
   -- Buffer tracker autocmd is already registered unconditionally by plugin/siefe.lua.
   -- Do NOT re-register it here: calling setup() must not cause BufEnter to fire twice.
+  -- Ensure Rust binaries are present; build from source if cargo available, else
+  -- download pre-built release assets.  Runs silently when all binaries exist.
+  require('siefe.install').ensure_binaries({ silent = true })
+end
+
+function M.install(force)
+  require('siefe.install').ensure_binaries({ force = force, silent = false })
 end
 
 -- ── Delegate to sub-modules ──────────────────────────────────────────────────
