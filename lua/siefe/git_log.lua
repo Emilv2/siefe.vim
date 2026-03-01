@@ -166,8 +166,16 @@ function M.gitlogfzf(fullscreen, kwargs)
   -- We write each mode-specific command as a temp script so that fzf's
   -- change-preview() paren-counting cannot be confused by the shell commands,
   -- and so {1} (fzf field reference) is only ever at the top level.
-  local mode_file = vim.fn.tempname()
-  vim.fn.writefile({ '0' }, mode_file)
+  -- Reuse mode_file across reopens so F7 preview cycle position is preserved
+  -- when toggle actions (-S/-G, -i, --follow, branch, author, paths) reopen.
+  local mode_file
+  if kwargs.mode_file and vim.fn.filereadable(kwargs.mode_file) == 1 then
+    mode_file = kwargs.mode_file
+  else
+    mode_file = vim.fn.tempname()
+    vim.fn.writefile({ '0' }, mode_file)
+    kwargs.mode_file = mode_file
+  end
 
   local function write_script(lines)
     local f = vim.fn.tempname()

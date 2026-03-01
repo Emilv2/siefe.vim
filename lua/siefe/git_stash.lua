@@ -58,8 +58,16 @@ function M.gitstash(fullscreen, kwargs)
   local suffix = vim.fn.executable('delta') == 1 and ('| delta ' .. config.delta_options) or ''
   local git_root_cmd = '`git rev-parse --show-toplevel`'
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
-  local mode_file = vim.fn.tempname()
-  vim.fn.writefile({ '0' }, mode_file)
+  -- Reuse mode_file across reopens so F7 preview cycle position is preserved
+  -- when toggle actions (-S/-G, -i, --pickaxe-regex) reopen.
+  local mode_file
+  if kwargs.mode_file and vim.fn.filereadable(kwargs.mode_file) == 1 then
+    mode_file = kwargs.mode_file
+  else
+    mode_file = vim.fn.tempname()
+    vim.fn.writefile({ '0' }, mode_file)
+    kwargs.mode_file = mode_file
+  end
 
   local function write_script(lines)
     local f = vim.fn.tempname()
