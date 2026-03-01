@@ -183,27 +183,34 @@ function M.gitlogfzf(fullscreen, kwargs)
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
   local p3
   if vim.fn.executable(pickaxe_diff) == 1 then
-    p3 = " bash -c '"
-      .. ' echo -e "\\033[0;35mgit show matching hunks\\033[0m" && '
-      .. '(export GREPDIFF_REGEX=`cat '
-      .. query_file
-      .. '`; '
-      .. git_SG
-      .. ' -C '
-      .. git_root_cmd
-      .. ' -c diff.external='
-      .. pickaxe_diff
-      .. ' show {1} -O'
-      .. vim.fn.shellescape(orderfile)
-      .. ' --ext-diff '
-      .. regex
-      .. G
-      .. '"`cat '
-      .. query_file
-      .. '`" --format=format: --patch --stat --) \''
-      .. suffix
+    -- Write to a temp script to avoid nested quoting/paren issues inside
+    -- change-preview(...). The script receives the commit hash as $1 via
+    -- fzf's {1} field expansion. GREPDIFF_REGEX is read from the query_file
+    -- (updated on every keystroke) so the preview always reflects the current
+    -- search term. This preview is NOT the default (gitlog_default_preview_command=0
+    -- → p0); it is available via the f6 key.
+    local p3_script = vim.fn.tempname()
+    vim.fn.writefile({
+      '#!/bin/sh',
+      'printf "\\033[0;35mgit show matching hunks\\033[0m\\n"',
+      'GREPDIFF_REGEX=$(cat ' .. query_file .. ')',
+      'export GREPDIFF_REGEX',
+      git_SG
+        .. ' -C "$(git rev-parse --show-toplevel)"'
+        .. ' -c diff.external='
+        .. vim.fn.shellescape(pickaxe_diff)
+        .. ' show "$1" -O'
+        .. vim.fn.shellescape(orderfile)
+        .. ' --ext-diff '
+        .. regex
+        .. G
+        .. '"$GREPDIFF_REGEX"'
+        .. ' --format=format: --patch --stat --',
+    }, p3_script)
+    vim.fn.setfperm(p3_script, 'rwxr-xr-x')
+    p3 = p3_script .. ' {1}' .. (suffix ~= '' and (' ' .. suffix) or '')
   else
-    p3 = 'echo run "make build" to compile siefe.vim binaries'
+    p3 = 'echo "run make build to compile siefe.vim Rust binaries"'
   end
   local p4 = 'echo -e "\\033[0;35mgit diff\\033[0m" && git -C '
     .. git_root_cmd

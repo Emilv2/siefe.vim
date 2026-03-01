@@ -81,26 +81,29 @@ function M.gitstash(fullscreen, kwargs)
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
   local p3
   if vim.fn.executable(pickaxe_diff) == 1 then
-    p3 = " bash -c '"
-      .. ' echo -e "\\033[0;35mgit show matching hunks\\033[0m" && '
-      .. '(export GREPDIFF_REGEX=`cat '
-      .. query_file
-      .. '`; '
-      .. 'git -C '
-      .. git_root_cmd
-      .. ' -c diff.external='
-      .. pickaxe_diff
-      .. ' show {1} -O'
-      .. vim.fn.shellescape(orderfile)
-      .. ' --ext-diff '
-      .. regex
-      .. G
-      .. '"`cat '
-      .. query_file
-      .. '`" --format=format: --patch --stat --) \''
-      .. suffix
+    -- Temp script avoids nested quoting/paren issues inside change-preview(...)
+    -- Receives stash ref as $1 via fzf {1} expansion. NOT the default preview.
+    local p3_script = vim.fn.tempname()
+    vim.fn.writefile({
+      '#!/bin/sh',
+      'printf "\\033[0;35mgit show matching hunks\\033[0m\\n"',
+      'GREPDIFF_REGEX=$(cat ' .. query_file .. ')',
+      'export GREPDIFF_REGEX',
+      'git -C "$(git rev-parse --show-toplevel)"'
+        .. ' -c diff.external='
+        .. vim.fn.shellescape(pickaxe_diff)
+        .. ' show "$1" -O'
+        .. vim.fn.shellescape(orderfile)
+        .. ' --ext-diff '
+        .. regex
+        .. G
+        .. '"$GREPDIFF_REGEX"'
+        .. ' --format=format: --patch --stat --',
+    }, p3_script)
+    vim.fn.setfperm(p3_script, 'rwxr-xr-x')
+    p3 = p3_script .. ' {1}' .. (suffix ~= '' and (' ' .. suffix) or '')
   else
-    p3 = 'echo run "make build" to compile siefe.vim binaries'
+    p3 = 'echo "run make build to compile siefe.vim Rust binaries"'
   end
   local p4 = 'echo -e "\\033[0;35mgit diff\\033[0m" && git -C '
     .. git_root_cmd

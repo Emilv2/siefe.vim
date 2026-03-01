@@ -93,9 +93,9 @@ local function make_defaults()
   d.gitlog_switch_key = 'ctrl-s'
   d.gitlog_preview_0_key = 'f1'
   d.gitlog_preview_1_key = 'f2'
-  d.gitlog_preview_2_key = 'f3'
-  d.gitlog_preview_3_key = 'f4'
-  d.gitlog_preview_4_key = 'f5'
+  d.gitlog_preview_2_key = 'f5'
+  d.gitlog_preview_3_key = 'f6'
+  d.gitlog_preview_4_key = 'f7'
   d.gitlog_default_preview_command = 0
   d.gitlog_default_G = false
   d.gitlog_default_regex = false
@@ -118,8 +118,8 @@ local function make_defaults()
   -- Git branch keys
   d.gitbranch_preview_0_key = 'f1'
   d.gitbranch_preview_1_key = 'f2'
-  d.gitbranch_preview_2_key = 'f3'
-  d.gitbranch_preview_3_key = 'f4'
+  d.gitbranch_preview_2_key = 'f5'
+  d.gitbranch_preview_3_key = 'f6'
   d.branches_all_key = 'ctrl-a'
   d.branches_switch_key = 'ctrl-o'
   d.branches_merge_key = 'ctrl-e'
@@ -136,9 +136,9 @@ local function make_defaults()
   d.stash_pickaxe_regex_key = 'ctrl-x'
   d.stash_preview_0_key = 'f1'
   d.stash_preview_1_key = 'f2'
-  d.stash_preview_2_key = 'f3'
-  d.stash_preview_3_key = 'f4'
-  d.stash_preview_4_key = 'f5'
+  d.stash_preview_2_key = 'f5'
+  d.stash_preview_3_key = 'f6'
+  d.stash_preview_4_key = 'f7'
   d.stash_default_preview_command = 0
 
   -- Window keys
