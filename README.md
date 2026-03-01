@@ -1,22 +1,25 @@
 # siefe.vim
 ## Neovim search plugin — fzf-lua on steroids
 
-siefe.vim is a Neovim plugin that wraps [fzf-lua](https://github.com/ibhagwan/fzf-lua) with a rich set of
+siefe.vim is a Neovim plugin that wraps [fzf-lua](https://github.com/Emilv2/fzf-lua) with a rich set of
 search commands, live-reload ripgrep integration, git log/status/stash/branch pickers, history with saved
-cursor positions, and much more.
+cursor positions (from shada), and much more.
 
-> **Neovim only.** The plugin is written in Lua and requires Neovim ≥ 0.8.
+> **Neovim only.** The plugin is written in Lua and requires Neovim ≥ 0.9.
 
 ## Dependencies
 
 | Dependency | Required | Notes |
 | --- | --- | --- |
-| [Emilv2/fzf-lua](https://github.com/Emilv2/fzf-lua) | ✓ | Neovim fzf integration |
+| [Emilv2/fzf-lua](https://github.com/Emilv2/fzf-lua) | ✓ | Neovim fzf integration (fork) |
 | [fzf](https://github.com/junegunn/fzf) | ✓ | fuzzy finder binary |
-| [ripgrep](https://github.com/BurntSushi/ripgrep) | ✓ | `rg` for search commands |
+| [ripgrep](https://github.com/BurntSushi/ripgrep) | ✓ | `rg` for search/files commands |
 | [fd](https://github.com/sharkdp/fd) | recommended | fast file finder for dir-select |
-| [bat](https://github.com/sharkdp/bat) | recommended | syntax-highlighted previews |
-| [delta](https://github.com/dandavison/delta) | optional | coloured git diff preview |
+| [delta](https://github.com/dandavison/delta) | optional | coloured git diff previews |
+| `cargo` / Rust toolchain | build-time | to compile helper binaries from source |
+
+> File previews use the **Neovim built-in previewer** (Treesitter / LSP syntax, no `bat` required).
+> Git diff previews use `git show`/`git diff` output, optionally styled with `delta`.
 
 ## Installation
 
@@ -25,28 +28,43 @@ cursor positions, and much more.
 {
   "Emilv2/siefe.vim",
   dependencies = { "Emilv2/fzf-lua" },
-  build = "make build",   -- compiles Rust helper binaries into bin/
+  -- Builds Rust helper binaries. If cargo is available, compiles from source;
+  -- otherwise downloads a pre-built tarball from the latest GitHub release.
+  build = "bash scripts/setup.sh",
   config = function()
     require("siefe").setup({
-      -- All options are optional; shown here with their defaults.
-      -- loclist = false,          -- use location list instead of quickfix
-      -- rg_default_hidden = false,
-      -- rg_default_case_sensitive = 1,  -- 1=smart, 2=sensitive, 3=insensitive
-      -- bat_options = "--style=numbers,changes",
+      -- All options are optional. See Configuration section below.
     })
   end,
 }
 ```
 
+### Binary installation
+
+On first `setup()`, siefe checks that its four Rust helper binaries are present in `bin/`.
+If they are missing or outdated it runs `scripts/setup.sh` automatically (async, no blocking).
+
+You can also invoke it manually:
+
+```vim
+:SiefeInstall    " install if missing
+:SiefeInstall!   " force reinstall (e.g. after updating the plugin)
+```
+
+The setup script prefers `cargo build --release` when `cargo` is available and falls back to
+downloading the pre-built tarball for your platform from the latest GitHub release.
+
 ## Rust helper binaries
 
-`make build` compiles four small Rust binaries and copies them into `bin/`:
+`scripts/setup.sh` (or `make build`) compiles four small Rust binaries and copies them into `bin/`.
+Each binary embeds the git commit hash of the plugin at build time (`--version` shows it).
+`setup()` warns if the installed binaries are older than the plugin's current HEAD.
 
 | Binary | Purpose |
 | --- | --- |
-| `rg2fzf` | Translates `rg --null` output (`file\0line:col:text\n`) to NUL-terminated records for `fzf --read0`, preserving correct field boundaries without `fs_stat` |
+| `rg2fzf` | Translates `rg --null` output (`file\0line:col:text\n`) to NUL-terminated records for `fzf --read0` — unambiguous field boundaries, no `fs_stat` calls |
 | `shada2fzf` | Parses Neovim's shada file to extract MRU file positions (line + col) for the history picker |
-| `diffgrep` | Filters a unified diff to only hunks whose `+`/`-` lines match a pattern (replaces the broken Perl version) |
+| `diffgrep` | Filters a unified diff to only hunks whose `+`/`-` lines match a pattern; supports `-S` (literal pickaxe) and `-G` (regex pickaxe) flags matching git's exact semantics |
 | `pickaxe-diff` | External diff driver for git pickaxe (`-S`/`-G`) that colours output and calls `diffgrep` |
 
 ## Commands
@@ -71,7 +89,7 @@ cursor positions, and much more.
 | `SiefeBuffersRgWord` | | buffer rg of word under cursor |
 | `SiefeBuffersRgWORD` | | buffer rg of WORD under cursor |
 
-**Key bindings inside the rg picker** (press `F9` for full help):
+**Key bindings inside the rg picker** (press `F1` for fzf-lua's built-in help):
 
 | Key | Action |
 | --- | --- |
@@ -116,7 +134,7 @@ cursor positions, and much more.
 
 | Command | Default map | Description |
 | --- | --- | --- |
-| `SiefeGitLog` | `<leader>gl` | git log (pickaxe -S search) |
+| `SiefeGitLog` | `<leader>gl` | git log (pickaxe `-S` literal search) |
 | `SiefeGitLogWord` | `<leader>gw` | git log for word under cursor |
 | `SiefeGitLogWORD` | `<leader>gW` | git log for WORD under cursor |
 | `SiefeGitLogVisual` | `<leader>gv` | git log for visual selection |
@@ -130,34 +148,50 @@ cursor positions, and much more.
 | `SiefeGitBranch` | `<leader>gb` | git branch picker |
 | `SiefeGitStash` | `<leader>gx` | git stash picker |
 
+**Key bindings inside the git log picker:**
+
+| Key | Action |
+| --- | --- |
+| `ctrl-s` | Toggle between `-S` (literal count diff) and `-G` (regex) pickaxe mode |
+| `ctrl-x` | Toggle regex mode for `-G` pattern matching |
+| `ctrl-i` / `alt-i` | Toggle case-insensitive search |
+| `ctrl-o` | Toggle `--follow` (follow file renames) |
+| `ctrl-b` | Filter by branch |
+| `ctrl-^` | Exclude branch |
+| `ctrl-a` | Filter by author |
+| `ctrl-t` | Filter by file type |
+| `ctrl-v` | Open commit in vertical diff split |
+| `F7` | **Cycle preview mode**: full diff → matching files → matching hunks (via `diffgrep`) → plain diff |
+| `F1` | fzf-lua built-in help |
+
 ### History / Buffers / Other
 
 | Command | Default map | Description |
 | --- | --- | --- |
 | `SiefeHistory` | `<leader>fh` | MRU file history (with line + col from shada) |
 | `SiefeProjectHistory` | `<leader>Fh` | MRU history limited to git repo |
-| `SiefeBuffers` | `<leader>fb` | open buffers |
+| `SiefeBuffers` | `<leader>fb` | open buffers (terminals sorted last) |
+| `SiefeWindows` | `<leader>W` | all windows across all tabs |
 | `SiefeMarks` | `<leader>m` | marks |
 | `SiefeJumps` | `<leader>j` | jump list |
-| `SiefeRegisters` | `<leader>'" ` | registers |
+| `SiefeRegisters` | `<leader>'"` | registers |
 | `SiefeMaps` | `<leader>?` | key mappings |
+| `SiefeInstall` | — | install/update Rust helper binaries |
 
 ## Configuration
 
-All options are passed to `require("siefe").setup({})`. None are required.
+All options are passed to `require("siefe").setup({})`. Calling `setup()` is optional —
+all defaults apply automatically. None of the options are required.
 
 ```lua
 require("siefe").setup({
   -- Use location list instead of quickfix for multi-select
   loclist = false,
 
-  -- bat syntax highlighting options
-  bat_options = "--style=numbers,changes",
-
-  -- delta diff viewer options
+  -- delta diff viewer options (used in git log/stash/branch previews)
   delta_options = "--keep-plus-minus-markers",
 
-  -- Default rg toggle states
+  -- Default rg toggle states (all false / 1=smart-case by default)
   rg_default_hidden = false,
   rg_default_no_ignore = 0,          -- 0=off, 1=--no-ignore, 2=--no-ignore-vcs
   rg_default_case_sensitive = 1,     -- 1=smart, 2=sensitive, 3=insensitive
@@ -168,35 +202,58 @@ require("siefe").setup({
   rg_default_text = false,
   rg_default_depth1 = false,
 
-  -- Key overrides (any fzf key string is accepted)
-  rg_word_key = "ctrl-w",
-  rg_case_key = "ctrl-s",
-  rg_files_key = "ctrl-f",
-  -- ... see lua/siefe/config.lua for the full list
+  -- Key overrides — any fzf key string is accepted (e.g. "alt-w", "ctrl-f", "f5")
+  rg_word_key = "ctrl-w",   -- toggle word-boundary matching (disabled in files mode)
+  rg_case_key = "ctrl-s",   -- cycle case modes
+  rg_files_key = "ctrl-f",  -- switch to files mode
+  rg_dir_key = "ctrl-d",    -- change search directory
+  -- ... see lua/siefe/config.lua for the full list of ~60 configurable keys
+
+  -- Disable all default mappings (set your own with <Plug> mappings)
+  -- vim.g.siefe_map_keys = false  -- set BEFORE the plugin loads (in init.lua)
 })
+```
+
+### Disabling default key mappings
+
+Default mappings (e.g. `<leader>rg`, `<leader>gl`) are created automatically.
+To disable them, set `vim.g.siefe_map_keys = false` **before** the plugin loads:
+
+```lua
+-- in init.lua (before lazy setup):
+vim.g.siefe_map_keys = false
+```
+
+Then map with `<Plug>` targets:
+
+```lua
+vim.keymap.set("n", "<leader>s", "<Plug>SiefeRg")
+vim.keymap.set("n", "<leader>G", "<Plug>SiefeGitLog")
 ```
 
 ## Development
 
 ```sh
-# Build Rust binaries
+# Install / update Rust binaries (cargo preferred, falls back to GitHub release download)
+bash scripts/setup.sh
+# or, to always build from source:
 make build
 
-# Run all tests (Rust + Lua unit)
+# Run all tests (Rust unit + Lua unit)
 make test
 
-# Run integration tests (requires make build first)
+# Run integration tests (requires `make build` first, needs rg + git in PATH)
 make test-integration
 
-# Lint
-make lint        # runs luacheck + stylua --check + cargo clippy + cargo fmt --check
+# Lint (luacheck + stylua --check + cargo clippy + cargo fmt --check)
+make lint
 
-# Format
-make fmt         # runs stylua + cargo fmt
+# Format (stylua + cargo fmt)
+make fmt
 
 # Coverage
-make coverage    # Rust llvm-cov summary + Lua luacov report
-make coverage-rust   # HTML report in coverage/rust/index.html
-make coverage-lua    # luacov.report.out
+make coverage-rust-summary  # Rust line coverage summary to stdout
+make coverage-rust           # HTML report at coverage/rust/index.html
+make coverage-lua            # Lua line coverage report at luacov.report.out
 ```
 

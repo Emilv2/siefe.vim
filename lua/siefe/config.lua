@@ -24,8 +24,7 @@ local function make_defaults()
   d.accept_key = 'ctrl-m'
   d.toggle_up_key = 'tab'
   d.toggle_down_key = 'shift-tab'
-  d.help_key = 'f9'
-  d.toggle_preview_key = 'ctrl-/'
+  d.toggle_preview_key = 'ctrl-/' -- fzf-lua F1 is the built-in help key
 
   -- Window-open actions
   d.split_key = 'ctrl-]'
