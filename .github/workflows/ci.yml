@@ -117,4 +117,7 @@ jobs:
         run: git clone --depth=1 https://github.com/ibhagwan/fzf-lua /tmp/fzf-lua
 
       - name: E2E tests (make test-e2e)
+        # Covers test_e2e.lua (rg / buffers / history / config) and
+        # test_e2e_gitlog.lua (git log: all-commits, file/dir filter, subdir,
+        # pickaxe -G/-S, F7 preview cycle)
         run: make test-e2e FZF_LUA_PATH=/tmp/fzf-lua

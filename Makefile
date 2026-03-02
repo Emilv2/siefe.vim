@@ -36,6 +36,7 @@ test-neovim:
 FZF_LUA_PATH ?= /tmp/fzf-lua
 test-e2e:
 	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -l test/test_e2e.lua
+	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -l test/test_e2e_gitlog.lua
 
 # Integration tests call real external binaries; requires `make build` first.
 test-integration: build
