@@ -99,6 +99,8 @@ jobs:
   e2e:
     name: E2E (fzf-lua chansend)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

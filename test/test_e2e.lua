@@ -53,7 +53,7 @@ local T = require('test.helpers')
 -- Neovim stores other files there (e.g. named-pipe sockets, shell paths), so
 -- rg would find unexpected results when searching that directory.
 -- Use a plain OS temp path that is isolated from Neovim's internals instead.
-local tmpdir = '/tmp/siefe_e2e_' .. tostring(math.floor(vim.fn.reltimefloat(vim.fn.reltime()) * 1e6))
+local tmpdir = '/tmp/siefe_e2e_' .. tostring(vim.loop.getpid()) .. '_' .. tostring(math.floor(vim.fn.reltimefloat(vim.fn.reltime()) * 1e6))
 vim.fn.mkdir(tmpdir, 'p')
 
 local function make_file(name, lines)
@@ -140,6 +140,8 @@ local function launch_and_wait(fn, ready_ms)
 end
 
 -- Send a string to fzf and yield briefly for fzf to process.
+-- delay_ms is the minimum time to wait after sending (default 400ms covers fzf
+-- UI refresh; set to a smaller value and follow with wait_fzf_match for live rg).
 local function fzf_type(chan, str, delay_ms)
   vim.fn.chansend(chan, str)
   vim.wait(delay_ms or 400)
@@ -234,7 +236,7 @@ T.group('e2e rg: opens file at the correct line and column', function()
   T.ok(cursor ~= nil, 'found a window showing the opened buffer')
   if cursor then
     T.eq(cursor[1], 3, 'cursor landed at line 3')
-    T.eq(cursor[2] + 1, 1, 'cursor at column 1 (rg default)')
+    T.eq(cursor[2] + 1, 1, 'cursor at column 1 (rg default)') -- cursor[2] is 0-indexed
   end
 end)
 
