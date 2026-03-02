@@ -67,6 +67,13 @@ function M.group(name, fn)
   end
 end
 
+--- Feed keystrokes synchronously (nvim-autopairs pattern).
+--- @param keys string  Neovim key notation string, e.g. '<Esc>', 'v4l<CR>'
+function M.feed(keys)
+  local k = vim.api.nvim_replace_termcodes(keys, true, false, true)
+  vim.api.nvim_feedkeys(k, 'x', true)
+end
+
 --- Print summary and exit with appropriate code.
 function M.finish()
   io.stdout:write(string.format('\n%d passed, %d failed\n', pass_count, fail_count))

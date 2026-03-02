@@ -62,6 +62,9 @@ jobs:
       - name: Lua unit tests (make test-lua)
         run: make test-lua
 
+      - name: Neovim integration tests (make test-neovim)
+        run: make test-neovim
+
   # ── 3. Integration: build Rust binaries → run real-rg/git tests ─────────────
   integration:
     name: Integration (build · rg · git)

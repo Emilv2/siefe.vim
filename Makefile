@@ -1,4 +1,4 @@
-.PHONY: build test test-lua test-rust test-integration \
+.PHONY: build test test-lua test-rust test-integration test-neovim \
         coverage coverage-rust coverage-lua lint lint-lua lint-rust fmt fmt-lua fmt-rust
 
 NVIM      ?= nvim
@@ -24,11 +24,16 @@ test-lua:
 	$(NVIM) --headless -u NONE -l test/test_rg.lua
 	$(NVIM) --headless -u NONE -l test/test_history.lua
 
+# Neovim integration tests: exercise functions that require real Neovim state
+# (buffers, cursor positions, registers, quickfix, feedkeys).
+test-neovim:
+	$(NVIM) --headless -u NONE -l test/test_neovim.lua
+
 # Integration tests call real external binaries; requires `make build` first.
 test-integration: build
 	$(NVIM) --headless -u NONE -l test/test_integration.lua
 
-test: test-rust test-lua
+test: test-rust test-lua test-neovim
 
 # ── Coverage ──────────────────────────────────────────────────────────────────
 
