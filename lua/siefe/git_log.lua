@@ -88,7 +88,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   local git_root_cmd = '`git rev-parse --show-toplevel`'
 
   local current =
-    vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), (vim.fn.FugitiveFind(':/') or '') .. '/', '', '')
+    vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), ((vim.fn.exists('*FugitiveFind') == 1 and vim.fn.FugitiveFind(':/')) or '') .. '/', '', '')
   local orderfile = vim.fn.tempname()
   vim.fn.writefile({ current }, orderfile)
 

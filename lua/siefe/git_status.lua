@@ -115,7 +115,7 @@ function M.gitstatus(fullscreen, kwargs)
   local p1 = 'git diff --staged -- {3}'
 
   local default_size, other_size = utils.preview_window_size()
-  local default_preview = ({ p0, p1 })[config.gitlog_default_preview_command + 1] or p0
+  local default_preview = p0
 
   local header = (kwargs.uno and '-uno ' or '') .. 'git status' .. paths_info
 

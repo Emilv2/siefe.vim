@@ -1,13 +1,13 @@
 -- test/test_picker_actions.lua
 -- Real integration tests for siefe picker action callbacks.
 --
--- Strategy: mock fzf-lua so that fzf_exec / fzf_live capture the opts.actions
--- table instead of launching an interactive terminal.  We then call each action
--- fn(selected, opts) directly with a real entry and assert the expected Neovim
--- side-effects (buffer, cursor, register, quickfix list).
+-- Strategy: mock fzf-lua so that fzf_exec / fzf_live capture opts.actions AND
+-- opts.keymap.fzf instead of launching an interactive terminal.  We then call
+-- each action fn(selected, opts) directly with a real entry and assert the
+-- expected Neovim side-effects (buffer, cursor, register, quickfix list).
 --
--- This exercises the full Lua code path from the top-level picker function
--- through the action callback, without requiring a real fzf process.
+-- We also test keymap.fzf binds (toggle-preview, F7 preview cycle, etc.)
+-- and verify that custom config keys are reflected in both tables.
 --
 -- Run with: nvim --headless -u NONE -l test/test_picker_actions.lua
 --
@@ -41,7 +41,12 @@ end
 -- ── fzf-lua mock ─────────────────────────────────────────────────────────────
 
 -- Captured state from the last picker launch (set by mock).
-local last_captured = { actions = nil, source = nil, opts = nil }
+-- Returns: { actions, keymap_fzf, source, opts }
+-- • actions:     opts.actions table (Lua-side action callbacks)
+-- • keymap_fzf:  opts.keymap.fzf table (fzf-native bind strings)
+-- • source:      the source passed to fzf_exec (table of entries)
+-- • opts:        the full opts table
+local last_captured = { actions = nil, keymap_fzf = nil, source = nil, opts = nil }
 
 -- Stub file-open action: parses a "file:line:col[:text]" rg-format entry.
 local function stub_open(cmd, entry)
@@ -87,7 +92,7 @@ local fzl_actions_stubs = {
 }
 
 local function make_fzl_mock()
-  last_captured = { actions = nil, source = nil, opts = nil }
+  last_captured = { actions = nil, keymap_fzf = nil, source = nil, opts = nil }
   -- rg.lua requires both 'fzf-lua' (for fzf_live/fzf_exec) and the submodule
   -- 'fzf-lua.actions' (for file_edit, file_split, …).  Both must be mocked.
   package.loaded['fzf-lua.actions'] = fzl_actions_stubs
@@ -97,11 +102,13 @@ local function make_fzl_mock()
       last_captured.source = src
       last_captured.opts = opts
       last_captured.actions = opts and opts.actions
+      last_captured.keymap_fzf = opts and opts.keymap and opts.keymap.fzf
     end,
     -- fzf_live: function source (live-rg mode)
     fzf_live = function(_src_fn, opts)
       last_captured.opts = opts
       last_captured.actions = opts and opts.actions
+      last_captured.keymap_fzf = opts and opts.keymap and opts.keymap.fzf
     end,
     -- fzl.actions also referenced directly (fzl = require('fzf-lua'))
     actions = fzl_actions_stubs,
@@ -110,7 +117,8 @@ end
 
 -- ── capture() helper ─────────────────────────────────────────────────────────
 
--- Run picker_fn() with a mocked fzf-lua; return the captured actions table.
+-- Run picker_fn() with a mocked fzf-lua; return the captured state table:
+--   { actions, keymap_fzf, source, opts }
 -- config_opts: if provided, call siefe.config.setup(config_opts) first, then
 --              reset to defaults after capture so tests don't bleed state.
 local function capture(picker_fn, config_opts)
@@ -132,7 +140,13 @@ local function capture(picker_fn, config_opts)
 
   picker_fn()
 
-  local actions = last_captured.actions or {}
+  -- Snapshot the captured state before teardown.
+  local cap = {
+    actions = last_captured.actions or {},
+    keymap_fzf = last_captured.keymap_fzf or {},
+    source = last_captured.source,
+    opts = last_captured.opts,
+  }
 
   -- Restore defaults after tests that customise config.
   if config_opts then
@@ -149,7 +163,34 @@ local function capture(picker_fn, config_opts)
   package.loaded['fzf-lua'] = nil
   package.loaded['fzf-lua.actions'] = nil
 
-  return actions
+  return cap
+end
+
+-- ── call_action helper ────────────────────────────────────────────────────────
+
+-- Call an action by key from either cap.actions or cap.keymap_fzf.
+-- For actions: calls { fn = ..., desc = ... }.fn(selected, opts)
+-- For keymap_fzf: the value may be a string bind or {bind_str, desc=...};
+--   we just verify it is registered (string or table), not call it
+--   (fzf-native binds like "change-preview-window(…)" run inside fzf, not Lua).
+local function call_action(cap, key, selected, opts)
+  local a = cap.actions[key]
+  if a and type(a) == 'table' and type(a.fn) == 'function' then
+    a.fn(selected or {}, opts or {})
+    return true
+  end
+  return false
+end
+
+-- Return true when the key is registered in either actions or keymap_fzf.
+local function has_bind(cap, key)
+  if cap.actions[key] ~= nil then
+    return true
+  end
+  if cap.keymap_fzf[key] ~= nil then
+    return true
+  end
+  return false
 end
 
 -- ── RG picker tests ───────────────────────────────────────────────────────────
@@ -158,13 +199,13 @@ T.group('rg: default action opens file at correct line and column', function()
   reset_buf()
   local path = make_file('rg_basic.lua', { 'line one', 'line two', 'target here', 'line four' })
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   local entry = path .. ':3:5:target here'
-  T.ok(type(actions['default']) == 'table', 'default action is registered')
-  actions['default'].fn({ entry }, {})
+  T.ok(type(cap.actions['default']) == 'table', 'default action is registered')
+  call_action(cap, 'default', { entry })
 
   T.eq(vim.fn.expand('%:p'), path, 'correct file opened')
   T.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'cursor at line 3')
@@ -175,7 +216,7 @@ T.group('rg: default action multi-select populates quickfix', function()
   vim.fn.setqflist({})
   local path = make_file('rg_qf.lua', { 'alpha', 'beta', 'gamma' })
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
@@ -184,7 +225,7 @@ T.group('rg: default action multi-select populates quickfix', function()
     path .. ':2:1:beta',
     path .. ':3:1:gamma',
   }
-  actions['default'].fn(entries, {})
+  call_action(cap, 'default', entries)
 
   local qf = vim.fn.getqflist()
   T.ok(#qf >= 2, 'quickfix has entries for multi-select (got ' .. tostring(#qf) .. ')')
@@ -194,75 +235,75 @@ T.group('rg: yank action copies matched text to register', function()
   local path = make_file('rg_yank.lua', { 'hello world' })
   local kwargs = {}
   local config = require('siefe.config')
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   local entry = path .. ':1:1:hello world'
-  T.ok(type(actions[config.rg_yank_key]) == 'table', 'yank action registered')
-  actions[config.rg_yank_key].fn({ entry }, {})
+  T.ok(type(cap.actions[config.rg_yank_key]) == 'table', 'yank action registered')
+  call_action(cap, config.rg_yank_key, { entry })
   T.eq(vim.fn.getreg('"'), 'hello world', 'yank registers matched text')
 end)
 
 T.group('rg: word toggle sets kwargs.word on/off', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
-  T.ok(actions[config.rg_word_key] ~= nil, 'word toggle action registered')
+  T.ok(cap.actions[config.rg_word_key] ~= nil, 'word toggle action registered')
   T.ok(not kwargs.word, 'word initially false')
-  actions[config.rg_word_key].fn({}, {})
+  call_action(cap, config.rg_word_key)
   T.ok(kwargs.word == true, 'first toggle → word = true')
-  actions[config.rg_word_key].fn({}, {})
+  call_action(cap, config.rg_word_key)
   T.ok(kwargs.word == false, 'second toggle → word = false')
 end)
 
 T.group('rg: case toggle cycles 1 (smart) → 2 (ignore) → 0 (sensitive)', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   -- Default case_sensitive = 1 (smart)
   T.eq(kwargs.case_sensitive, 1, 'initial case_sensitive = 1 (smart)')
-  actions[config.rg_case_key].fn({}, {})
+  call_action(cap, config.rg_case_key)
   T.eq(kwargs.case_sensitive, 2, 'after 1 toggle → 2 (ignore-case)')
-  actions[config.rg_case_key].fn({}, {})
+  call_action(cap, config.rg_case_key)
   T.eq(kwargs.case_sensitive, 0, 'after 2 toggles → 0 (case-sensitive)')
-  actions[config.rg_case_key].fn({}, {})
+  call_action(cap, config.rg_case_key)
   T.eq(kwargs.case_sensitive, 1, 'after 3 toggles → back to 1 (smart)')
 end)
 
 T.group('rg: hidden toggle sets kwargs.hidden', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   T.ok(not kwargs.hidden, 'hidden initially false')
-  actions[config.rg_hidden_key].fn({}, {})
+  call_action(cap, config.rg_hidden_key)
   T.ok(kwargs.hidden == true, 'hidden toggle → true')
 end)
 
 T.group('rg: no-ignore toggle cycles 0 → 1 → 2 → 3 → 0', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   T.eq(kwargs.no_ignore, 0, 'no_ignore initially 0')
-  actions[config.rg_no_ignore_key].fn({}, {})
+  call_action(cap, config.rg_no_ignore_key)
   T.eq(kwargs.no_ignore, 1, 'after 1 toggle → 1 (-u)')
-  actions[config.rg_no_ignore_key].fn({}, {})
+  call_action(cap, config.rg_no_ignore_key)
   T.eq(kwargs.no_ignore, 2, 'after 2 toggles → 2 (-uu)')
-  actions[config.rg_no_ignore_key].fn({}, {})
+  call_action(cap, config.rg_no_ignore_key)
   T.eq(kwargs.no_ignore, 3, 'after 3 toggles → 3 (-uuu)')
-  actions[config.rg_no_ignore_key].fn({}, {})
+  call_action(cap, config.rg_no_ignore_key)
   T.eq(kwargs.no_ignore, 0, 'after 4 toggles → back to 0')
 end)
 
@@ -271,16 +312,42 @@ T.group('rg: vdiffsplit action opens file in vertical diffsplit', function()
   local path = make_file('rg_diff.lua', { 'diff line 1', 'diff line 2' })
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
   end)
 
   local win_before = #vim.api.nvim_list_wins()
   local entry = path .. ':1:1:diff line 1'
-  T.ok(type(actions[config.vdiffsplit_key]) == 'table', 'vdiffsplit action registered')
-  actions[config.vdiffsplit_key].fn({ entry }, {})
+  T.ok(type(cap.actions[config.vdiffsplit_key]) == 'table', 'vdiffsplit action registered')
+  call_action(cap, config.vdiffsplit_key, { entry })
   T.ok(#vim.api.nvim_list_wins() > win_before, 'vdiffsplit opened a new window')
   vim.cmd('only!')
+end)
+
+T.group('rg: toggle_preview_key registered in keymap.fzf', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.rg').ripgrepfzf(false, tmpdir, {})
+  end)
+  -- toggle_preview_key is a fzf-native bind (change-preview-window), lives in keymap.fzf
+  T.ok(
+    cap.keymap_fzf[config.toggle_preview_key] ~= nil,
+    'toggle_preview_key registered in keymap.fzf'
+  )
+end)
+
+T.group('rg: fixed-strings toggle sets kwargs.fixed_strings', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.rg').ripgrepfzf(false, tmpdir, kwargs)
+  end)
+
+  T.ok(not kwargs.fixed_strings, 'fixed_strings initially false')
+  call_action(cap, config.rg_fixed_strings_key)
+  T.ok(kwargs.fixed_strings == true, 'toggle → fixed_strings = true')
+  call_action(cap, config.rg_fixed_strings_key)
+  T.ok(kwargs.fixed_strings == false, 'second toggle → fixed_strings = false')
 end)
 
 -- ── History picker tests ──────────────────────────────────────────────────────
@@ -293,12 +360,12 @@ T.group('history: default action opens file at saved line and column', function(
   local entry = history_m._test.make_history_entry(3, 2, path)
 
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.history').historyoldfiles(false, kwargs)
   end)
 
-  T.ok(type(actions['default']) == 'table', 'default action registered')
-  actions['default'].fn({ entry }, {})
+  T.ok(type(cap.actions['default']) == 'table', 'default action registered')
+  call_action(cap, 'default', { entry })
 
   T.eq(vim.fn.expand('%:p'), path, 'correct file opened')
   T.eq(vim.api.nvim_win_get_cursor(0)[1], 3, 'cursor at saved line 3')
@@ -314,11 +381,11 @@ T.group('history: default action multi-select populates quickfix', function()
   local e2 = history_m._test.make_history_entry(1, 1, p2)
 
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.history').historyoldfiles(false, kwargs)
   end)
 
-  actions['default'].fn({ e1, e2 }, {})
+  call_action(cap, 'default', { e1, e2 })
   local qf = vim.fn.getqflist()
   T.ok(#qf >= 2, 'multi-select populates quickfix (' .. tostring(#qf) .. ' entries)')
 end)
@@ -326,13 +393,13 @@ end)
 T.group('history: project toggle flips kwargs.project', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.history').historyoldfiles(false, kwargs)
   end)
 
   T.ok(not kwargs.project, 'project initially false')
-  T.ok(type(actions[config.history_git_key]) == 'table', 'project toggle registered')
-  actions[config.history_git_key].fn({}, {})
+  T.ok(type(cap.actions[config.history_git_key]) == 'table', 'project toggle registered')
+  call_action(cap, config.history_git_key)
   T.ok(kwargs.project == true, 'toggle sets kwargs.project = true')
 end)
 
@@ -343,15 +410,24 @@ T.group('history: split action opens file in a new window', function()
   local entry = history_m._test.make_history_entry(1, 1, path)
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.history').historyoldfiles(false, kwargs)
   end)
 
   local win_before = #vim.api.nvim_list_wins()
-  T.ok(type(actions[config.split_key]) == 'table', 'split action registered')
-  actions[config.split_key].fn({ entry }, {})
+  T.ok(type(cap.actions[config.split_key]) == 'table', 'split action registered')
+  call_action(cap, config.split_key, { entry })
   T.ok(#vim.api.nvim_list_wins() > win_before, 'split opened a new window')
   vim.cmd('only!')
+end)
+
+T.group('history: delete action registered when history_delete_key is configured', function()
+  -- history_delete_key is in config.lua but the history picker does not
+  -- currently implement a delete action — verify only that the key exists
+  -- in config so that future implementation has a stable default key.
+  local config = require('siefe.config')
+  T.ok(type(config.history_delete_key) == 'string' and config.history_delete_key ~= '', 'history_delete_key is a non-empty string in config')
+  T.eq(config.history_delete_key, 'del', 'default history_delete_key is del')
 end)
 
 -- ── Buffers picker tests ──────────────────────────────────────────────────────
@@ -364,13 +440,13 @@ T.group('buffers: default action switches to the selected buffer', function()
 
   T.ok(vim.api.nvim_get_current_buf() ~= target_buf, 'not on target buffer initially')
 
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.buffers').buffers(false, {})
   end)
 
   -- Find the entry for target_buf in the captured source.
   local target_entry
-  for _, e in ipairs(last_captured.source or {}) do
+  for _, e in ipairs(cap.source or {}) do
     if e:match('%[' .. tostring(target_buf) .. '%]') then
       target_entry = e
       break
@@ -378,8 +454,8 @@ T.group('buffers: default action switches to the selected buffer', function()
   end
 
   T.ok(target_entry ~= nil, 'target buffer has an entry in picker source')
-  T.ok(type(actions['default']) == 'table', 'default action registered')
-  actions['default'].fn({ target_entry }, {})
+  T.ok(type(cap.actions['default']) == 'table', 'default action registered')
+  call_action(cap, 'default', { target_entry })
   T.eq(vim.api.nvim_get_current_buf(), target_buf, 'switched to target buffer')
 end)
 
@@ -391,12 +467,12 @@ T.group('buffers: delete action removes the buffer', function()
 
   T.ok(vim.fn.buflisted(del_buf) == 1, 'buffer is listed before delete')
 
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.buffers').buffers(false, {})
   end)
 
   local del_entry
-  for _, e in ipairs(last_captured.source or {}) do
+  for _, e in ipairs(cap.source or {}) do
     if e:match('%[' .. tostring(del_buf) .. '%]') then
       del_entry = e
       break
@@ -405,22 +481,152 @@ T.group('buffers: delete action removes the buffer', function()
 
   T.ok(del_entry ~= nil, 'buffer-to-delete has an entry in source')
   local config = require('siefe.config')
-  T.ok(type(actions[config.buffers_delete_key]) == 'table', 'delete action registered')
-  actions[config.buffers_delete_key].fn({ del_entry }, {})
+  T.ok(type(cap.actions[config.buffers_delete_key]) == 'table', 'delete action registered')
+  call_action(cap, config.buffers_delete_key, { del_entry })
   T.eq(vim.fn.buflisted(del_buf), 0, 'buffer is no longer listed after delete')
 end)
 
 T.group('buffers: project toggle flips kwargs.project', function()
   local config = require('siefe.config')
   local kwargs = {}
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.buffers').buffers(false, kwargs)
   end)
 
   T.ok(not kwargs.project, 'project initially false')
-  T.ok(type(actions[config.buffers_git_key]) == 'table', 'project toggle registered')
-  actions[config.buffers_git_key].fn({}, {})
+  T.ok(type(cap.actions[config.buffers_git_key]) == 'table', 'project toggle registered')
+  call_action(cap, config.buffers_git_key)
   T.ok(kwargs.project == true, 'toggle sets kwargs.project = true')
+end)
+
+T.group('buffers: toggle_preview_key registered in keymap.fzf', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.buffers').buffers(false, {})
+  end)
+  T.ok(
+    cap.keymap_fzf[config.toggle_preview_key] ~= nil,
+    'toggle_preview_key in keymap.fzf for buffers picker'
+  )
+end)
+
+-- ── Git log picker tests ──────────────────────────────────────────────────────
+
+T.group('git_log: S/G toggle flips kwargs.G', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, kwargs)
+  end)
+
+  local initial_G = kwargs.G
+  T.ok(type(cap.actions[config.gitlog_sg_key]) == 'table', 'S/G toggle registered')
+  call_action(cap, config.gitlog_sg_key, {}, { last_query = 'testquery' })
+  T.ok(kwargs.G ~= initial_G, 'S/G toggle flips kwargs.G')
+end)
+
+T.group('git_log: ignore_case toggle flips kwargs.ignore_case', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, kwargs)
+  end)
+
+  local initial_ic = kwargs.ignore_case
+  T.ok(type(cap.actions[config.gitlog_ignore_case_key]) == 'table', 'ignore_case toggle registered')
+  call_action(cap, config.gitlog_ignore_case_key, {}, { last_query = '' })
+  T.ok(kwargs.ignore_case ~= initial_ic, 'ignore_case toggled')
+end)
+
+T.group('git_log: follow toggle flips kwargs.follow', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, kwargs)
+  end)
+
+  local initial_follow = kwargs.follow
+  T.ok(type(cap.actions[config.gitlog_follow_key]) == 'table', 'follow toggle registered')
+  call_action(cap, config.gitlog_follow_key, {}, { last_query = '' })
+  T.ok(kwargs.follow ~= initial_follow, 'follow toggled')
+end)
+
+T.group('git_log: pickaxe_regex toggle flips kwargs.regex', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, kwargs)
+  end)
+
+  local initial_regex = kwargs.regex
+  T.ok(type(cap.actions[config.gitlog_pickaxe_regex_key]) == 'table', 'regex toggle registered')
+  call_action(cap, config.gitlog_pickaxe_regex_key, {}, { last_query = '' })
+  T.ok(kwargs.regex ~= initial_regex, 'regex toggled')
+end)
+
+T.group('git_log: F7 preview cycle key registered in keymap.fzf', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, {})
+  end)
+  T.ok(
+    cap.keymap_fzf[config.gitlog_preview_cycle_key] ~= nil,
+    'F7 preview cycle key in keymap.fzf'
+  )
+end)
+
+T.group('git_log: fzf-mode key registered in keymap.fzf', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, {})
+  end)
+  T.ok(cap.keymap_fzf[config.gitlog_fzf_key] ~= nil, 'gitlog_fzf_key in keymap.fzf')
+end)
+
+-- ── Git status picker tests ───────────────────────────────────────────────────
+
+T.group('git_status: uno toggle flips kwargs.uno', function()
+  local config = require('siefe.config')
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_status').gitstatus(false, kwargs)
+  end)
+
+  T.ok(not kwargs.uno, 'uno initially false')
+  T.ok(type(cap.actions[config.gitstatus_uno_key]) == 'table', 'uno toggle registered')
+  call_action(cap, config.gitstatus_uno_key)
+  T.ok(kwargs.uno == true, 'toggle sets kwargs.uno = true')
+end)
+
+T.group('git_status: add action registered under gitstatus_add_key', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.git_status').gitstatus(false, {})
+  end)
+  T.ok(type(cap.actions[config.gitstatus_add_key]) == 'table', 'add action registered')
+end)
+
+T.group('git_status: restore action registered under gitstatus_restore_key', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.git_status').gitstatus(false, {})
+  end)
+  T.ok(type(cap.actions[config.gitstatus_restore_key]) == 'table', 'restore action registered')
+end)
+
+T.group('git_status: preview keys registered in keymap.fzf', function()
+  local config = require('siefe.config')
+  local cap = capture(function()
+    require('siefe.git_status').gitstatus(false, {})
+  end)
+  T.ok(
+    cap.keymap_fzf[config.gitstatus_preview_0_key] ~= nil,
+    'gitstatus_preview_0_key in keymap.fzf'
+  )
+  T.ok(
+    cap.keymap_fzf[config.gitstatus_preview_1_key] ~= nil,
+    'gitstatus_preview_1_key in keymap.fzf'
+  )
 end)
 
 -- ── Config / custom shortcuts tests ──────────────────────────────────────────
@@ -429,56 +635,75 @@ T.group('config: default rg_word_key is ctrl-w', function()
   local config = require('siefe.config')
   T.eq(config.rg_word_key, 'ctrl-w', 'default rg_word_key is ctrl-w')
 
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end)
-  T.ok(type(actions['ctrl-w']) == 'table', 'ctrl-w wired to word toggle in rg actions')
+  T.ok(type(cap.actions['ctrl-w']) == 'table', 'ctrl-w wired to word toggle in rg actions')
 end)
 
 T.group('config: custom rg_word_key changes the action key', function()
   -- Custom config: move word toggle from ctrl-w to alt-w
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end, { rg_word_key = 'alt-w' })
 
-  T.ok(type(actions['alt-w']) == 'table', 'alt-w is now the word toggle action')
-  T.ok(actions['ctrl-w'] == nil, 'ctrl-w is no longer the word toggle action')
+  T.ok(type(cap.actions['alt-w']) == 'table', 'alt-w is now the word toggle action')
+  T.ok(cap.actions['ctrl-w'] == nil, 'ctrl-w is no longer the word toggle action')
 end)
 
 T.group('config: custom split_key changes rg and history actions', function()
   -- Use ctrl-z as the custom split key
-  local rg_actions = capture(function()
+  local rg_cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end, { split_key = 'ctrl-z' })
 
-  T.ok(type(rg_actions['ctrl-z']) == 'table', 'rg: ctrl-z is the split action')
-  T.ok(rg_actions['ctrl-]'] == nil, 'rg: ctrl-] no longer registered for split')
+  T.ok(type(rg_cap.actions['ctrl-z']) == 'table', 'rg: ctrl-z is the split action')
+  T.ok(rg_cap.actions['ctrl-]'] == nil, 'rg: ctrl-] no longer registered for split')
 
-  local hist_actions = capture(function()
+  local hist_cap = capture(function()
     require('siefe.history').historyoldfiles(false, {})
   end, { split_key = 'ctrl-z' })
 
-  T.ok(type(hist_actions['ctrl-z']) == 'table', 'history: ctrl-z is the split action')
-  T.ok(hist_actions['ctrl-]'] == nil, 'history: ctrl-] no longer registered for split')
+  T.ok(type(hist_cap.actions['ctrl-z']) == 'table', 'history: ctrl-z is the split action')
+  T.ok(hist_cap.actions['ctrl-]'] == nil, 'history: ctrl-] no longer registered for split')
 end)
 
 T.group('config: custom rg_case_key changes case toggle action', function()
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end, { rg_case_key = 'alt-c' })
 
-  T.ok(type(actions['alt-c']) == 'table', 'alt-c is the case toggle action')
-  T.ok(actions['ctrl-s'] == nil, 'ctrl-s no longer the case toggle')
+  T.ok(type(cap.actions['alt-c']) == 'table', 'alt-c is the case toggle action')
+  T.ok(cap.actions['ctrl-s'] == nil, 'ctrl-s no longer the case toggle')
 end)
 
 T.group('config: history_git_key (project toggle) default is ctrl-g', function()
   local config = require('siefe.config')
   T.eq(config.history_git_key, 'ctrl-g', 'default history_git_key is ctrl-g')
 
-  local actions = capture(function()
+  local cap = capture(function()
     require('siefe.history').historyoldfiles(false, {})
   end)
-  T.ok(type(actions['ctrl-g']) == 'table', 'ctrl-g is the project toggle in history')
+  T.ok(type(cap.actions['ctrl-g']) == 'table', 'ctrl-g is the project toggle in history')
+end)
+
+T.group('config: custom gitlog_preview_cycle_key moves F7 to F8', function()
+  local cap = capture(function()
+    require('siefe.git_log').gitlogfzf(false, {})
+  end, { gitlog_preview_cycle_key = 'f8' })
+
+  T.ok(cap.keymap_fzf['f8'] ~= nil, 'f8 is now the preview cycle key in keymap.fzf')
+  T.ok(cap.keymap_fzf['f7'] == nil, 'f7 is no longer the preview cycle key')
+end)
+
+T.group('config: custom gitstatus_uno_key changes uno toggle', function()
+  local kwargs = {}
+  local cap = capture(function()
+    require('siefe.git_status').gitstatus(false, kwargs)
+  end, { gitstatus_uno_key = 'alt-u' })
+
+  T.ok(type(cap.actions['alt-u']) == 'table', 'alt-u is the uno toggle action')
+  T.ok(cap.actions['ctrl-n'] == nil, 'ctrl-n no longer uno toggle')
 end)
 
 -- ── Cleanup ───────────────────────────────────────────────────────────────────

@@ -52,9 +52,9 @@ T.group('derived defaults', function()
   -- fd_depth1_key derives from rg_depth1_key
   T.eq(cfg.fd_depth1_key, cfg.rg_depth1_key, 'fd_depth1_key')
 
-  -- git_log/stash still have preview commands (shell-based, not builtin)
-  T.eq(cfg.gitlog_default_preview_command, 0, 'gitlog_default_preview_command')
-  T.eq(cfg.stash_default_preview_command, 0, 'stash_default_preview_command')
+  -- git log/stash use a single F7 preview cycle key (replaced per-command keys)
+  T.eq(cfg.gitlog_preview_cycle_key, 'f7', 'gitlog_preview_cycle_key')
+  T.eq(cfg.stash_preview_cycle_key, 'f7', 'stash_preview_cycle_key')
 end)
 
 -- ── setup() overrides ────────────────────────────────────────────────────────
