@@ -64,6 +64,8 @@ jobs:
 
       - name: Neovim integration tests (make test-neovim)
         run: make test-neovim
+        # Includes test_neovim.lua (feedkeys/buffer/cursor) and
+        # test_picker_actions.lua (action callbacks with mocked fzf-lua)
 
   # ── 3. Integration: build Rust binaries → run real-rg/git tests ─────────────
   integration:

@@ -28,6 +28,7 @@ test-lua:
 # (buffers, cursor positions, registers, quickfix, feedkeys).
 test-neovim:
 	$(NVIM) --headless -u NONE -l test/test_neovim.lua
+	$(NVIM) --headless -u NONE -l test/test_picker_actions.lua
 
 # Integration tests call real external binaries; requires `make build` first.
 test-integration: build
