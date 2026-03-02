@@ -7,6 +7,7 @@ local function make_defaults()
   local d = {}
 
   -- General behaviour
+  d.map_keys = true -- set to false to disable all default <leader> mappings
   d.loclist = false
   d.rg_loclist = false
   d.gitlog_loclist = false

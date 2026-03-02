@@ -209,22 +209,21 @@ require("siefe").setup({
   rg_dir_key = "ctrl-d",    -- change search directory
   -- ... see lua/siefe/config.lua for the full list of ~60 configurable keys
 
-  -- Disable all default mappings (set your own with <Plug> mappings)
-  -- vim.g.siefe_map_keys = false  -- set BEFORE the plugin loads (in init.lua)
+  -- Disable all default <leader> mappings (use your own <Plug> mappings instead)
+  map_keys = false,
 })
 ```
 
 ### Disabling default key mappings
 
 Default mappings (e.g. `<leader>rg`, `<leader>gl`) are created automatically.
-To disable them, set `vim.g.siefe_map_keys = false` **before** the plugin loads:
+Pass `map_keys = false` to `setup()` to disable them:
 
 ```lua
--- in init.lua (before lazy setup):
-vim.g.siefe_map_keys = false
+require('siefe').setup({ map_keys = false })
 ```
 
-Then map with `<Plug>` targets:
+Then define your own mappings with `<Plug>` targets:
 
 ```lua
 vim.keymap.set("n", "<leader>s", "<Plug>SiefeRg")

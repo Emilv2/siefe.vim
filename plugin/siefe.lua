@@ -6,10 +6,9 @@ if vim.g.loaded_siefe_lua then
 end
 vim.g.loaded_siefe_lua = 1
 
-local map_keys = vim.g.siefe_map_keys ~= nil and vim.g.siefe_map_keys or true
-
 local siefe = require('siefe')
 local utils = require('siefe.utils')
+local config = require('siefe.config')
 
 -- Ensure the buffer tracker autocmd is set up even without explicit setup()
 vim.api.nvim_create_augroup('siefe_buffer_tracker', { clear = true })
@@ -414,7 +413,7 @@ plug('<Plug>SiefeInstall', '<cmd>SiefeInstall<CR>')
 
 -- ── Default key mappings (if enabled) ────────────────────────────────────────
 
-if map_keys then
+if config.options.map_keys then
   local function maybe_map(mode, lhs, plug_name)
     if vim.fn.hasmapto(plug_name) == 0 and vim.fn.maparg(lhs, mode) == '' then
       vim.keymap.set(mode, lhs, plug_name, { silent = true, remap = true })
