@@ -47,7 +47,19 @@ local function parse_entry(line)
   return 0, 0, line
 end
 
--- Build a history source entry.
+-- Return an absolute path for fname.
+-- In project mode, recent_git_files_info() emits paths relative to git_root.
+-- The builtin previewer resolves them correctly via cwd=git_root, but
+-- utils.open_file() resolves against Neovim's cwd (which may be a subdirectory).
+-- This function ensures open_file always receives an absolute path.
+local function make_absolute(fname, git_root, project)
+  if project and git_root and git_root ~= '' and fname ~= '' and fname:sub(1, 1) ~= '/' then
+    return git_root .. '/' .. fname
+  end
+  return fname
+end
+
+
 -- Format: fname:lnum:col\x01DISPLAY
 -- entry_to_file() splits on ':' to extract fname:lnum:col from the prefix;
 -- \x01 separates it from the display shown by fzf (--with-nth=2..).
@@ -138,6 +150,11 @@ function M.historyoldfiles(fullscreen, kwargs)
     return selected or {}
   end
 
+  -- Resolve fname to absolute via git_root when in project mode.
+  local function resolve(fname)
+    return make_absolute(fname, git_root, kwargs.project and in_git)
+  end
+
   -- ── Actions ─────────────────────────────────────────────────────────────────
 
   local actions = {}
@@ -149,11 +166,11 @@ function M.historyoldfiles(fullscreen, kwargs)
         return
       end
       local lnum, col, filename = parse_entry(items[1])
-      utils.open_file('edit', filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
+      utils.open_file('edit', resolve(filename), lnum > 0 and lnum or nil, col > 0 and col or nil)
       if #items > 1 then
         local qf = vim.tbl_map(function(l)
           local _, _, fname = parse_entry(l)
-          return { filename = fname }
+          return { filename = resolve(fname) }
         end, items)
         if config.history_loclist then
           utils.fill_loc(qf)
@@ -172,7 +189,7 @@ function M.historyoldfiles(fullscreen, kwargs)
         local items = get_items(selected, opts)
         for _, line in ipairs(items) do
           local lnum, col, filename = parse_entry(line)
-          utils.open_file(c, filename, lnum > 0 and lnum or nil, col > 0 and col or nil)
+          utils.open_file(c, resolve(filename), lnum > 0 and lnum or nil, col > 0 and col or nil)
         end
       end,
       desc = 'open ' .. c,
@@ -245,6 +262,7 @@ end
 M._test = {
   parse_entry = parse_entry,
   make_history_entry = make_history_entry,
+  make_absolute = make_absolute,
 }
 
 return M

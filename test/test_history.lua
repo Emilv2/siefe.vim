@@ -97,4 +97,26 @@ T.group('make_history_entry / parse_entry round-trip', function()
   T.ok(display:find('src/main.lua', 1, true), 'display contains filename')
 end)
 
+-- ── make_absolute ──────────────────────────────────────────────────────────────
+
+local make_abs = hist._test.make_absolute
+
+T.group('make_absolute', function()
+  -- non-project mode: fname returned unchanged (even if relative)
+  T.eq(make_abs('src/foo.lua', '/repo', false), 'src/foo.lua', 'non-project: relative unchanged')
+  T.eq(make_abs('/abs/path.lua', '/repo', false), '/abs/path.lua', 'non-project: absolute unchanged')
+
+  -- project mode, relative fname: git_root prepended
+  T.eq(make_abs('src/foo.lua', '/repo', true), '/repo/src/foo.lua', 'project: relative resolved')
+  T.eq(make_abs('a/b/c.lua', '/home/user/proj', true), '/home/user/proj/a/b/c.lua', 'project: deep relative')
+
+  -- project mode, already absolute: returned unchanged
+  T.eq(make_abs('/abs/path.lua', '/repo', true), '/abs/path.lua', 'project: absolute unchanged')
+
+  -- edge cases
+  T.eq(make_abs('', '/repo', true), '', 'empty fname unchanged')
+  T.eq(make_abs('file.lua', '', true), 'file.lua', 'empty git_root: fname unchanged')
+  T.eq(make_abs('file.lua', nil, true), 'file.lua', 'nil git_root: fname unchanged')
+end)
+
 T.finish()
