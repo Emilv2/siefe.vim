@@ -1,5 +1,5 @@
 -- lua/siefe/install.lua
--- Ensures siefe's Rust binaries (rg2fzf, shada2fzf, diffgrep, pickaxe-diff)
+-- Ensures siefe's Rust binaries (diffgrep, pickaxe-diff)
 -- are present in the plugin's bin/ directory.
 --
 -- Called from siefe.setup() and can also be invoked manually:
@@ -7,7 +7,7 @@
 --   :lua require('siefe.install').ensure_binaries({ force = true })
 local M = {}
 
-local BINARIES = { "rg2fzf", "shada2fzf", "diffgrep", "pickaxe-diff" }
+local BINARIES = { "diffgrep", "pickaxe-diff" }
 
 -- Return the absolute path to the plugin root (three directories above this file:
 -- lua/siefe/install.lua → lua/siefe → lua → <plugin root>).
@@ -29,7 +29,7 @@ end
 -- Extract the git hash embedded by build.rs from a binary's --version output.
 -- Returns nil when the binary doesn't support --version or has no hash.
 local function binary_git_hash(bin_dir)
-  local out = vim.fn.system({ bin_dir .. "/rg2fzf", "--version" })
+  local out = vim.fn.system({ bin_dir .. "/diffgrep", "--version" })
   if vim.v.shell_error ~= 0 then
     return nil
   end

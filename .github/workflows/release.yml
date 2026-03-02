@@ -60,7 +60,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          for b in rg2fzf shada2fzf diffgrep pickaxe-diff; do
+          for b in diffgrep pickaxe-diff; do
             cp "target/${{ matrix.target }}/release/$b" dist/
           done
           tar -czf "siefe-binaries-${{ matrix.target }}.tar.gz" -C dist .

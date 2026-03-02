@@ -187,7 +187,11 @@ fn emit_output(
         for hunk in &fd.hunks {
             writeln!(out, "{}", format_hunk_header(&hunk.header, colors))?;
             for line in &hunk.lines {
-                writeln!(out, "{}", format_content_line(line, highlight_regex, colors))?;
+                writeln!(
+                    out,
+                    "{}",
+                    format_content_line(line, highlight_regex, colors)
+                )?;
             }
         }
     }
@@ -345,7 +349,7 @@ fn main() {
         let escaped = regex::escape(effective);
         let re = Regex::new(&escaped).unwrap_or_else(|_| {
             // Fallback: never-matching regex (should not happen after escape)
-            Regex::new("(?!x)x").unwrap()
+            Regex::new("$^").unwrap()
         });
         (Match::Literal(effective.to_owned()), re)
     } else {

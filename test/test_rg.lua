@@ -13,45 +13,6 @@ package.loaded['siefe.rg'] = nil
 local rg = require('siefe.rg')
 local t = rg._test
 
--- ── parse_rg2fzf_entry ────────────────────────────────────────────────────────
-
-T.group('parse_rg2fzf_entry', function()
-  -- Normal entry: filename SOH line:col:text
-  local r = t.parse_rg2fzf_entry('file.lua\x011:5:hello world')
-  T.eq(r.filename, 'file.lua', 'filename')
-  T.eq(r.lnum, 1, 'lnum')
-  T.eq(r.col, 5, 'col')
-  T.eq(r.text, 'hello world', 'text')
-
-  -- Colons in filename: SOH still unambiguously marks the boundary
-  local r2 = t.parse_rg2fzf_entry('server:8080/api.go\x011:1:GET /api')
-  T.eq(r2.filename, 'server:8080/api.go', 'colons-in-filename: filename correct')
-  T.eq(r2.lnum, 1, 'colons-in-filename: lnum')
-  T.eq(r2.text, 'GET /api', 'colons-in-filename: text')
-
-  -- Colons in match text: all preserved
-  local r3 = t.parse_rg2fzf_entry('file.rs\x011:1:foo:bar:baz')
-  T.eq(r3.text, 'foo:bar:baz', 'colons in text preserved')
-
-  -- Simple ANSI CSI stripped from filename before SOH
-  local r4 = t.parse_rg2fzf_entry('\x1b[32mfile.lua\x1b[0m\x011:1:text')
-  T.eq(r4.filename, 'file.lua', 'simple ANSI stripped from filename')
-  T.eq(r4.lnum, 1, 'ANSI-stripped: lnum')
-
-  -- Complex ANSI (bold + colour) in match text
-  local r5 = t.parse_rg2fzf_entry('a.lua\x011:1:\x1b[1;31mhello\x1b[0m world')
-  T.eq(r5.filename, 'a.lua', 'complex ANSI in text: filename ok')
-  T.eq(r5.lnum, 1, 'complex ANSI in text: lnum ok')
-
-  -- No SOH separator → nil
-  local r6 = t.parse_rg2fzf_entry('file.lua:1:1:text')
-  T.ok(r6 == nil, 'no SOH returns nil')
-
-  -- SOH present but tail has no line:col pattern → nil
-  local r7 = t.parse_rg2fzf_entry('file.lua\x01not-a-position')
-  T.ok(r7 == nil, 'SOH but no line:col returns nil')
-end)
-
 -- ── build_rg_command ──────────────────────────────────────────────────────────
 
 T.group('build_rg_command', function()
@@ -70,7 +31,7 @@ T.group('build_rg_command', function()
   }
 
   -- Must contain core rg flags
-  local cmd = t.build_rg_command(base, nil)
+  local cmd = t.build_rg_command(base)
   T.ok(cmd:find('rg ', 1, true), 'contains rg')
   T.ok(cmd:find('--column', 1, true), 'contains --column')
   T.ok(cmd:find('--line-number', 1, true), 'contains --line-number')
@@ -78,34 +39,29 @@ T.group('build_rg_command', function()
   -- %s placeholder is present for fzf_live / shellescape substitution
   T.ok(cmd:find('%s', 1, true), 'contains %s placeholder')
 
-  -- No --null when no rg2fzf_path given
-  T.ok(not cmd:find('--null', 1, true), 'no --null without rg2fzf')
-
-  -- With rg2fzf_path: --null added, binary piped
-  local cmd2 = t.build_rg_command(base, '/bin/rg2fzf')
-  T.ok(cmd2:find('--null', 1, true), '--null with rg2fzf')
-  T.ok(cmd2:find('rg2fzf', 1, true), 'rg2fzf pipe appended')
+  -- No --null in search mode (fzf-lua builtin handles colon-delimited output)
+  T.ok(not cmd:find('--null', 1, true), 'no --null in search mode')
 
   -- Case sensitivity flags
-  local smart = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 1 }), nil)
+  local smart = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 1 }))
   T.ok(smart:find('--smart-case', 1, true), '--smart-case when case_sensitive=1')
 
-  local ignore = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 2 }), nil)
+  local ignore = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 2 }))
   T.ok(ignore:find('--ignore-case', 1, true), '--ignore-case when case_sensitive=2')
 
-  local sens = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 0 }), nil)
+  local sens = t.build_rg_command(vim.tbl_extend('force', base, { case_sensitive = 0 }))
   T.ok(sens:find('--case-sensitive', 1, true), '--case-sensitive when case_sensitive=0')
 
   -- Word-boundary flag
-  local word = t.build_rg_command(vim.tbl_extend('force', base, { word = true }), nil)
+  local word = t.build_rg_command(vim.tbl_extend('force', base, { word = true }))
   T.ok(word:find('-w ', 1, true), '-w when word=true')
 
   -- Hidden files flag
-  local hidden = t.build_rg_command(vim.tbl_extend('force', base, { hidden = true }), nil)
+  local hidden = t.build_rg_command(vim.tbl_extend('force', base, { hidden = true }))
   T.ok(hidden:find('--hidden', 1, true), '--hidden when hidden=true')
 
   -- Paths are appended to the command
-  local with_paths = t.build_rg_command(vim.tbl_extend('force', base, { paths = { 'src/', 'lib/' } }), nil)
+  local with_paths = t.build_rg_command(vim.tbl_extend('force', base, { paths = { 'src/', 'lib/' } }))
   T.ok(with_paths:find('src', 1, true), 'paths appended')
 end)
 
@@ -122,7 +78,7 @@ T.group('build_files_command', function()
   }
 
   local cmd = t.build_files_command(base)
-  -- rg --null is always present (NUL-terminated paths for --read0)
+  -- rg --null is always present for files mode (NUL-terminated paths for --read0)
   T.ok(cmd:find('rg --null', 1, true), 'always has rg --null')
   T.ok(cmd:find('--files', 1, true), 'always has --files')
   T.ok(not cmd:find('--hidden', 1, true), 'no --hidden by default')

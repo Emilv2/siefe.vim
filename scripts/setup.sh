@@ -15,7 +15,7 @@ set -euo pipefail
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN_DIR="$PLUGIN_DIR/bin"
 REPO="Emilv2/siefe.vim"
-BINARIES=(rg2fzf shada2fzf diffgrep pickaxe-diff)
+BINARIES=(diffgrep pickaxe-diff)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,9 +52,9 @@ binaries_up_to_date() {
   [[ -n "$current_hash" ]] || return 1
 
   local binary_version
-  binary_version="$("$BIN_DIR/rg2fzf" --version 2>/dev/null)" || return 1
+  binary_version="$("$BIN_DIR/diffgrep" --version 2>/dev/null)" || return 1
 
-  # Extract hash from "rg2fzf 0.1.0 (git:a1b2c3d)"
+  # Extract hash from "diffgrep 0.1.0 (git:a1b2c3d)"
   local binary_hash="${binary_version##*(git:}"
   binary_hash="${binary_hash%)}"
   [[ -n "$binary_hash" ]] || return 1

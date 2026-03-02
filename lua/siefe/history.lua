@@ -79,10 +79,6 @@ function M.historyoldfiles(fullscreen, kwargs)
     git_help = ' ╱ ' .. utils.prettify_header(config.history_git_key, 'project history:' .. toggle)
   end
 
-  -- Detect shada2fzf binary (used only for non-project mode to stream MRU positions)
-  local shada2fzf_bin = utils.bin_path('shada2fzf')
-  local has_shada2fzf = (not kwargs.project) and vim.fn.executable(shada2fzf_bin) == 1
-
   local source
   local project_prefix = ''
   if kwargs.project and in_git then
@@ -91,72 +87,9 @@ function M.historyoldfiles(fullscreen, kwargs)
       return make_history_entry(lnum, col, fname)
     end, utils.recent_git_files_info())
     project_prefix = utils.get_git_basename_or_bufdir() .. ' '
-  elseif has_shada2fzf then
-    -- Streaming source: emit current buffer + listed buffers immediately, then
-    -- pipe shada2fzf for all historically-visited files with saved positions.
-    -- Uses a coroutine so fzf sees entries as they arrive (responsive on large
-    -- shada files) and no filereadable() NFS calls are made for old files.
-    source = (function()
-      -- Build the prefix entries (current buf + listed buffers) synchronously
-      local prefix = {}
-      local visited = {}
-
-      local cur = vim.fn.expand('%')
-      if cur ~= '' then
-        local fname = vim.fn.fnamemodify(cur, ':~:.')
-        local lnum = vim.fn.line('.')
-        table.insert(prefix, make_history_entry(lnum, 0, fname))
-        visited[fname] = true
-      end
-      for _, b in ipairs(utils.buflisted_sorted()) do
-        local name = vim.fn.bufname(b)
-        if name ~= '' then
-          local fname = vim.fn.fnamemodify(vim.fn.expand(name), ':~:.')
-          if not visited[fname] then
-            local lnum = (vim.fn.getbufinfo(b)[1] or {}).lnum or 0
-            table.insert(prefix, make_history_entry(lnum, 0, fname))
-            visited[fname] = true
-          end
-        end
-      end
-
-      local shada_path = utils.shada_path()
-      local s2f = shada2fzf_bin
-      local vis = visited -- capture for the coroutine closure
-
-      return function(fzf_cb)
-        -- Emit current buf + listed buffers immediately
-        for _, e in ipairs(prefix) do
-          fzf_cb(e)
-        end
-
-        -- Stream shada2fzf output: `line//col//filename\n`
-        -- shada2fzf has already sorted by timestamp desc (MRU order) and
-        -- deduplicated, so we just skip files already in the prefix list.
-        -- Note: filenames containing '//' are handled correctly — parse_entry
-        -- uses table.concat(parts[3..], '//') to reconstruct them faithfully.
-        -- io.popen is used for broad Neovim version compatibility; vim.system
-        -- (0.10+) could replace this if a minimum version requirement is set.
-        local f = io.popen(vim.fn.shellescape(s2f) .. ' ' .. vim.fn.shellescape(shada_path))
-        if f then
-          for line in f:lines() do
-            -- Extract the filename (third //-field) and convert to 4-field display format
-            local parts = vim.split(line, '//', { plain = true })
-            local fname = #parts >= 3 and table.concat(vim.list_slice(parts, 3), '//') or nil
-            if fname and fname ~= '' and not vis[fname] then
-              local lnum = tonumber(parts[1]) or 0
-              local col = tonumber(parts[2]) or 0
-              fzf_cb(make_history_entry(lnum, col, fname))
-              vis[fname] = true
-            end
-          end
-          f:close()
-        end
-
-        fzf_cb(nil) -- signal EOF to fzf-lua
-      end
-    end)()
   else
+    -- Use v:oldfiles (no line/col position info) prefixed with the current
+    -- buffer and listed buffers for immediate MRU access.
     source = vim.tbl_map(function(e)
       local lnum, col, fname = parse_entry(e)
       return make_history_entry(lnum, col, fname)

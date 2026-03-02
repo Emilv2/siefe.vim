@@ -11,72 +11,13 @@ local function bool_to_flag(b, flag)
   return b and flag or ''
 end
 
--- Parse an rg2fzf-format entry: `filename\x01line:col:text`
--- rg2fzf uses SOH (\x01) as the unambiguous filename/rest separator — it is
--- invalid in POSIX filenames, so a single find() locates the exact boundary
--- with zero fs_stat calls regardless of colons in the filename or match text.
--- The tail is always `\d+:\d+:text` — rg guarantees numeric line and col
--- fields with `--column --line-number`.
--- ANSI CSI sequences (from rg --color=always) are stripped before parsing.
-local function parse_rg2fzf_entry(entry)
-  -- Strip ANSI/VT100 CSI sequences: ESC [ <params> <final-byte>
-  -- Final bytes are in the range 0x40-0x7E (@A-Z[\]^_`a-z{|}~).
-  local clean = entry:gsub('\27%[[\32-\63]*[\64-\126]', '')
-  local sep = clean:find('\1', 1, true) -- SOH = \x01
-  if not sep then
-    return nil
-  end
-  local filename = clean:sub(1, sep - 1)
-  local rest = clean:sub(sep + 1) -- always "line:col:text" from rg2fzf
-  local lnum, col, text = rest:match('^(%d+):(%d+):(.*)')
-  if not lnum then
-    return nil
-  end
-  return { filename = filename, lnum = tonumber(lnum) or 1, col = tonumber(col) or 1, text = text or '' }
-end
-
--- Open multiple parsed entries in the given window command; populate qf/ll for
--- multi-select.  Used by file-open actions when rg2fzf is active (avoids the
--- fs_stat loop inside fzl_actions / entry_to_file).
-local function open_rg2fzf_entries(entries, win_cmd, use_loclist)
-  if not entries or #entries == 0 then
-    return
-  end
-  local parsed_list = {}
-  for _, e in ipairs(entries) do
-    local p = parse_rg2fzf_entry(e)
-    if p then
-      table.insert(parsed_list, p)
-    end
-  end
-  if #parsed_list == 0 then
-    return
-  end
-  utils.open_file(win_cmd, parsed_list[1].filename, parsed_list[1].lnum, parsed_list[1].col)
-  if #parsed_list > 1 then
-    local qf = vim.tbl_map(function(p)
-      return { filename = p.filename, lnum = p.lnum, col = p.col, text = p.text or '' }
-    end, parsed_list)
-    if use_loclist then
-      utils.fill_loc(qf)
-    else
-      utils.fill_quickfix(qf)
-    end
-  end
-end
-
 -- Build the rg command format string.
 -- Returns a Lua format string where '%s' is the query placeholder.
 -- Callers use string.format() to substitute either:
 --   '{q}'  — fzf's live-query marker (for fzf_live mode), or
 --   a shellescape'd query string (for fzf_exec static mode).
--- When rg2fzf_path is provided, rg is called with --null and the output is
--- piped through rg2fzf, which converts each `file\0line:col:text\n` record to
--- the NUL-terminated `file:line:col:text\0` format required by fzf --read0.
-local function build_rg_command(kwargs, rg2fzf_path)
+local function build_rg_command(kwargs)
   local logger = utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' '
-  local null_flag = rg2fzf_path and '--null ' or ''
-  local rg2fzf_pipe = rg2fzf_path and (' | ' .. vim.fn.shellescape(rg2fzf_path)) or ''
   local case = kwargs.case_sensitive == 1 and '--smart-case '
     or kwargs.case_sensitive == 2 and '--ignore-case '
     or '--case-sensitive '
@@ -104,7 +45,6 @@ local function build_rg_command(kwargs, rg2fzf_path)
 
   return logger
     .. 'rg '
-    .. null_flag
     .. '--column --auto-hybrid-regex -U --glob \\!.git/objects '
     .. '--line-number --no-heading --color=always '
     .. '--colors "column:fg:green" --with-filename '
@@ -121,7 +61,6 @@ local function build_rg_command(kwargs, rg2fzf_path)
     .. ' '
     .. '-- %s'
     .. paths
-    .. rg2fzf_pipe
 end
 
 local function build_files_command(kwargs)
@@ -220,19 +159,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   end
   kwargs.paths = clean_paths
 
-  -- Detect rg2fzf (optional Rust binary that converts rg --null output to
-  -- NUL-terminated records for fzf --read0).  If absent, fall back to plain
-  -- rg output without --null; search mode then works without --read0.
-  local rg2fzf = utils.bin_path('rg2fzf')
-  rg2fzf = vim.fn.executable(rg2fzf) == 1 and rg2fzf or nil
-
   local default_size, other_size = utils.preview_window_size()
 
   -- Determine mode
   local mode = kwargs.files and 'files' or (kwargs.fzf and 'fzf' or 'rg')
 
   -- Commands
-  local cmd_fmt = build_rg_command(kwargs, rg2fzf)
+  local cmd_fmt = build_rg_command(kwargs)
   local files_cmd = build_files_command(kwargs)
 
   local rg_km = utils.make_binds({
@@ -259,32 +192,16 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     -- newline, so multiline match text or special characters in entries are
     -- never confused with record boundaries.
     ['--print0'] = '',
-    -- No --delimiter is set here.  fzf's field-index syntax ({N}) only works
-    -- reliably with a delimiter that never appears in filenames; ':' fails when
-    -- filenames contain colons.  The builtin previewer calls
-    -- path.entry_to_file() on the Lua side, which uses uv.fs_stat() to
-    -- progressively extend the filename candidate across each ':' boundary
-    -- until an existing file is found — handling colons in both filenames and
-    -- match text without any fzf-side field index.
     ['--prompt'] = build_prompt(kwargs, mode),
     -- For files mode, '+{}' tells fzf to scroll the preview to the selected
     -- file's position (a no-op for file lists, but harmless).  For search/fzf
     -- modes the builtin previewer scrolls to the matched line via
     -- entry_to_file() — no fzf-side '+{N}' scroll hint is needed or reliable.
     ['--preview-window'] = (mode == 'files') and ('+{},' .. default_size) or default_size,
-    -- --read0 tells fzf to split its input stream on NUL bytes (rather than
-    -- newlines), which handles paths and match text containing any special
-    -- characters including newlines.
-    --
-    -- Files mode:  rg --null --files emits NUL-terminated paths directly.
-    -- Search/fzf:  rg --null | rg2fzf converts each `file\0rest\n` record to
-    --              `file:rest\0`, making records NUL-terminated while keeping
-    --              the standard `file:line:col:text` format that fzf-lua's
-    --              path.entry_to_file() parses.
-    -- Fallback:    when rg2fzf is absent, search/fzf mode works without --read0
-    --              (rare edge cases like colons in filenames are handled by
-    --              fzf-lua's smart parser).
-    ['--read0'] = (mode == 'files' or rg2fzf ~= nil) and '' or nil,
+    -- --read0 tells fzf to split its input stream on NUL bytes.
+    -- Files mode: rg --null --files emits NUL-terminated paths directly.
+    -- Search/fzf: rg emits newline-terminated output; no --read0 needed.
+    ['--read0'] = mode == 'files' and '' or nil,
   }
 
   -- ── Helpers for actions ──────────────────────────────────────────────────────
@@ -323,34 +240,26 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   local actions = {}
 
   -- Open: first entry in current window; populate qf/ll for multi-select.
-  -- In rg/fzf mode with rg2fzf: entries are `filename\x01line:col:text` — parsed
-  -- without fs_stat.  In files mode or without rg2fzf: use fzl_actions which
-  -- calls entry_to_file() (fs_stat path) to handle plain filenames correctly.
+  -- Uses fzl_actions which calls entry_to_file() to handle file:line:col format.
   actions['default'] = {
     fn = function(selected, opts)
       local entries = get_entries(selected)
       if #entries == 0 then
         return
       end
-      if rg2fzf and mode ~= 'files' then
-        open_rg2fzf_entries(entries, 'edit', config.rg_loclist)
-      else
-        fzl_actions.file_edit({ entries[1] }, opts)
-        if #entries > 1 then
-          if config.rg_loclist then
-            fzl_actions.file_sel_to_ll(entries, opts)
-          else
-            fzl_actions.file_sel_to_qf(entries, opts)
-          end
+      fzl_actions.file_edit({ entries[1] }, opts)
+      if #entries > 1 then
+        if config.rg_loclist then
+          fzl_actions.file_sel_to_ll(entries, opts)
+        else
+          fzl_actions.file_sel_to_qf(entries, opts)
         end
       end
     end,
     desc = 'open',
   }
 
-  -- Window open actions.
-  -- rg/fzf mode with rg2fzf: parse \x01 format directly (no fs_stat).
-  -- Files mode or no rg2fzf: native fzl_actions (uses entry_to_file / fs_stat).
+  -- Window open actions using native fzl_actions.
   local function make_open_action(win_cmd, desc)
     return {
       fn = function(selected, opts)
@@ -358,16 +267,12 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
         if #entries == 0 then
           return
         end
-        if rg2fzf and mode ~= 'files' then
-          open_rg2fzf_entries(entries, win_cmd, false)
-        else
-          if win_cmd == 'split' then
-            fzl_actions.file_split(entries, opts)
-          elseif win_cmd == 'vsplit' then
-            fzl_actions.file_vsplit(entries, opts)
-          elseif win_cmd == 'tabedit' then
-            fzl_actions.file_tabedit(entries, opts)
-          end
+        if win_cmd == 'split' then
+          fzl_actions.file_split(entries, opts)
+        elseif win_cmd == 'vsplit' then
+          fzl_actions.file_vsplit(entries, opts)
+        elseif win_cmd == 'tabedit' then
+          fzl_actions.file_tabedit(entries, opts)
         end
       end,
       desc = desc,
@@ -379,21 +284,13 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   actions[config.tab_key] = make_open_action('tabedit', 'tab')
   actions[config.vdiffsplit_key] = {
     fn = function(selected, _opts)
-      -- fzl_actions has no diffsplit equivalent; keep custom parsing.
       local entries = get_entries(selected)
       if #entries == 0 then
         return
       end
-      if rg2fzf then
-        local parsed = parse_rg2fzf_entry(entries[1])
-        if parsed then
-          utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col)
-        end
-      else
-        local parsed = utils.parse_rg_line(entries[1])
-        if parsed then
-          utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col)
-        end
+      local parsed = utils.parse_rg_line(entries[1])
+      if parsed then
+        utils.open_file('vert diffsplit', parsed.filename, parsed.lnum, parsed.col)
       end
     end,
     desc = 'diff',
@@ -612,14 +509,12 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     end,
   }
 
-  -- Yank matched text to default register.
-  -- rg2fzf path: parse \x01 format directly.
-  -- Fallback path: parse standard file:line:col:text format.
+  -- Yank matched text to default register using standard file:line:col:text format.
   actions[config.rg_yank_key] = {
     fn = function(selected, _opts)
       local texts = {}
       for _, line in ipairs(get_entries(selected)) do
-        local parsed = rg2fzf and parse_rg2fzf_entry(line) or utils.parse_rg_line(line)
+        local parsed = utils.parse_rg_line(line)
         if parsed then
           table.insert(texts, parsed.text)
         end
@@ -700,7 +595,6 @@ end
 -- Test-only exports (not part of the public API).
 -- Used by test/test_rg.lua to exercise pure logic without launching fzf.
 M._test = {
-  parse_rg2fzf_entry = parse_rg2fzf_entry,
   build_rg_command = build_rg_command,
   build_files_command = build_files_command,
   build_prompt = build_prompt,

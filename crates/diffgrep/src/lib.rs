@@ -390,24 +390,36 @@ mod tests {
     fn s_mode_count_changes_matches() {
         // 1 occurrence added, 0 removed → count changed → match
         let diff = single_file_diff("+line with needle here\n-unrelated removal\n");
-        assert!(!run_s(&diff, "needle").is_empty(), "count change should match");
+        assert!(
+            !run_s(&diff, "needle").is_empty(),
+            "count change should match"
+        );
     }
 
     #[test]
     fn s_mode_count_equal_no_match() {
         // 1 occurrence added AND 1 occurrence removed → net change = 0 → no match
         let diff = single_file_diff("+added needle line\n-removed needle line\n");
-        assert!(run_s(&diff, "needle").is_empty(), "same count should not match");
+        assert!(
+            run_s(&diff, "needle").is_empty(),
+            "same count should not match"
+        );
     }
 
     #[test]
     fn s_mode_treats_pattern_literally_not_as_regex() {
         // "foo.bar" as a literal should NOT match "foo_bar" (dot is literal)
         let diff = single_file_diff("+foo_bar\n");
-        assert!(run_s(&diff, "foo.bar").is_empty(), "literal dot must not match underscore");
+        assert!(
+            run_s(&diff, "foo.bar").is_empty(),
+            "literal dot must not match underscore"
+        );
         // but the exact string should match
         let diff2 = single_file_diff("+foo.bar\n");
-        assert!(!run_s(&diff2, "foo.bar").is_empty(), "exact literal should match");
+        assert!(
+            !run_s(&diff2, "foo.bar").is_empty(),
+            "exact literal should match"
+        );
     }
 
     #[test]

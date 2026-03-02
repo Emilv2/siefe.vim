@@ -106,27 +106,6 @@ T.group('bin_path', function()
   T.ok(vim.fn.filereadable(preview) == 1, 'bin/preview exists')
 end)
 
--- ── shada_path ────────────────────────────────────────────────────────────────
-
-T.group('shada_path', function()
-  -- Should always return a non-empty string ending with the shada filename
-  local p = utils.shada_path()
-  T.ok(type(p) == 'string' and #p > 0, 'shada_path returns non-empty string')
-  T.ok(p:match('%.shada$') or p:match('main%.shada$'), 'shada_path ends with .shada: ' .. p)
-
-  -- Respects vim.o.shadafile when set to a custom path
-  local orig = vim.o.shadafile
-  vim.o.shadafile = '/tmp/custom.shada'
-  T.eq(utils.shada_path(), '/tmp/custom.shada', 'honours shadafile option')
-  vim.o.shadafile = orig
-
-  -- 'NONE' means shada is disabled; fall back to default
-  vim.o.shadafile = 'NONE'
-  local disabled_p = utils.shada_path()
-  T.ok(disabled_p ~= 'NONE', 'NONE shadafile falls back to default path')
-  vim.o.shadafile = orig
-end)
-
 -- ── csi ───────────────────────────────────────────────────────────────────────
 
 T.group('csi', function()

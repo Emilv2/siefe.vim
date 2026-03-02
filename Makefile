@@ -10,8 +10,6 @@ STYLUA    ?= stylua
 
 build:
 	$(CARGO) build --release
-	cp target/release/rg2fzf bin/rg2fzf
-	cp target/release/shada2fzf bin/shada2fzf
 	cp target/release/diffgrep bin/diffgrep
 	cp target/release/pickaxe-diff bin/pickaxe-diff
 

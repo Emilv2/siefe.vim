@@ -338,8 +338,7 @@ function M.recent_files_info()
     end
   end
 
-  -- v:oldfiles (line=0, col=0 — v:oldfiles carries no position info;
-  -- when shada2fzf is present the streaming path provides real positions)
+  -- v:oldfiles (line=0, col=0 — v:oldfiles carries no position info)
   for _, of in ipairs(M.oldfiles()) do
     if vim.fn.filereadable(vim.fn.fnamemodify(vim.fn.expand(of.name), ':p')) == 1 then
       table.insert(items, '0//0//' .. vim.fn.fnamemodify(vim.fn.expand(of.name), ':~:.'))
@@ -380,8 +379,7 @@ function M.recent_git_files_info()
   for _, of in ipairs(M.oldfiles()) do
     local full = vim.fn.fnamemodify(vim.fn.expand(vim.fn.fnameescape(of.name)), ':p')
     if vim.fn.filereadable(full) == 1 and full:sub(1, #git_dir) == git_dir then
-      -- line=0, col=0: v:oldfiles carries no position info; shada2fzf streaming
-      -- path provides real positions when the binary is present
+      -- line=0, col=0: v:oldfiles carries no position info
       table.insert(items, '0//0//' .. full:sub(#git_dir + 2))
     end
   end
@@ -485,18 +483,6 @@ function M.bin_path(name)
   return M.bin_dir() .. name
 end
 
--- ── Shada path ───────────────────────────────────────────────────────────────
-
--- Return the path to Neovim's active shada file.
--- Respects the 'shadafile' option; falls back to the XDG default.
-function M.shada_path()
-  local sf = vim.o.shadafile
-  if sf and sf ~= '' and sf ~= 'NONE' then
-    return sf
-  end
-  return vim.fn.stdpath('state') .. '/shada/main.shada'
-end
-
 local _data_path = nil
 function M.data_path()
   if _data_path == nil then
@@ -539,9 +525,7 @@ function M.fd_command()
 end
 
 -- Always use ':' — the standard rg field separator understood by fzf-lua's
--- builtin previewer and path.entry_to_file() parser.  In search mode, rg2fzf
--- (when present) converts `rg --null` output (`file\0rest\n`) to this format
--- (`file:rest\0`), enabling fzf --read0 without changing the per-field format.
+-- builtin previewer and path.entry_to_file() parser.
 function M.rg_delimiter()
   return ':'
 end

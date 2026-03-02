@@ -31,7 +31,11 @@ fn main() {
     let mut args = std::env::args().skip(1).peekable();
 
     // Handle --version / -V
-    if args.peek().map(|a| a == "--version" || a == "-V").unwrap_or(false) {
+    if args
+        .peek()
+        .map(|a| a == "--version" || a == "-V")
+        .unwrap_or(false)
+    {
         println!("{VERSION}");
         return;
     }
