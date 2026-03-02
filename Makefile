@@ -1,4 +1,4 @@
-.PHONY: build test test-lua test-rust test-integration test-neovim \
+.PHONY: build test test-lua test-rust test-integration test-neovim test-e2e \
         coverage coverage-rust coverage-lua lint lint-lua lint-rust fmt fmt-lua fmt-rust
 
 NVIM      ?= nvim
@@ -29,6 +29,13 @@ test-lua:
 test-neovim:
 	$(NVIM) --headless -u NONE -l test/test_neovim.lua
 	$(NVIM) --headless -u NONE -l test/test_picker_actions.lua
+
+# End-to-end tests: launch real fzf via fzf-lua, interact via chansend(), assert side-effects.
+# Requires fzf binary and fzf-lua in runtimepath (set FZF_LUA_PATH, default /tmp/fzf-lua).
+# Clone: git clone --depth=1 https://github.com/ibhagwan/fzf-lua /tmp/fzf-lua
+FZF_LUA_PATH ?= /tmp/fzf-lua
+test-e2e:
+	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -l test/test_e2e.lua
 
 # Integration tests call real external binaries; requires `make build` first.
 test-integration: build
