@@ -54,9 +54,17 @@ local function format_buffer(b, git_dir)
   extra = extra == '' and readonly
     or (utils.red(' [', 'Exception') .. modified .. modifiable .. utils.red('] ', 'Exception') .. readonly)
   local rel_name
-  if git_dir ~= '' and abs_name ~= '' then
+  if git_dir ~= '' and abs_name ~= '' and abs_name:sub(1, #git_dir + 1) == git_dir .. '/' then
+    -- Inside the current git root: show √/relative/path/from/root
     rel_name = utils.green('√') .. '/' .. abs_name:sub(#git_dir + 2)
+  elseif abs_name ~= '' then
+    -- Outside the current git root (different repo or no git): show absolute path
+    -- Use abs_name (not the :p:~:. shortened form) so it is unambiguous
+    -- regardless of the current working directory.
+    rel_name = abs_name
   else
+    -- No path (unnamed/special buffer): preserve the display name as-is
+    -- (e.g. '[No Name]', '[Command Line]')
     rel_name = name
   end
   local line_text = line == 0 and '' or ' line ' .. line
@@ -264,5 +272,7 @@ function M.buffers(fullscreen, kwargs)
     actions = actions,
   })
 end
+
+M._test = { format_buffer = format_buffer }
 
 return M

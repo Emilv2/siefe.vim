@@ -284,6 +284,65 @@ T.group('parse_rg_line: non-match returns nil', function()
   T.eq(r, nil, 'non-matching line returns nil')
 end)
 
+-- ── buffers format_buffer display names ───────────────────────────────────────
+
+T.group('format_buffer: inside git root shows relative path', function()
+  -- Create a temp file inside a fake git root
+  local fake_root = tmpdir .. '/fakegit'
+  local subdir = fake_root .. '/src'
+  vim.fn.mkdir(subdir, 'p')
+  local fpath = subdir .. '/inside.lua'
+  vim.fn.writefile({ 'hello' }, fpath)
+  -- Open it in a buffer
+  vim.cmd('edit ' .. vim.fn.fnameescape(fpath))
+  local b = vim.fn.bufnr('')
+  local buffers_m = require('siefe.buffers')
+  local entry = buffers_m._test.format_buffer(b, fake_root)
+  -- The display part is after the first \x01
+  local display = entry:match('\x01(.*)')
+  -- Should contain the relative path from git root (src/inside.lua), NOT fake_root prefix
+  T.ok(display:find('src/inside%.lua', 1, false) ~= nil, 'display contains relative path src/inside.lua')
+  -- Should NOT contain the absolute fake_root prefix in the display part
+  T.ok(display:find(fake_root, 1, true) == nil, 'display does not contain full absolute fake_root prefix')
+  -- The metadata field (before \x01) must still contain the absolute path for the previewer
+  local meta = entry:match('^(.-)\x01')
+  T.ok(meta:find(fpath, 1, true) ~= nil, 'metadata field contains absolute path for previewer')
+  vim.cmd('bdelete! ' .. b)
+end)
+
+T.group('format_buffer: outside git root shows absolute path', function()
+  -- Create a temp file outside the fake git root (a sibling directory)
+  local fake_root = tmpdir .. '/fakegit2'
+  vim.fn.mkdir(fake_root, 'p')
+  local outside = tmpdir .. '/outside_repo'
+  vim.fn.mkdir(outside, 'p')
+  local fpath = outside .. '/outside.lua'
+  vim.fn.writefile({ 'world' }, fpath)
+  vim.cmd('edit ' .. vim.fn.fnameescape(fpath))
+  local b = vim.fn.bufnr('')
+  local buffers_m = require('siefe.buffers')
+  local entry = buffers_m._test.format_buffer(b, fake_root)
+  local display = entry:match('\x01(.*)')
+  -- Display should contain the full absolute path (not a truncated/garbled version)
+  T.ok(display:find(fpath, 1, true) ~= nil, 'display contains absolute path for outside-root buffer')
+  -- Should NOT show the √ git-relative prefix
+  T.ok(display:find('√', 1, true) == nil, 'display does not show √ prefix for outside-root buffer')
+  vim.cmd('bdelete! ' .. b)
+end)
+
+T.group('format_buffer: no git root shows absolute path', function()
+  local fpath = tmpdir .. '/nogit.lua'
+  vim.fn.writefile({ 'standalone' }, fpath)
+  vim.cmd('edit ' .. vim.fn.fnameescape(fpath))
+  local b = vim.fn.bufnr('')
+  local buffers_m = require('siefe.buffers')
+  -- Pass empty git_dir (no git context): falls through to name (:p:~:. form), no √
+  local entry = buffers_m._test.format_buffer(b, '')
+  local display = entry:match('\x01(.*)')
+  T.ok(display:find('√', 1, true) == nil, 'display does not show √ without git root')
+  vim.cmd('bdelete! ' .. b)
+end)
+
 -- ── Cleanup ───────────────────────────────────────────────────────────────────
 
 vim.fn.delete(tmpdir, 'rf')
