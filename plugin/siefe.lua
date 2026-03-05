@@ -413,7 +413,7 @@ plug('<Plug>SiefeInstall', '<cmd>SiefeInstall<CR>')
 
 -- ── Default key mappings (if enabled) ────────────────────────────────────────
 
-if config.options.map_keys then
+if config.map_keys then
   local function maybe_map(mode, lhs, plug_name)
     if vim.fn.hasmapto(plug_name) == 0 and vim.fn.maparg(lhs, mode) == '' then
       vim.keymap.set(mode, lhs, plug_name, { silent = true, remap = true })
