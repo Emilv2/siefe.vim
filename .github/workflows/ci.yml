@@ -62,6 +62,12 @@ jobs:
       - name: Lua unit tests (make test-lua)
         run: make test-lua
 
+      - name: Plugin load tests (make test-plugin)
+        # Sources plugin/siefe.lua the same way Neovim does on startup.
+        # Catches load-time bugs (e.g. config.options.map_keys nil-index) that
+        # are invisible to module-level require() tests.
+        run: make test-plugin
+
       - name: Neovim integration tests (make test-neovim)
         run: make test-neovim
         # Includes test_neovim.lua (feedkeys/buffer/cursor) and

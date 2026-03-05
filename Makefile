@@ -1,4 +1,4 @@
-.PHONY: build test test-lua test-rust test-integration test-neovim test-e2e \
+.PHONY: build test test-lua test-plugin test-rust test-integration test-neovim test-e2e \
         coverage coverage-rust coverage-lua lint lint-lua lint-rust fmt fmt-lua fmt-rust
 
 NVIM      ?= nvim
@@ -24,6 +24,12 @@ test-lua:
 	$(NVIM) --headless -u NONE -l test/test_rg.lua
 	$(NVIM) --headless -u NONE -l test/test_history.lua
 
+# Plugin load test: sources plugin/siefe.lua the same way Neovim does on startup.
+# Catches load-time bugs (e.g. config.options.map_keys nil-index) invisible to
+# module-level require() tests.
+test-plugin:
+	$(NVIM) --headless -u NONE -l test/test_plugin.lua
+
 # Neovim integration tests: exercise functions that require real Neovim state
 # (buffers, cursor positions, registers, quickfix, feedkeys).
 test-neovim:
@@ -42,7 +48,7 @@ test-e2e:
 test-integration: build
 	$(NVIM) --headless -u NONE -l test/test_integration.lua
 
-test: test-rust test-lua test-neovim
+test: test-rust test-lua test-plugin test-neovim
 
 # ── Coverage ──────────────────────────────────────────────────────────────────
 
