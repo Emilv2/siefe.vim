@@ -240,6 +240,93 @@ T.group('e2e config: custom rg_word_key is accepted by fzf', function()
   cfg.setup({}) -- restore defaults
 end)
 
+-- rg: type select (-t) chains correctly into a filtered rg session -----------
+--
+-- This test specifically guards against the type_select.lua bug where
+-- vim.list_slice(selected, 2) skipped the first (often only) selected type
+-- because fzf-lua already strips selected[1] (the --print-query result) before
+-- calling the action.  Without the fix, single-type selection always produced
+-- type_flag='' and rg reopened without any type filter.
+
+T.group('e2e rg: type select (-t lua) filters results to only lua files', function()
+  vim.cmd('enew!')
+  -- Create three files with the same unique search token but different extensions.
+  -- After selecting the 'lua' type, only the .lua file should appear.
+  local token = 'UNIQUE_TYPE_E2E_TOKEN_XQZ'
+  local lua_file = make_file('type_e2e.lua', { token, 'lua content' })
+  local py_file  = make_file('type_e2e.py',  { token, 'python content' })
+  local rs_file  = make_file('type_e2e.rs',  { token, 'rust content' })
+  -- Silence "unused" warnings; the files must exist on disk but paths aren't
+  -- referenced again — rg discovers them by directory search.
+  local _ = lua_file; _ = py_file; _ = rs_file
+
+  -- Step 1: Launch the rg picker.
+  local h1 = launch_and_wait(function()
+    require('siefe.rg').ripgrepfzf(false, tmpdir, {})
+  end)
+  T.ok(h1 ~= nil, 'rg picker launched for type-select test')
+  if not h1 then
+    return
+  end
+
+  -- Step 2: Send ctrl-t (\x14) to open the type_select sub-picker.
+  -- Snapshot terminal buffers BEFORE sending so find_new_term_buf can spot T2.
+  local before_type = E.current_term_bufs()
+  vim.fn.chansend(h1.chan, '\x14') -- ctrl-t = rg_type_key default
+
+  -- Step 3: Find the type_select picker (T2).
+  local type_buf = E.find_new_term_buf(before_type, 5000)
+  T.ok(type_buf ~= nil, 'type_select picker appeared after ctrl-t')
+  if not type_buf then
+    return
+  end
+
+  local type_chan = vim.b[type_buf].terminal_job_id
+  T.ok(type_chan ~= nil and type_chan > 0, 'type_select channel is valid')
+  if not type_chan or type_chan < 1 then
+    return
+  end
+  E.wait_fzf_ready(type_buf, 2000)
+
+  -- Step 4: Type "lua" to filter the type list to "lua: *.lua", then Enter.
+  -- Snapshot BEFORE pressing Enter so we can find the re-opened rg (T3).
+  E.fzf_type(type_chan, 'lua', 300)
+  -- Wait for the filtered entry to appear (fzf shows "lua: *.lua").
+  E.wait_fzf_match(type_buf, 'lua:%s', 3000)
+
+  local before_rg2 = E.current_term_bufs()
+  E.fzf_enter(type_chan)
+
+  -- Step 5: Wait for T2 to close and for the re-opened rg picker (T3) to appear.
+  E.wait_fzf_close(type_buf, 5000)
+  local rg2_buf = E.find_new_term_buf(before_rg2, 6000)
+  T.ok(rg2_buf ~= nil, 'rg reopened (T3) after type selection')
+  if not rg2_buf then
+    return
+  end
+
+  local rg2_chan = vim.b[rg2_buf].terminal_job_id
+  T.ok(rg2_chan ~= nil and rg2_chan > 0, 'rg2 channel is valid')
+  if not rg2_chan or rg2_chan < 1 then
+    return
+  end
+  E.wait_fzf_ready(rg2_buf, 1500)
+
+  -- Step 6: Search for the unique token; with -tlua only the .lua file should
+  -- appear in fzf's results.
+  E.fzf_type(rg2_chan, token, 300)
+  -- Wait for the .lua result to appear before checking the others.
+  E.wait_fzf_match(rg2_buf, 'type_e2e%.lua', 5000)
+
+  T.ok(E.has_pattern(rg2_buf, 'type_e2e%.lua'), 'lua file present after -t lua filter')
+  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.py'),  'py file excluded by -t lua filter')
+  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.rs'),  'rs file excluded by -t lua filter')
+
+  -- Close the filtered rg picker cleanly.
+  vim.fn.chansend(rg2_chan, '\x1b')
+  E.wait_fzf_close(rg2_buf, 3000)
+end)
+
 -- Cleanup ---------------------------------------------------------------------
 
 vim.fn.delete(tmpdir, 'rf')

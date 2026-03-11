@@ -21,8 +21,10 @@ function M.type_select(func, fullscreen, ...)
     if not selected or #selected == 0 then
       return
     end
-    -- selected[1] = query (--print-query), rest = chosen types
-    local items = vim.list_slice(selected, 2)
+    -- fzf-lua's fzf_wrap() strips selected[1] (the --print-query result) before
+    -- calling our action, so selected[1] is the first chosen type entry, not the
+    -- query.  Use the full list directly (same fix as rg.lua get_entries()).
+    local items = selected
 
     local type_flag = ''
     if #items > 0 and items[1] ~= config.abort_key then
@@ -80,14 +82,14 @@ function M.type_select(func, fullscreen, ...)
         ['--multi'] = '',
         ['--ansi'] = '',
         ['--history'] = utils.data_path() .. '/type_fzf_history',
-        ['--print-query'] = '',
       },
       keymap = ts_km,
       actions = {
         ['default'] = { fn = on_select, desc = 'select' },
         [config.abort_key] = {
           fn = function(selected, opts)
-            on_select({ '', config.abort_key }, opts)
+            -- Pass abort_key as items[1] so on_select clears the type flag.
+            on_select({ config.abort_key }, opts)
           end,
           desc = 'abort',
         },
