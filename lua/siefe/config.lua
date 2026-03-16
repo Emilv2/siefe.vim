@@ -33,6 +33,9 @@ local function make_defaults()
   d.tab_key = 'alt-enter'
   d.vdiffsplit_key = 'alt-d'
 
+  -- Window layout
+  d.win_height = 0.40 -- height as fraction of screen (0.0–1.0) for non-fullscreen pickers
+
   -- Preview size
   d.preview_hide_threshold = 80
   d.default_preview_size = 50

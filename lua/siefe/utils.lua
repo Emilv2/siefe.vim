@@ -589,8 +589,20 @@ function M.fzf_escape(s)
 end
 
 -- Build the winopts table for fzf-lua
+-- Non-fullscreen: bottom-anchored window (height = win_height fraction, full width).
+--   row=1.0 in fzf-lua positions the bottom edge at the screen bottom.
+-- Fullscreen: uses the entire terminal.
 function M.winopts(fullscreen)
-  return { fullscreen = fullscreen or false }
+  if fullscreen then
+    return { fullscreen = true }
+  end
+  local cfg = require('siefe.config')
+  return {
+    height = cfg.win_height,
+    width  = 1.0,
+    row    = 1.0, -- anchor to bottom of screen
+    col    = 0,   -- leftmost column; irrelevant for full-width, but explicit
+  }
 end
 
 return M
