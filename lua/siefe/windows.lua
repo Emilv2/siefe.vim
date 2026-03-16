@@ -66,7 +66,7 @@ function M.windows(fullscreen, kwargs)
   kwargs = kwargs or {}
   kwargs.query = kwargs.query or ''
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   -- Build source: iterate all tabs × windows in tab order
   local source = {}
@@ -106,11 +106,11 @@ function M.windows(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  win_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   local actions = {}
 

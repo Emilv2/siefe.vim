@@ -111,7 +111,7 @@ function M.buffers(fullscreen, kwargs)
   local header_lines = (vim.fn.bufnr('') == (sorted[1] or 0)) and 1 or 0
   local tabstop = (math.max((table.unpack or unpack)(#sorted > 0 and sorted or { 0 })) or 0) >= 1000 and 9 or 8
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   local buf_km = utils.make_binds({
     ['change'] = 'first',
@@ -121,11 +121,11 @@ function M.buffers(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  buf_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   -- ── Helpers ─────────────────────────────────────────────────────────────────
 

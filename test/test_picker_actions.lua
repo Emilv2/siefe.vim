@@ -41,12 +41,13 @@ end
 -- ── fzf-lua mock ─────────────────────────────────────────────────────────────
 
 -- Captured state from the last picker launch (set by mock).
--- Returns: { actions, keymap_fzf, source, opts }
--- • actions:     opts.actions table (Lua-side action callbacks)
--- • keymap_fzf:  opts.keymap.fzf table (fzf-native bind strings)
--- • source:      the source passed to fzf_exec (table of entries)
--- • opts:        the full opts table
-local last_captured = { actions = nil, keymap_fzf = nil, source = nil, opts = nil }
+-- Returns: { actions, keymap_fzf, keymap_builtin, source, opts }
+-- • actions:        opts.actions table (Lua-side action callbacks)
+-- • keymap_fzf:     opts.keymap.fzf table (fzf-native bind strings)
+-- • keymap_builtin: opts.keymap.builtin table (fzf-lua builtin action strings)
+-- • source:         the source passed to fzf_exec (table of entries)
+-- • opts:           the full opts table
+local last_captured = { actions = nil, keymap_fzf = nil, keymap_builtin = nil, source = nil, opts = nil }
 
 -- Stub file-open action: parses a "file:line:col[:text]" rg-format entry.
 local function stub_open(cmd, entry)
@@ -92,7 +93,7 @@ local fzl_actions_stubs = {
 }
 
 local function make_fzl_mock()
-  last_captured = { actions = nil, keymap_fzf = nil, source = nil, opts = nil }
+  last_captured = { actions = nil, keymap_fzf = nil, keymap_builtin = nil, source = nil, opts = nil }
   -- rg.lua requires both 'fzf-lua' (for fzf_live/fzf_exec) and the submodule
   -- 'fzf-lua.actions' (for file_edit, file_split, …).  Both must be mocked.
   package.loaded['fzf-lua.actions'] = fzl_actions_stubs
@@ -103,12 +104,14 @@ local function make_fzl_mock()
       last_captured.opts = opts
       last_captured.actions = opts and opts.actions
       last_captured.keymap_fzf = opts and opts.keymap and opts.keymap.fzf
+      last_captured.keymap_builtin = opts and opts.keymap and opts.keymap.builtin
     end,
     -- fzf_live: function source (live-rg mode)
     fzf_live = function(_src_fn, opts)
       last_captured.opts = opts
       last_captured.actions = opts and opts.actions
       last_captured.keymap_fzf = opts and opts.keymap and opts.keymap.fzf
+      last_captured.keymap_builtin = opts and opts.keymap and opts.keymap.builtin
     end,
     -- fzl.actions also referenced directly (fzl = require('fzf-lua'))
     actions = fzl_actions_stubs,
@@ -144,6 +147,7 @@ local function capture(picker_fn, config_opts)
   local cap = {
     actions = last_captured.actions or {},
     keymap_fzf = last_captured.keymap_fzf or {},
+    keymap_builtin = last_captured.keymap_builtin or {},
     source = last_captured.source,
     opts = last_captured.opts,
   }
@@ -324,15 +328,20 @@ T.group('rg: vdiffsplit action opens file in vertical diffsplit', function()
   vim.cmd('only!')
 end)
 
-T.group('rg: toggle_preview_key registered in keymap.fzf', function()
+T.group('rg: toggle_preview_key registered in keymap.builtin', function()
   local config = require('siefe.config')
   local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end)
-  -- toggle_preview_key is a fzf-native bind (change-preview-window), lives in keymap.fzf
+  -- toggle_preview_key uses fzf-lua's builtin 'toggle-preview' action so that
+  -- it correctly controls fzf-lua's separate Neovim preview window.
   T.ok(
-    cap.keymap_fzf[config.toggle_preview_key] ~= nil,
-    'toggle_preview_key registered in keymap.fzf'
+    cap.keymap_builtin[config.toggle_preview_key] == 'toggle-preview',
+    'toggle_preview_key registered in keymap.builtin as toggle-preview'
+  )
+  T.ok(
+    cap.keymap_fzf[config.toggle_preview_key] == nil,
+    'toggle_preview_key not in keymap.fzf for builtin-previewer picker'
   )
 end)
 
@@ -499,14 +508,18 @@ T.group('buffers: project toggle flips kwargs.project', function()
   T.ok(kwargs.project == true, 'toggle sets kwargs.project = true')
 end)
 
-T.group('buffers: toggle_preview_key registered in keymap.fzf', function()
+T.group('buffers: toggle_preview_key registered in keymap.builtin', function()
   local config = require('siefe.config')
   local cap = capture(function()
     require('siefe.buffers').buffers(false, {})
   end)
   T.ok(
-    cap.keymap_fzf[config.toggle_preview_key] ~= nil,
-    'toggle_preview_key in keymap.fzf for buffers picker'
+    cap.keymap_builtin[config.toggle_preview_key] == 'toggle-preview',
+    'toggle_preview_key in keymap.builtin for buffers picker'
+  )
+  T.ok(
+    cap.keymap_fzf[config.toggle_preview_key] == nil,
+    'toggle_preview_key not in keymap.fzf for builtin-previewer picker'
   )
 end)
 

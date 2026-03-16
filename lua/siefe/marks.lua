@@ -87,7 +87,7 @@ function M.marks(fullscreen, kwargs)
     )
   end
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   local header = 'm\tl\tc\tfile/text'
 
@@ -97,11 +97,11 @@ function M.marks(fullscreen, kwargs)
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  marks_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   local function parse_mark_line(line)
     -- format: fname:lnum:col\x01bufnr\x01mark\x01display...

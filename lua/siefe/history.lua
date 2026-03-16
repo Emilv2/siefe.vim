@@ -108,7 +108,7 @@ function M.historyoldfiles(fullscreen, kwargs)
     end, utils.recent_files_info())
   end
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   local hist_km = utils.make_binds({
     ['change'] = 'first',
@@ -118,11 +118,11 @@ function M.historyoldfiles(fullscreen, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  hist_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   -- Shows current buffer at top as a "header line"
   local header_lines = (vim.fn.expand('%') ~= '') and 1 or 0

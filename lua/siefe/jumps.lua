@@ -89,7 +89,7 @@ function M.jumps(fullscreen, kwargs)
     table.insert(source, printjump(git_dir, current, jump_max, lnum_max_len, i - 1, jump))
   end
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   local header = 'jumps  current:' .. current
 
@@ -100,11 +100,11 @@ function M.jumps(fullscreen, kwargs)
     [config.down_key] = 'down',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  jumps_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   local function parse_jump_line(line)
     -- format: fname:lnum:col\x01rel_offset\x01display

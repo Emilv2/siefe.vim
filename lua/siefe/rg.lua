@@ -159,7 +159,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   end
   kwargs.paths = clean_paths
 
-  local default_size, other_size = utils.preview_window_size()
+  local default_size = utils.preview_window_size()
 
   -- Determine mode
   local mode = kwargs.files and 'files' or (kwargs.fzf and 'fzf' or 'rg')
@@ -175,13 +175,11 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     [config.previous_history_key] = 'previous-history',
     [config.toggle_up_key] = 'toggle+up',
     [config.toggle_down_key] = 'toggle+down',
-    -- Wrap complex fzf bind strings as { action, desc = 'short' } so fzf-lua's
-    -- F1 help shows the short description instead of the full action string.
-    [config.toggle_preview_key] = {
-      'change-preview-window(' .. other_size .. '|' .. config.second_preview_size .. '%|)',
-      desc = 'cycle-preview',
-    },
   })
+  -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
+  -- builtin Neovim preview window (change-preview-window is a fzf-native action
+  -- that does not affect fzf-lua's separate Neovim preview window).
+  rg_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/rg_fzf_history',
