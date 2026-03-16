@@ -101,7 +101,9 @@ function M.marks(fullscreen, kwargs)
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
   -- builtin Neovim preview window (change-preview-window is a fzf-native action
   -- that does not affect fzf-lua's separate Neovim preview window).
-  marks_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
+  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
+  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
+  marks_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
 
   local function parse_mark_line(line)
     -- format: fname:lnum:col\x01bufnr\x01mark\x01display...

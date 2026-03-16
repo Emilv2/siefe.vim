@@ -507,6 +507,23 @@ function M.make_binds(binds)
   return { fzf = binds or {} }
 end
 
+-- Convert an fzf key notation string (e.g. 'ctrl-/', 'alt-p', 'f4') to Neovim
+-- key notation (e.g. '<C-/>', '<A-p>', '<f4>').  This is required when a key
+-- needs to be registered as a Neovim terminal-mode keymap (keymap.builtin) via
+-- vim.keymap.set("t", key, ...).  fzf notation does not use angle-bracket
+-- wrapping, so the literal string 'ctrl-/' would map the characters c,t,r,l,-,/
+-- rather than the Ctrl+/ keystroke.
+function M.fzf_key_to_nvim(key)
+  local conv = { ctrl = 'C', alt = 'A', shift = 'S' }
+  key = key:lower()
+  for fzf_mod, nvim_mod in pairs(conv) do
+    -- Replace 'ctrl-' → 'C-', 'alt-' → 'A-', 'shift-' → 'S-'.
+    -- Anchoring on the trailing dash avoids partial matches (e.g. 'alternative').
+    key = key:gsub(fzf_mod .. '%-', nvim_mod .. '-')
+  end
+  return '<' .. key .. '>'
+end
+
 -- ── Preview commands ──────────────────────────────────────────────────────────
 
 local _fd_cmd = nil

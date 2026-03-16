@@ -104,7 +104,9 @@ function M.jumps(fullscreen, kwargs)
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
   -- builtin Neovim preview window (change-preview-window is a fzf-native action
   -- that does not affect fzf-lua's separate Neovim preview window).
-  jumps_km.builtin = { [config.toggle_preview_key] = 'toggle-preview' }
+  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
+  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
+  jumps_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
 
   local function parse_jump_line(line)
     -- format: fname:lnum:col\x01rel_offset\x01display

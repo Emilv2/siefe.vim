@@ -226,4 +226,34 @@ T.group('log_path', function()
   T.eq(utils.log_path(), p, 'log_path idempotent')
 end)
 
+-- ── fzf_key_to_nvim ───────────────────────────────────────────────────────────
+
+T.group('fzf_key_to_nvim: converts fzf notation to Neovim angle-bracket notation', function()
+  -- ctrl-X → <C-x> (lowercase)
+  T.eq(utils.fzf_key_to_nvim('ctrl-/'), '<C-/>', 'ctrl-/ → <C-/>')
+  T.eq(utils.fzf_key_to_nvim('ctrl-a'), '<C-a>', 'ctrl-a → <C-a>')
+  T.eq(utils.fzf_key_to_nvim('ctrl-z'), '<C-z>', 'ctrl-z → <C-z>')
+  -- alt- → <A->
+  T.eq(utils.fzf_key_to_nvim('alt-p'), '<A-p>', 'alt-p → <A-p>')
+  T.eq(utils.fzf_key_to_nvim('alt-enter'), '<A-enter>', 'alt-enter → <A-enter>')
+  -- shift- → <S->
+  T.eq(utils.fzf_key_to_nvim('shift-tab'), '<S-tab>', 'shift-tab → <S-tab>')
+  -- plain function keys (no modifier) just get wrapped
+  T.eq(utils.fzf_key_to_nvim('f4'), '<f4>', 'f4 → <f4>')
+  T.eq(utils.fzf_key_to_nvim('f7'), '<f7>', 'f7 → <f7>')
+  -- input is lowercased
+  T.eq(utils.fzf_key_to_nvim('CTRL-A'), '<C-a>', 'CTRL-A (upper) → <C-a>')
+  -- partial-match safety: modifier name without trailing dash is not replaced
+  T.ok(utils.fzf_key_to_nvim('alternative'):find('A-', 1, true) == nil, '"alt" not replaced when no trailing dash')
+end)
+
+T.group('fzf_key_to_nvim: default toggle_preview_key converts correctly', function()
+  local cfg = require('siefe.config')
+  local nvim_key = utils.fzf_key_to_nvim(cfg.toggle_preview_key)
+  -- Default is 'ctrl-/' → must become '<C-/>'
+  T.eq(nvim_key, '<C-/>', 'default toggle_preview_key converts to <C-/>')
+  -- The raw fzf key must NOT equal the Neovim key
+  T.ok(nvim_key ~= cfg.toggle_preview_key, 'fzf key and Neovim key are different strings')
+end)
+
 T.finish()
