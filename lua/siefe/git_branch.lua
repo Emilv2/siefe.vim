@@ -58,6 +58,7 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/rg_branch_history',
+    ['--layout'] = 'default',
     ['--ansi'] = '',
     ['--delimiter'] = ':',
     ['--preview-window'] = '~1,' .. default_size,
@@ -175,6 +176,7 @@ function M.author_select(callback, fullscreen)
     fzf_opts = {
       ['--history'] = utils.data_path() .. '/rg_author_history',
       ['--multi'] = '',
+      ['--layout'] = 'default',
       ['--ansi'] = '',
     },
     keymap = au_km,

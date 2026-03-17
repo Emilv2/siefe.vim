@@ -605,21 +605,23 @@ function M.fzf_escape(s)
   return s
 end
 
--- Build the winopts table for fzf-lua
--- Non-fullscreen: bottom-anchored window (height = win_height fraction, full width).
---   row=1.0 in fzf-lua positions the bottom edge at the screen bottom.
--- Fullscreen: uses the entire terminal.
+-- Build the winopts table for fzf-lua.
 function M.winopts(fullscreen)
-  if fullscreen then
-    return { fullscreen = true }
+  return { fullscreen = fullscreen or false }
+end
+
+-- Returns a list of Neovim key notations to register in keymap.builtin for
+-- toggle-preview.  Two keys are needed for ctrl-/ because:
+--   Standard terminals:  Ctrl+/ sends 0x1f, which Neovim calls <C-_>.
+--   CSI-u/kitty terminals: Ctrl+/ sends a distinct sequence; Neovim calls it <C-/>.
+-- Registering both ensures the key works regardless of terminal type.
+-- For all other fzf keys, only the single converted key is returned.
+function M.builtin_toggle_keys(fzf_key)
+  local main = M.fzf_key_to_nvim(fzf_key)
+  if fzf_key:lower() == 'ctrl-/' then
+    return { main, '<C-_>' }
   end
-  local cfg = require('siefe.config')
-  return {
-    height = cfg.win_height,
-    width  = 1.0,
-    row    = 1.0, -- anchor to bottom of screen
-    col    = 0,   -- leftmost column; irrelevant for full-width, but explicit
-  }
+  return { main }
 end
 
 return M

@@ -300,6 +300,7 @@ function M.gitstash(fullscreen, kwargs)
     preview = default_preview,
     fzf_opts = {
       ['--history'] = utils.data_path() .. '/rg_branch_history',
+      ['--layout'] = 'default',
       ['--ansi'] = '',
       ['--multi'] = '',
       ['--read0'] = '',

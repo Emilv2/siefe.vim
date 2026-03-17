@@ -81,6 +81,7 @@ function M.type_select(func, fullscreen, ...)
       fzf_opts = {
         ['--multi'] = '',
         ['--ansi'] = '',
+        ['--layout'] = 'default',
         ['--history'] = utils.data_path() .. '/type_fzf_history',
       },
       keymap = ts_km,

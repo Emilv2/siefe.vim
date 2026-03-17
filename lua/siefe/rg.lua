@@ -179,12 +179,16 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
   -- builtin Neovim preview window (change-preview-window is a fzf-native action
   -- that does not affect fzf-lua's separate Neovim preview window).
-  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
-  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
-  rg_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
+  -- Use builtin_toggle_keys() to register both <C-/> (CSI-u terminals) and
+  -- <C-_> (standard terminals where Ctrl+/ sends 0x1f = <C-_>).
+  rg_km.builtin = {}
+  for _, nk in ipairs(utils.builtin_toggle_keys(config.toggle_preview_key)) do
+    rg_km.builtin[nk] = 'toggle-preview'
+  end
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/rg_fzf_history',
+    ['--layout'] = 'default',
     ['--ansi'] = '',
     ['--multi'] = '',
     -- Use NUL as the output record separator.  fzf-lua detects --print0 in

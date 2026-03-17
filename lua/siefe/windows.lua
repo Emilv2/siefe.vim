@@ -108,11 +108,11 @@ function M.windows(fullscreen, kwargs)
     [config.toggle_down_key] = 'toggle+down',
   })
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
-  -- builtin Neovim preview window (change-preview-window is a fzf-native action
-  -- that does not affect fzf-lua's separate Neovim preview window).
-  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
-  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
-  win_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
+  -- builtin Neovim preview window. Use builtin_toggle_keys() for terminal compat.
+  win_km.builtin = {}
+  for _, nk in ipairs(utils.builtin_toggle_keys(config.toggle_preview_key)) do
+    win_km.builtin[nk] = 'toggle-preview'
+  end
 
   local actions = {}
 
@@ -173,6 +173,7 @@ function M.windows(fullscreen, kwargs)
     fzf_opts = {
       ['--multi'] = '',
       ['--tiebreak'] = 'index',
+      ['--layout'] = 'default',
       ['--ansi'] = '',
       -- Entry: fname:lnum:0\x01display
       -- entry_to_file() reads fname:lnum from ':' prefix; fzf shows field 2+ (display).

@@ -331,18 +331,19 @@ end)
 T.group('rg: toggle_preview_key registered in keymap.builtin with Neovim notation', function()
   local config = require('siefe.config')
   local utils = require('siefe.utils')
-  local nvim_key = utils.fzf_key_to_nvim(config.toggle_preview_key)
+  local keys = utils.builtin_toggle_keys(config.toggle_preview_key)
   local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end)
-  -- toggle_preview_key must be in Neovim notation (<C-/>) in keymap.builtin so
-  -- that fzf-lua's vim.keymap.set("t", key, ...) registers the correct terminal
-  -- keymap.  fzf notation ('ctrl-/') would silently map the literal string and
-  -- never fire when the user presses the key.
-  T.ok(
-    cap.keymap_builtin[nvim_key] == 'toggle-preview',
-    'toggle_preview_key registered in keymap.builtin as toggle-preview (Neovim notation: ' .. nvim_key .. ')'
-  )
+  -- toggle_preview_key must be in Neovim notation in keymap.builtin.
+  -- For ctrl-/, both <C-/> (CSI-u terminals) and <C-_> (standard terminals)
+  -- are registered for cross-terminal compatibility.
+  for _, nk in ipairs(keys) do
+    T.ok(
+      cap.keymap_builtin[nk] == 'toggle-preview',
+      'toggle_preview_key registered in keymap.builtin as toggle-preview (' .. nk .. ')'
+    )
+  end
   T.ok(
     cap.keymap_builtin[config.toggle_preview_key] == nil,
     'fzf-notation key not present in keymap.builtin (would silently fail)'
@@ -519,14 +520,16 @@ end)
 T.group('buffers: toggle_preview_key registered in keymap.builtin with Neovim notation', function()
   local config = require('siefe.config')
   local utils = require('siefe.utils')
-  local nvim_key = utils.fzf_key_to_nvim(config.toggle_preview_key)
+  local keys = utils.builtin_toggle_keys(config.toggle_preview_key)
   local cap = capture(function()
     require('siefe.buffers').buffers(false, {})
   end)
-  T.ok(
-    cap.keymap_builtin[nvim_key] == 'toggle-preview',
-    'toggle_preview_key in keymap.builtin (Neovim notation: ' .. nvim_key .. ') for buffers picker'
-  )
+  for _, nk in ipairs(keys) do
+    T.ok(
+      cap.keymap_builtin[nk] == 'toggle-preview',
+      'toggle_preview_key in keymap.builtin (' .. nk .. ') for buffers picker'
+    )
+  end
   T.ok(
     cap.keymap_builtin[config.toggle_preview_key] == nil,
     'fzf-notation key not present in keymap.builtin'

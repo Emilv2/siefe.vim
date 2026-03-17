@@ -160,6 +160,7 @@ function M.registers(fullscreen, kwargs)
     fzf_opts = {
       ['--ansi'] = '',
       ['--sync'] = '',
+      ['--layout'] = 'default',
       ['--delimiter'] = ' ',
     },
     keymap = regs_km,

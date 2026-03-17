@@ -120,17 +120,18 @@ function M.historyoldfiles(fullscreen, kwargs)
     [config.toggle_down_key] = 'toggle+down',
   })
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
-  -- builtin Neovim preview window (change-preview-window is a fzf-native action
-  -- that does not affect fzf-lua's separate Neovim preview window).
-  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
-  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
-  hist_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
+  -- builtin Neovim preview window. Use builtin_toggle_keys() for terminal compat.
+  hist_km.builtin = {}
+  for _, nk in ipairs(utils.builtin_toggle_keys(config.toggle_preview_key)) do
+    hist_km.builtin[nk] = 'toggle-preview'
+  end
 
   -- Shows current buffer at top as a "header line"
   local header_lines = (vim.fn.expand('%') ~= '') and 1 or 0
 
   local fzf_opts = {
     ['--history'] = utils.data_path() .. '/rg_history_history',
+    ['--layout'] = 'default',
     ['--ansi'] = '',
     ['--multi'] = '',
     -- Entry format: fname:lnum:col\x01display

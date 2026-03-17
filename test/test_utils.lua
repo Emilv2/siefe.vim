@@ -256,4 +256,33 @@ T.group('fzf_key_to_nvim: default toggle_preview_key converts correctly', functi
   T.ok(nvim_key ~= cfg.toggle_preview_key, 'fzf key and Neovim key are different strings')
 end)
 
+-- ── builtin_toggle_keys ───────────────────────────────────────────────────────
+
+T.group('builtin_toggle_keys: ctrl-/ returns both <C-/> and <C-_> for terminal compat', function()
+  local keys = utils.builtin_toggle_keys('ctrl-/')
+  -- Must include <C-/> (CSI-u / kitty terminals)
+  T.ok(vim.tbl_contains(keys, '<C-/>'), 'ctrl-/ includes <C-/> (CSI-u terminal key)')
+  -- Must include <C-_> (standard terminals where Ctrl+/ sends 0x1f = <C-_>)
+  T.ok(vim.tbl_contains(keys, '<C-_>'), 'ctrl-/ includes <C-_> (standard terminal 0x1f)')
+  T.eq(#keys, 2, 'ctrl-/ returns exactly 2 keys')
+end)
+
+T.group('builtin_toggle_keys: non-slash ctrl keys return single key', function()
+  local keys = utils.builtin_toggle_keys('ctrl-p')
+  T.eq(#keys, 1, 'ctrl-p returns 1 key')
+  T.eq(keys[1], '<C-p>', 'ctrl-p returns <C-p>')
+end)
+
+T.group('builtin_toggle_keys: alt key returns single key', function()
+  local keys = utils.builtin_toggle_keys('alt-p')
+  T.eq(#keys, 1, 'alt-p returns 1 key')
+  T.eq(keys[1], '<A-p>', 'alt-p returns <A-p>')
+end)
+
+T.group('builtin_toggle_keys: function key returns single key', function()
+  local keys = utils.builtin_toggle_keys('f4')
+  T.eq(#keys, 1, 'f4 returns 1 key')
+  T.eq(keys[1], '<f4>', 'f4 returns <f4>')
+end)
+
 T.finish()

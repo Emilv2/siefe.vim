@@ -356,6 +356,7 @@ function M.gitstatus(fullscreen, kwargs)
     preview = default_preview,
     fzf_opts = {
       ['--history'] = utils.data_path() .. '/git_status_history',
+      ['--layout'] = 'default',
       ['--ansi'] = '',
       ['--multi'] = '',
       ['--print-query'] = '',

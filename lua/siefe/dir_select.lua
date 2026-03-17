@@ -236,6 +236,7 @@ function M.dir_select(
     ['--print-query'] = '',
     ['--query'] = kwargs.fd_query or '',
     ['--scheme'] = 'path',
+    ['--layout'] = 'default',
     ['--prompt'] = prompt,
   }, multi_opt)
 

@@ -99,11 +99,11 @@ function M.marks(fullscreen, kwargs)
     [config.toggle_down_key] = 'toggle+down',
   })
   -- toggle-preview via keymap.builtin so it correctly controls the fzf-lua
-  -- builtin Neovim preview window (change-preview-window is a fzf-native action
-  -- that does not affect fzf-lua's separate Neovim preview window).
-  -- keymap.builtin keys must be in Neovim notation (<C-/>) not fzf notation
-  -- (ctrl-/) because fzf-lua registers them via vim.keymap.set("t", key, ...).
-  marks_km.builtin = { [utils.fzf_key_to_nvim(config.toggle_preview_key)] = 'toggle-preview' }
+  -- builtin Neovim preview window. Use builtin_toggle_keys() for terminal compat.
+  marks_km.builtin = {}
+  for _, nk in ipairs(utils.builtin_toggle_keys(config.toggle_preview_key)) do
+    marks_km.builtin[nk] = 'toggle-preview'
+  end
 
   local function parse_mark_line(line)
     -- format: fname:lnum:col\x01bufnr\x01mark\x01display...
@@ -212,6 +212,7 @@ function M.marks(fullscreen, kwargs)
       ['--ansi'] = '',
       ['--multi'] = '',
       ['--tabstop'] = '4',
+      ['--layout'] = 'default',
       -- Entry: fname:lnum:col\x01bufnr\x01mark\x01display
       -- entry_to_file() reads fname:lnum:col from ':' prefix; fzf shows field 4+ (display).
       ['--delimiter'] = '\x01',

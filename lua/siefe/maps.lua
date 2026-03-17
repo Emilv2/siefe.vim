@@ -65,6 +65,7 @@ function M.mode_select(fullscreen, query)
     fzf_opts = {
       ['--history'] = utils.data_path() .. '/git_dir_history',
       ['--ansi'] = '',
+      ['--layout'] = 'default',
       ['--multi'] = '',
     },
     keymap = ms_km,
@@ -255,6 +256,7 @@ function M.maps(fullscreen, query, modes)
     fzf_opts = {
       ['--ansi'] = '',
       ['--print-query'] = '',
+      ['--layout'] = 'default',
       ['--delimiter'] = '•',
       ['--with-nth'] = '5..',
     },
