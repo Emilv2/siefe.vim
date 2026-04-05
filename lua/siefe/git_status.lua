@@ -68,7 +68,7 @@ function M.gitstatus(fullscreen, kwargs)
     end
 
     local output = vim.fn.system(cmd)
-    local records = vim.split(output, '\0', { plain = true })
+    local records = vim.split(output, '\n', { plain = true })
     local i = 1
     while i <= #records do
       local rec = records[i]
