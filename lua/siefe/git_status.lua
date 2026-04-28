@@ -52,11 +52,13 @@ function M.gitstatus(fullscreen, kwargs)
     end
   end
 
-  -- Streaming source: parse git status --porcelain -z in Lua.
-  -- Each fzf_cb() call feeds one NUL-free entry directly to fzf-lua,
-  -- so --read0 is not needed and no bin/git_status subprocess is required.
+  -- Streaming source: parse git status --porcelain in Lua.
+  -- Each fzf_cb() call feeds one entry directly to fzf-lua.
+  -- We do NOT use -z (NUL-separated) because vim.fn.system() does not reliably
+  -- preserve NUL bytes in its return value across all Neovim versions.
+  -- vim.fn.systemlist() returns one line per entry (LF-separated), which is safe.
   local source = function(fzf_cb)
-    local cmd = { 'git', '-C', git_root, 'status', '--porcelain', '-z' }
+    local cmd = { 'git', '-C', git_root, 'status', '--porcelain' }
     if kwargs.uno then
       table.insert(cmd, '-uno')
     end
@@ -67,45 +69,48 @@ function M.gitstatus(fullscreen, kwargs)
       end
     end
 
-    local output = vim.fn.system(cmd)
-    local records = vim.split(output, '\n', { plain = true })
-    local i = 1
-    while i <= #records do
-      local rec = records[i]
+    local records = vim.fn.systemlist(cmd)
+    for _, rec in ipairs(records) do
       if rec ~= '' then
         local status = rec:sub(1, 2)
-        local filename = rec:sub(4)
+        local rest = rec:sub(4) -- skip "XY " prefix
         local x = status:sub(1, 1)
         local y = status:sub(2, 2)
         local c1 = pick_color(x)
         local c2 = pick_color(y)
         if x == 'R' or x == 'C' then
-          -- Next NUL-delimited record is the old filename (rename source)
-          local prev = records[i + 1] or ''
-          fzf_cb(
-            status
-              .. '//'
-              .. filename
-              .. '//'
-              .. prev
-              .. ' //'
-              .. c1
-              .. x
-              .. c2
-              .. y
-              .. c_none
-              .. ' '
-              .. filename
-              .. ' -> '
-              .. prev
-          )
-          i = i + 2
+          -- Without -z, rename/copy format is "XY ORIG -> NEW" on one line.
+          -- We keep field layout identical to what the action/preview code expects:
+          --   parts[1]=status  parts[2]=new  parts[3]=orig  parts[4]=display
+          local arrow = rest:find(' -> ', 1, true)
+          if arrow then
+            local orig = rest:sub(1, arrow - 1)
+            local new = rest:sub(arrow + 4) -- skip past the 4-char ' -> ' separator
+            fzf_cb(
+              status
+                .. '//'
+                .. new
+                .. '//'
+                .. orig
+                .. ' //'
+                .. c1
+                .. x
+                .. c2
+                .. y
+                .. c_none
+                .. ' '
+                .. orig
+                .. ' -> '
+                .. new
+            )
+          else
+            -- Fallback: git output has no ' -> ' in a rename line (should not happen).
+            -- Treat the whole rest as the filename so fzf shows something.
+            fzf_cb(status .. '// //' .. rest .. ' //' .. c1 .. x .. c2 .. y .. c_none .. ' ' .. rest)
+          end
         else
-          fzf_cb(status .. '// //' .. filename .. ' //' .. c1 .. x .. c2 .. y .. c_none .. ' ' .. filename)
-          i = i + 1
+          fzf_cb(status .. '// //' .. rest .. ' //' .. c1 .. x .. c2 .. y .. c_none .. ' ' .. rest)
         end
-      else
-        i = i + 1
       end
     end
     fzf_cb(nil)
@@ -138,14 +143,15 @@ function M.gitstatus(fullscreen, kwargs)
     for _, line in ipairs(items) do
       local parts = vim.split(line, '//', { plain = true })
       if #parts >= 4 then
-        -- Wire format (matches the source coroutine above):
+        -- Wire format (matches the source function above):
         --   Non-rename:  STATUS// //FILENAME //colored-display
-        --   Rename/copy: STATUS//NEW//OLD //colored-display
-        -- parts[3] is therefore the NEW filename for non-renames, and the
-        -- OLD (pre-rename) filename for R/C entries.  This is intentional:
+        --   Rename/copy: STATUS//NEW//ORIG //colored-display
+        -- parts[3] is therefore the FILENAME for non-renames, and the
+        -- ORIG (pre-rename) filename for R/C entries.  This is intentional:
         -- preview commands use {3} as the path for `git diff`, and for a
         -- rename the interesting diff is shown against the old path.
-        local filename = parts[3]:gsub('%z$', '') -- strip accidental trailing null
+        -- vim.trim() removes the trailing space that precedes the '//' delimiter.
+        local filename = vim.trim(parts[3])
         table.insert(filelist, { filename = filename, text = parts[1] })
       end
     end

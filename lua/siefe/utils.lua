@@ -188,8 +188,17 @@ end
 
 function M.get_git_root()
   local ok, result = pcall(vim.fn.FugitiveFind, ':/')
-  if ok then
-    return result or ''
+  if ok and result and result ~= '' then
+    return result
+  end
+  -- Fallback: derive root from the current buffer's directory without requiring fugitive
+  local dir = vim.fn.expand('%:p:h')
+  if dir == '' then
+    dir = vim.fn.getcwd()
+  end
+  local root = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(dir) .. ' rev-parse --show-toplevel'))
+  if vim.v.shell_error == 0 and root ~= '' then
+    return root
   end
   return ''
 end
@@ -448,8 +457,11 @@ function M.git_file_existed(file)
   if file == '' then
     return false
   end
+  -- Use the file's own directory as the git working directory so that
+  -- git rev-parse resolves correctly regardless of Neovim's CWD.
+  local dir = vim.fn.fnamemodify(file, ':h')
   local out = vim.fn.system(
-    'git -C `git rev-parse --show-toplevel` log --pretty=format: --name-only --diff-filter=A -- '
+    'git -C ' .. vim.fn.shellescape(dir) .. ' log --pretty=format: --name-only --diff-filter=A -- '
       .. vim.fn.shellescape(file)
   )
   return out ~= '' and vim.v.shell_error == 0
