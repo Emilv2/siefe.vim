@@ -301,7 +301,7 @@ function M.gitstash(fullscreen, kwargs)
   fzf_lua.fzf_exec(initial_cmd, {
     prompt = prompt,
     query = kwargs.query,
-    cwd = utils.get_git_root(),
+    cwd = git_root,
     winopts = utils.winopts(fullscreen),
     previewer = false,
     preview = default_preview,

@@ -616,7 +616,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   fzf_lua.fzf_exec(initial_command, {
     prompt = prompt,
     query = kwargs.query,
-    cwd = utils.get_git_root(),
+    cwd = git_root,
     winopts = utils.winopts(fullscreen),
     previewer = false,
     preview = default_preview,
