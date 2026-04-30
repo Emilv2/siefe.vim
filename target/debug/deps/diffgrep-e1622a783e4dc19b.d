@@ -6,4 +6,4 @@ crates/diffgrep/src/main.rs:
 
 # env-dep:CARGO_PKG_NAME=diffgrep
 # env-dep:CARGO_PKG_VERSION=0.1.0
-# env-dep:SIEFE_GIT_HASH=ff19571
+# env-dep:SIEFE_GIT_HASH=2b70311
