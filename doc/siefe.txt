@@ -39,7 +39,7 @@ The plugin is written entirely in Lua and requires Neovim >= 0.8.
 REQUIREMENTS                                               *siefe-requirements*
 
   - Neovim >= 0.8
-  - Emilv2/fzf-lua  (Neovim fzf integration, required)
+  - ibhagwan/fzf-lua  (Neovim fzf integration, required)
   - fzf binary      (required)
   - ripgrep (`rg`)  (required)
   - fd / fdfind     (optional, for directory selection)
@@ -54,7 +54,7 @@ With lazy.nvim: >lua
 
   {
     "Emilv2/siefe.vim",
-    dependencies = { "Emilv2/fzf-lua" },
+    dependencies = { "ibhagwan/fzf-lua" },
     build = "make build",
     config = function()
       require("siefe").setup({})

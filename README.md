@@ -1,7 +1,7 @@
 # siefe.vim
 ## Neovim search plugin — fzf-lua on steroids
 
-siefe.vim is a Neovim plugin that wraps [fzf-lua](https://github.com/Emilv2/fzf-lua) with a rich set of
+siefe.vim is a Neovim plugin that wraps [fzf-lua](https://github.com/ibhagwan/fzf-lua) with a rich set of
 search commands, live-reload ripgrep integration, git log/status/stash/branch pickers, history with saved
 cursor positions (from shada), and much more.
 
@@ -11,7 +11,7 @@ cursor positions (from shada), and much more.
 
 | Dependency | Required | Notes |
 | --- | --- | --- |
-| [Emilv2/fzf-lua](https://github.com/Emilv2/fzf-lua) | ✓ | Neovim fzf integration (fork) |
+| [ibhagwan/fzf-lua](https://github.com/ibhagwan/fzf-lua) | ✓ | Neovim fzf integration |
 | [fzf](https://github.com/junegunn/fzf) | ✓ | fuzzy finder binary |
 | [ripgrep](https://github.com/BurntSushi/ripgrep) | ✓ | `rg` for search/files commands |
 | [fd](https://github.com/sharkdp/fd) | recommended | fast file finder for dir-select |
@@ -27,7 +27,7 @@ cursor positions (from shada), and much more.
 -- lazy.nvim
 {
   "Emilv2/siefe.vim",
-  dependencies = { "Emilv2/fzf-lua" },
+  dependencies = { "ibhagwan/fzf-lua" },
   -- Builds Rust helper binaries. If cargo is available, compiles from source;
   -- otherwise downloads a pre-built tarball from the latest GitHub release.
   build = "bash scripts/setup.sh",

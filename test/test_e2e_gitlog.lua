@@ -123,10 +123,10 @@ end
 -- ── Launch helpers ────────────────────────────────────────────────────────────
 
 -- Launch gitlogfzf from the repo root directory.  `get_git_root()` in
--- utils.lua calls FugitiveFind which won't be available in headless tests,
--- so it returns ''.  With cwd='', fzf_exec inherits Neovim's working
--- directory — which we set to gitrepo — and the shell backtick
--- `git rev-parse --show-toplevel` in the command also resolves correctly.
+-- utils.lua first tries FugitiveFind (unavailable in headless tests), then
+-- falls back to `git -C bufdir rev-parse --show-toplevel`.  Setting cwd to
+-- gitrepo ensures the fallback resolves the correct git root, which is then
+-- embedded as a literal path in the fzf commands.
 local function launch_gitlog(kwargs, cwd, ready_ms)
   vim.cmd('cd ' .. vim.fn.fnameescape(cwd or gitrepo))
   return E.launch_and_wait(function()

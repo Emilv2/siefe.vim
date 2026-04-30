@@ -219,10 +219,8 @@ function M.get_relative_git_or_bufdir(dir, git_dir)
     if vim.v.shell_error ~= 0 then
       return bufdir
     end
-    local base = vim.split(
-      vim.fn.system('basename `git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel`'),
-      '\n'
-    )[1]
+    local toplevel = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
+    local base = vim.fn.fnamemodify(toplevel, ':t')
     return '#' .. base .. '/' .. rel
   else
     -- With argument: return relative path from git root to dir

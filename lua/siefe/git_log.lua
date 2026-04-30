@@ -85,10 +85,18 @@ function M.gitlogfzf(fullscreen, kwargs)
   local query_file = vim.fn.tempname()
   local format = '--format=%C(auto)%h •%d %s %C(green)%cr %C(blue)(%aN <%aE>) %C(reset)%b'
   local git_SG = utils.bin_path('git_SG')
-  local git_root_cmd = '`git rev-parse --show-toplevel`'
+  -- Compute git root once in Lua and embed it as a literal in shell commands
+  -- so all commands run against the correct repository regardless of fzf's CWD.
+  local git_root = utils.get_git_root()
+  if git_root == '' then
+    git_root = vim.fn.getcwd()
+  end
+  local git_root_escaped = vim.fn.shellescape(git_root)
 
+  local ok_fug, fug_root = pcall(vim.fn.FugitiveFind, ':/')
+  local fug_prefix = (ok_fug and fug_root and fug_root ~= '') and (fug_root .. '/') or ''
   local current =
-    vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), ((vim.fn.exists('*FugitiveFind') == 1 and vim.fn.FugitiveFind(':/')) or '') .. '/', '', '')
+    vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), fug_prefix, '', '')
   local orderfile = vim.fn.tempname()
   vim.fn.writefile({ current }, orderfile)
 
@@ -124,7 +132,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   else
     cmd_fmt = git_SG
       .. ' -C '
-      .. git_root_cmd
+      .. git_root_escaped
       .. ' log '
       .. G
       .. '%s -z '
@@ -137,8 +145,8 @@ function M.gitlogfzf(fullscreen, kwargs)
       .. regex
       .. ignore_case
 
-    local write_init = 'echo ' .. vim.fn.shellescape(kwargs.query) .. ' > ' .. query_file .. ' ;'
-    local write_reload = 'echo {q} > ' .. query_file .. ' ;'
+    local write_init = 'printf "%s" ' .. vim.fn.shellescape(kwargs.query) .. ' > ' .. query_file .. ' ;'
+    local write_reload = 'printf "%s" {q} > ' .. query_file .. ' ;'
     local logger = utils.bin_path('logger') .. ' ' .. vim.fn.shellescape(utils.log_path()) .. ' '
 
     initial_command = logger
@@ -187,7 +195,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   local p0_script = write_script({
     '#!/bin/sh',
     'printf "\\033[0;35mgit show all\\033[0m\\n"',
-    'git -C "$(git rev-parse --show-toplevel)"'
+    'git -C ' .. git_root_escaped
       .. ' show --color=always -O'
       .. vim.fn.shellescape(orderfile)
       .. ' "$1" --patch --stat --'
@@ -199,7 +207,7 @@ function M.gitlogfzf(fullscreen, kwargs)
     'printf "\\033[0;35mgit show matching files\\033[0m\\n"',
     'pattern=$(cat ' .. query_file .. ')',
     git_SG
-      .. ' -C "$(git rev-parse --show-toplevel)"'
+      .. ' -C ' .. git_root_escaped
       .. ' show '
       .. G
       .. '"$pattern" -O'
@@ -221,7 +229,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       'GREPDIFF_MODE=' .. (kwargs.G and 'G' or 'S'),
       'export GREPDIFF_MODE',
       git_SG
-        .. ' -C "$(git rev-parse --show-toplevel)"'
+        .. ' -C ' .. git_root_escaped
         .. ' -c diff.external='
         .. vim.fn.shellescape(pickaxe_diff)
         .. ' show "$1" -O'
@@ -243,7 +251,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   local p4_script = write_script({
     '#!/bin/sh',
     'printf "\\033[0;35mgit diff\\033[0m\\n"',
-    'git -C "$(git rev-parse --show-toplevel)"'
+    'git -C ' .. git_root_escaped
       .. ' diff --color=always -O'
       .. vim.fn.shellescape(orderfile)
       .. ' --patch --stat "$1" --'
