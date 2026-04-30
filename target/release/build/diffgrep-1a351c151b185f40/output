@@ -1,0 +1,2 @@
+cargo:rustc-env=SIEFE_GIT_HASH=ff19571
+cargo:rerun-if-changed=/home/runner/work/siefe.vim/siefe.vim/.git/HEAD
