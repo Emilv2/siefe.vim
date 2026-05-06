@@ -135,14 +135,19 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 end
 
 -- Author picker
-function M.author_select(callback, fullscreen)
+function M.author_select(callback, fullscreen, git_root)
   local ok, fzf_lua = pcall(require, 'fzf-lua')
   if not ok then
     utils.warn('siefe: fzf-lua not found')
     return
   end
 
-  local source = "git log --format='%aN <%aE>' | awk '!x[$0]++'"
+  git_root = git_root or utils.get_git_root()
+  local source = (
+    git_root ~= ''
+      and ('git -C ' .. vim.fn.shellescape(git_root) .. " log --format='%aN <%aE>' | awk '!x[$0]++'")
+      or "git log --format='%aN <%aE>' | awk '!x[$0]++'"
+  )
 
   local au_km = utils.make_binds({
     ['change'] = 'first',
@@ -157,7 +162,7 @@ function M.author_select(callback, fullscreen)
   local actions = {}
   actions['default'] = {
     fn = function(selected, opts)
-      callback({ '', unpack(selected or {}) })
+      callback(selected or {})
     end,
     desc = 'select',
   }
@@ -170,7 +175,7 @@ function M.author_select(callback, fullscreen)
 
   fzf_lua.fzf_exec(source, {
     prompt = 'authors> ',
-    cwd = utils.get_git_root(),
+    cwd = git_root ~= '' and git_root or nil,
     winopts = utils.winopts(fullscreen),
     previewer = false,
     fzf_opts = {

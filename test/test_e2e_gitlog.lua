@@ -16,7 +16,7 @@
 --
 -- Commits (newest = E at top in reverse-list layout):
 --   E  GITLOGTEST_REMOVE_E  removes UNIQUE_PICKAXE_TOKEN from main.lua
---   D  GITLOGTEST_DOCS_D    adds docs/readme.txt
+--   D  GITLOGTEST_DOCS_D    adds docs/readme.txt        (Other Author)
 --   C  GITLOGTEST_MARKER_C  adds UNIQUE_PICKAXE_TOKEN to main.lua
 --   B  GITLOGTEST_UTILS_B   adds src/utils.lua
 --   A  GITLOGTEST_INIT_A    initial: adds src/main.lua
@@ -29,7 +29,8 @@
 --   5. From subdirectory, absolute-path filter → same result as test 2
 --   6. Pickaxe -G (regex): type UNIQUE_PICKAXE_TOKEN → C and E visible
 --   7. Pickaxe -S (literal count-diff): type UNIQUE_PICKAXE_TOKEN → C and E
---   8. F7 preview cycle key: 3 presses do not crash fzf
+--   8. Ctrl-A author picker shows authors immediately and filters on selection
+--   9. F7 preview cycle key: 3 presses do not crash fzf
 
 vim.opt.rtp:prepend(vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h'))
 
@@ -106,7 +107,7 @@ git("commit --no-gpg-sign -m 'GITLOGTEST_MARKER_C'")
 -- Commit D ─ adds docs/readme.txt (separate dir; should NOT appear for src/ filter)
 vim.fn.writefile({ 'readme text' }, gitrepo .. '/docs/readme.txt')
 git('add docs/readme.txt')
-git("commit --no-gpg-sign -m 'GITLOGTEST_DOCS_D'")
+git("-c user.email='other@siefe.test' -c user.name='Other Author' commit --no-gpg-sign -m 'GITLOGTEST_DOCS_D'")
 
 -- Commit E ─ removes UNIQUE_PICKAXE_TOKEN from main.lua (count 1 → 0)
 vim.fn.writefile({ 'function setup()', 'return M' }, gitrepo .. '/src/main.lua')
@@ -315,6 +316,53 @@ T.group('e2e git log: pickaxe -S finds commits where string count changes', func
 end)
 
 -- 8. F7 preview cycle: 3 presses do not crash fzf ------------------------------
+
+T.group('e2e git log: ctrl-a author picker shows authors without typing and filters on selection', function()
+  vim.cmd('enew!')
+  local h = launch_gitlog({})
+  T.ok(h ~= nil, 'picker launched for author picker test')
+  if not h then
+    return
+  end
+
+  E.wait_fzf_match(h.fzf_buf, 'GITLOGTEST_REMOVE_E', 4000)
+
+  local before = E.current_term_bufs()
+  vim.fn.chansend(h.chan, '\x01') -- Ctrl-A
+  local au_buf = E.find_new_term_buf(before, 4000)
+  T.ok(au_buf ~= nil, 'author picker launched')
+  if not au_buf then
+    return
+  end
+  local au_chan = vim.b[au_buf].terminal_job_id
+
+  E.wait_fzf_match(au_buf, 'Siefe Test <test@siefe.test>', 4000)
+  E.wait_fzf_match(au_buf, 'Other Author <other@siefe.test>', 4000)
+  T.ok(E.has_pattern(au_buf, 'Siefe Test <test@siefe.test>'), 'default author visible without typing')
+  T.ok(E.has_pattern(au_buf, 'Other Author <other@siefe.test>'), 'second author visible without typing')
+
+  local before_select = E.current_term_bufs()
+  vim.fn.chansend(au_chan, '\x1b[B') -- Down arrow to "Other Author"
+  vim.wait(200)
+  E.fzf_enter(au_chan)
+
+  local h2 = E.find_new_term_buf(before_select, 5000)
+  T.ok(h2 ~= nil, 'git log relaunched after author selection')
+  if not h2 then
+    return
+  end
+  local h2_chan = vim.b[h2].terminal_job_id
+
+  E.wait_fzf_match(h2, 'GITLOGTEST_DOCS_D', 4000)
+  T.ok(E.has_pattern(h2, 'GITLOGTEST_DOCS_D'), 'selected author commit visible')
+  T.ok(not E.has_pattern(h2, 'GITLOGTEST_REMOVE_E'), 'other author commit E absent')
+  T.ok(not E.has_pattern(h2, 'GITLOGTEST_MARKER_C'), 'other author commit C absent')
+  T.ok(not E.has_pattern(h2, 'GITLOGTEST_UTILS_B'), 'other author commit B absent')
+  T.ok(not E.has_pattern(h2, 'GITLOGTEST_INIT_A'), 'other author commit A absent')
+
+  vim.fn.chansend(h2_chan, '\x1b')
+  E.wait_fzf_close(h2, 3000)
+end)
 
 T.group('e2e git log: F7 preview cycle key does not crash fzf', function()
   vim.cmd('enew!')

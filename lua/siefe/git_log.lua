@@ -25,6 +25,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   kwargs.type = kwargs.type or {}
   kwargs.line_range = kwargs.line_range or {}
   kwargs.fixup = kwargs.fixup or 0
+  kwargs.git_root = kwargs.git_root or utils.get_git_root()
 
   -- Strip fugitive headers from paths
   kwargs.paths = vim.tbl_map(utils.fugitive_strip_header, kwargs.paths)
@@ -522,10 +523,10 @@ function M.gitlogfzf(fullscreen, kwargs)
         if alines[1] == config.abort_key then
           kwargs.authors = {}
         else
-          kwargs.authors = vim.list_slice(alines, 2)
+          kwargs.authors = alines
         end
         M.gitlogfzf(fullscreen, kwargs)
-      end, fullscreen)
+      end, fullscreen, kwargs.git_root)
     end,
     desc = 'authors',
     header = function()
@@ -547,7 +548,7 @@ function M.gitlogfzf(fullscreen, kwargs)
         '',
         true,
         false,
-        utils.get_git_root(),
+        kwargs.git_root,
         kwargs
       )
     end,
@@ -608,7 +609,7 @@ function M.gitlogfzf(fullscreen, kwargs)
   fzf_lua.fzf_exec(initial_command, {
     prompt = prompt,
     query = kwargs.query,
-    cwd = utils.get_git_root(),
+    cwd = kwargs.git_root ~= '' and kwargs.git_root or nil,
     winopts = utils.winopts(fullscreen),
     previewer = false,
     preview = default_preview,
