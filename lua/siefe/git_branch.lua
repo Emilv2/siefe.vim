@@ -143,11 +143,20 @@ function M.author_select(callback, fullscreen, git_root)
   end
 
   git_root = git_root or utils.get_git_root()
-  local source = (
-    git_root ~= ''
-      and ('git -C ' .. vim.fn.shellescape(git_root) .. " log --format='%aN <%aE>' | awk '!x[$0]++'")
-      or "git log --format='%aN <%aE>' | awk '!x[$0]++'"
-  )
+  local cmd = git_root ~= '' and { 'git', '-C', git_root, 'log', '--format=%aN <%aE>' }
+    or { 'git', 'log', '--format=%aN <%aE>' }
+  local lines = vim.fn.systemlist(cmd)
+  if vim.v.shell_error ~= 0 then
+    lines = {}
+  end
+  local seen = {}
+  local source = {}
+  for _, line in ipairs(lines) do
+    if line ~= '' and not seen[line] then
+      seen[line] = true
+      table.insert(source, line)
+    end
+  end
 
   local au_km = utils.make_binds({
     ['change'] = 'first',
