@@ -40,6 +40,7 @@ T.group('defaults', function()
   T.eq(cfg.rg_default_hidden, false, 'rg_default_hidden')
   T.eq(cfg.rg_default_no_ignore, 0, 'rg_default_no_ignore')
   T.eq(cfg.rg_default_fixed_strings, false, 'rg_default_fixed_strings')
+  T.eq(cfg.rg_default_pcre2, false, 'rg_default_pcre2')
   T.eq(cfg.buffers_jump, false, 'buffers_jump')
 end)
 

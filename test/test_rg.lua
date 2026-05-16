@@ -23,6 +23,7 @@ T.group('build_rg_command', function()
     hidden = false,
     no_ignore = 0,
     fixed_strings = false,
+    pcre2 = false,
     max_1 = false,
     search_zip = false,
     text = false,
@@ -59,6 +60,10 @@ T.group('build_rg_command', function()
   -- Hidden files flag
   local hidden = t.build_rg_command(vim.tbl_extend('force', base, { hidden = true }))
   T.ok(hidden:find('--hidden', 1, true), '--hidden when hidden=true')
+
+  -- PCRE2 flag
+  local pcre2 = t.build_rg_command(vim.tbl_extend('force', base, { pcre2 = true }))
+  T.ok(pcre2:find('-P ', 1, true), '-P when pcre2=true')
 
   -- Paths are appended to the command
   local with_paths = t.build_rg_command(vim.tbl_extend('force', base, { paths = { 'src/', 'lib/' } }))
@@ -100,6 +105,7 @@ T.group('build_prompt', function()
     hidden = false,
     no_ignore = 0,
     fixed_strings = false,
+    pcre2 = false,
     max_1 = false,
     search_zip = false,
     text = false,

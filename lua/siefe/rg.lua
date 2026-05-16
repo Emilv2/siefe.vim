@@ -29,6 +29,7 @@ local function build_rg_command(kwargs)
     or kwargs.no_ignore == 3 and '-uuu '
     or ''
   local fixed = bool_to_flag(kwargs.fixed_strings, '-F ')
+  local pcre2 = bool_to_flag(kwargs.pcre2, '-P ')
   local max1 = bool_to_flag(kwargs.max_1, '-m1 ')
   local zip = bool_to_flag(kwargs.search_zip, '-z ')
   local text = bool_to_flag(kwargs.text, '--text ')
@@ -54,6 +55,7 @@ local function build_rg_command(kwargs)
     .. no_ignore
     .. hidden
     .. fixed
+    .. pcre2
     .. max1
     .. zip
     .. text
@@ -77,7 +79,9 @@ local function build_files_command(kwargs)
   -- --null outputs NUL-terminated paths (no newline between entries), which
   -- pairs with fzf's --read0 to handle filenames containing any special
   -- characters including colons and spaces.
-  return 'rg --null ' .. zip .. text .. no_ign .. hidden .. depth1 .. ' --color=always --files ' .. type_f
+  local fixed = bool_to_flag(kwargs.fixed_strings, '-F ')
+  local pcre2 = bool_to_flag(kwargs.pcre2, '-P ')
+  return 'rg --null ' .. zip .. text .. fixed .. pcre2 .. no_ign .. hidden .. depth1 .. ' --color=always --files ' .. type_f
 end
 
 local function build_prompt(kwargs, mode)
@@ -90,6 +94,7 @@ local function build_prompt(kwargs, mode)
   local depth1 = bool_to_flag(kwargs.depth1, '-d1 ')
   local hidden = kwargs.hidden and '-. ' or ''
   local fixed = bool_to_flag(kwargs.fixed_strings, '-F ')
+  local pcre2 = bool_to_flag(kwargs.pcre2, '-P ')
   local max1 = bool_to_flag(kwargs.max_1, '-m1 ')
   local zip = bool_to_flag(kwargs.search_zip, '-z ')
   local text = kwargs.text and '-a ' or ''
@@ -97,7 +102,7 @@ local function build_prompt(kwargs, mode)
   local base = kwargs.prompt or utils.get_relative_git_or_bufdir()
 
   if mode == 'files' then
-    return no_ign .. depth1 .. hidden .. zip .. text .. type_p .. base .. ' Files> '
+    return no_ign .. depth1 .. hidden .. zip .. text .. fixed .. pcre2 .. type_p .. base .. ' Files> '
   else
     local fzf_rg = kwargs.fzf and 'fzf' or 'rg'
     return word
@@ -106,6 +111,7 @@ local function build_prompt(kwargs, mode)
       .. hidden
       .. case_sym
       .. fixed
+      .. pcre2
       .. max1
       .. zip
       .. text
@@ -141,6 +147,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   kwargs.hidden = kwargs.hidden ~= nil and kwargs.hidden or config.rg_default_hidden
   kwargs.no_ignore = kwargs.no_ignore ~= nil and kwargs.no_ignore or config.rg_default_no_ignore
   kwargs.fixed_strings = kwargs.fixed_strings ~= nil and kwargs.fixed_strings or config.rg_default_fixed_strings
+  kwargs.pcre2 = kwargs.pcre2 ~= nil and kwargs.pcre2 or config.rg_default_pcre2
   kwargs.max_1 = kwargs.max_1 ~= nil and kwargs.max_1 or config.rg_default_max_1
   kwargs.search_zip = kwargs.search_zip ~= nil and kwargs.search_zip or config.rg_default_search_zip
   kwargs.text = kwargs.text ~= nil and kwargs.text or config.rg_default_text
@@ -407,6 +414,17 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     desc = '-F',
     header = function()
       return kwargs.fixed_strings and '-F' or nil
+    end,
+  }
+
+  -- Toggle: PCRE2 (--pcre2 / -P)
+  actions[config.rg_pcre2_key] = {
+    fn = function(selected, opts)
+      reopen(selected, opts, { pcre2 = not kwargs.pcre2 })
+    end,
+    desc = '-P',
+    header = function()
+      return kwargs.pcre2 and '-P' or nil
     end,
   }
 

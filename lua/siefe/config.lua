@@ -49,6 +49,7 @@ local function make_defaults()
   d.rg_hidden_key = 'alt-.'
   d.rg_no_ignore_key = 'ctrl-u'
   d.rg_fixed_strings_key = 'ctrl-x'
+  d.rg_pcre2_key = 'ctrl-p'
   d.rg_max_1_key = 'ctrl-a'
   d.rg_search_zip_key = 'alt-z'
   d.rg_text_key = 'alt-t'
@@ -65,6 +66,7 @@ local function make_defaults()
   d.rg_default_hidden = false
   d.rg_default_no_ignore = 0
   d.rg_default_fixed_strings = false
+  d.rg_default_pcre2 = false
   d.rg_default_max_1 = false
   d.rg_default_search_zip = false
   d.rg_default_text = false
