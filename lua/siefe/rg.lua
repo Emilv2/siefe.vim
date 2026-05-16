@@ -301,7 +301,6 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   }
 
   -- Toggle: fzf/rg mode
-  -- header() always returns the current mode so it's always visible in --header.
   actions[config.rg_toggle_fzf_key] = {
     fn = function(selected, opts)
       if kwargs.files then
@@ -572,6 +571,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
     fzf_opts = fzf_opts,
     keymap = rg_km,
     actions = actions,
+    _headers = {},
   }
 
   if mode == 'rg' then

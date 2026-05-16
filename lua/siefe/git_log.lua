@@ -616,6 +616,7 @@ function M.gitlogfzf(fullscreen, kwargs)
     fzf_opts = fzf_opts,
     keymap = gl_km,
     actions = actions,
+    _headers = {},
   })
 end
 
