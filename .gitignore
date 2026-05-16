@@ -9,3 +9,5 @@
 nvim-linux-x86_64.tar.gz
 nvim-linux-x86_64/
 /tmp/nvim-linux-x86_64/
+*.log
+tmux-*
