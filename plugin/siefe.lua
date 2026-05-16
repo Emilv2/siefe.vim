@@ -129,6 +129,15 @@ vim.api.nvim_create_user_command('SiefeProjectRgConflict', function(args)
   })
 end, { nargs = 0, bang = true })
 
+vim.api.nvim_create_user_command('SiefeRgHistory', function(args)
+  local git_root = utils.get_git_root()
+  siefe.ripgrepfzf(args.bang, git_root ~= '' and git_root or utils.bufdir(), {
+    query = vim.trim(vim.fn.getline('.')),
+    prompt = utils.get_git_basename_or_bufdir(),
+    paths = utils.recent_files(git_root ~= '' and git_root or nil),
+  })
+end, { nargs = 0, bang = true })
+
 vim.api.nvim_create_user_command('SiefeBuffersRg', function(args)
   siefe.ripgrepfzf(args.bang, utils.get_git_root(), {
     query = args.args,
@@ -386,6 +395,7 @@ plug('<Plug>SiefeBuffersRgWORD', '<cmd>SiefeBuffersRgWORD<CR>')
 plug('<Plug>SiefeBuffersRgLine', '<cmd>SiefeBuffersRgLine<CR>')
 
 plug('<Plug>SiefeRgP', '<cmd>SiefeRg <c-r>+<CR>')
+plug('<Plug>SiefeRgHistory', '<cmd>SiefeRgHistory<CR>')
 plug('<Plug>SiefeProjectRgP', '<cmd>SiefeProjectRg <c-r>+<CR>')
 
 plug('<Plug>SiefeMarks', '<cmd>SiefeMarks<CR>')
