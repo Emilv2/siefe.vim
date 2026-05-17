@@ -333,11 +333,38 @@ function M.ripgrep_dir_sink(fullscreen, orig_dir, fd_hidden, fd_no_ignore, fd_de
     local proot = vim.fn.expand(config.fd_project_root_env)
     M.dir_select(M.ripgrep_dir_sink, fullscreen, proot, fd_hidden, fd_no_ignore, 'd', false, fd_depth1, '', kwargs)
   else
-    -- accepted a directory
-    kwargs.prompt = utils.get_relative_git_or_bufdir(new_dir)
-    kwargs.paths = {}
-    local resolved = vim.trim(vim.fn.system('realpath ' .. vim.fn.shellescape(new_dir)))
-    rg.ripgrepfzf(fullscreen, resolved, kwargs)
+    -- accepted directory/directories
+    -- fzf-lua --print-query can produce empty strings; filter them out
+    local dirs = {}
+    for _, d in ipairs(vim.list_slice(lines, 3)) do
+      if d ~= '' then
+        table.insert(dirs, d)
+      end
+    end
+    if #dirs == 0 then
+      -- nothing selected, fall back to orig_dir
+      kwargs.prompt = utils.get_relative_git_or_bufdir(orig_dir)
+      kwargs.paths = {}
+      kwargs.orig_dir = orig_dir
+      rg.ripgrepfzf(fullscreen, orig_dir, kwargs)
+    elseif #dirs == 1 then
+      kwargs.prompt = utils.get_relative_git_or_bufdir(dirs[1])
+      kwargs.paths = {}
+      local resolved = vim.trim(vim.fn.system('realpath ' .. vim.fn.shellescape(dirs[1])))
+      rg.ripgrepfzf(fullscreen, resolved, kwargs)
+    else
+      local resolved_dirs = {}
+      for _, d in ipairs(dirs) do
+        table.insert(resolved_dirs, vim.trim(vim.fn.system('realpath ' .. vim.fn.shellescape(d))))
+      end
+      local base_dir = utils.get_git_root()
+      if base_dir == '' then
+        base_dir = utils.bufdir()
+      end
+      kwargs.prompt = table.concat(dirs, ' ')
+      kwargs.paths = resolved_dirs
+      rg.ripgrepfzf(fullscreen, base_dir, kwargs)
+    end
   end
 end
 

@@ -494,7 +494,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
       kwargs.fd_query = ''
       vim.schedule(function()
         local ds = require('siefe.dir_select')
-        ds.dir_select(ds.ripgrep_dir_sink, fullscreen, dir, false, false, 'd', false, false, '', kwargs)
+        ds.dir_select(ds.ripgrep_dir_sink, fullscreen, dir, false, false, 'd', true, false, '', kwargs)
       end)
     end,
     desc = 'cd',
