@@ -1,5 +1,5 @@
 -- Capture nvim's rendered TUI as plain text via screenstring().
--- Call via: nvim --server /tmp/nvim-server --remote-expr 'luaeval("dofile(\"<path>\")")'
+-- Call via: nvim --server "$SOCKET" --remote-expr 'luaeval("dofile(\"<path>\")")'
 
 local lines = {}
 for row = 1, vim.o.lines do
