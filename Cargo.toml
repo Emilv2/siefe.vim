@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/diffgrep", "crates/pickaxe_diff"]
+resolver = "2"

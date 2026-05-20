@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  # ── 1. Rust: unit tests, formatter, linter ──────────────────────────────────
+  rust:
+    name: Rust (test · fmt · clippy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable (clippy + rustfmt)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo registry / build artefacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo test
+        run: cargo test
+
+      - name: cargo fmt --check
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        run: cargo clippy -- -D warnings
+
+  # ── 2. Lua: unit tests, luacheck, stylua ────────────────────────────────────
+  lua:
+    name: Lua (test · luacheck · stylua)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim (stable)
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install luacheck
+        run: |
+          sudo apt-get install -y luarocks
+          luarocks install --local luacheck
+          echo "$HOME/.luarocks/bin" >> "$GITHUB_PATH"
+
+      - name: stylua --check
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua/ test/ plugin/siefe.lua
+
+      - name: luacheck
+        run: luacheck lua/ test/ plugin/siefe.lua
+
+      - name: Lua unit tests (make test-lua)
+        run: make test-lua
+
+      - name: Plugin load tests (make test-plugin)
+        # Sources plugin/siefe.lua the same way Neovim does on startup.
+        # Catches load-time bugs (e.g. config.options.map_keys nil-index) that
+        # are invisible to module-level require() tests.
+        run: make test-plugin
+
+      - name: Neovim integration tests (make test-neovim)
+        run: make test-neovim
+        # Includes test_neovim.lua (feedkeys/buffer/cursor) and
+        # test_picker_actions.lua (action callbacks with mocked fzf-lua)
+
+  # ── 3. Integration: build Rust binaries → run real-rg/git tests ─────────────
+  integration:
+    name: Integration (build · rg · git)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry / build artefacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Neovim (stable)
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install ripgrep
+        run: sudo apt-get install -y ripgrep
+
+      - name: Build Rust binaries (make build)
+        run: make build
+
+      - name: Integration tests (make test-integration)
+        run: make test-integration
+
+  # ── 4. E2E: real fzf launched via fzf-lua, interacted with via chansend ─────
+  e2e:
+    name: E2E (fzf-lua chansend)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Neovim (stable)
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+
+      - name: Install fzf
+        run: sudo apt-get install -y fzf
+
+      - name: Clone fzf-lua
+        run: git clone --depth=1 https://github.com/ibhagwan/fzf-lua /tmp/fzf-lua
+
+      - name: E2E tests (make test-e2e)
+        # Covers test_e2e.lua (rg / buffers / history / config) and
+        # test_e2e_gitlog.lua (git log: all-commits, file/dir filter, subdir,
+        # pickaxe -G/-S, F7 preview cycle)
+        run: make test-e2e FZF_LUA_PATH=/tmp/fzf-lua

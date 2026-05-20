@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -9,15 +9,41 @@ repos:
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
       - id: check-executables-have-shebangs
-  - repo: https://github.com/Kuniwak/vint
-    rev: v0.4a3
-    hooks:
-      - id: vint
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.5.1-1
+    rev: v3.8.0-1
     hooks:
       - id: shfmt
+  - repo: local
+    hooks:
+      - id: stylua
+        name: stylua (Lua formatter)
+        language: system
+        entry: stylua --check
+        types: [file]
+        files: '\.(lua)$'
+        pass_filenames: true
+      - id: luacheck
+        name: luacheck (Lua linter)
+        language: system
+        entry: luacheck
+        types: [file]
+        files: '\.(lua)$'
+        pass_filenames: true
+      - id: cargo-fmt
+        name: cargo fmt (Rust formatter)
+        language: system
+        entry: cargo fmt --check --
+        types: [file]
+        files: '\.rs$'
+        pass_filenames: false
+      - id: cargo-clippy
+        name: cargo clippy (Rust linter)
+        language: system
+        entry: cargo clippy -- -D warnings
+        types: [file]
+        files: '\.rs$'
+        pass_filenames: false

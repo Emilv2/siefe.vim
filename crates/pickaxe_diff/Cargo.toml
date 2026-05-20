@@ -1,0 +1,12 @@
+[package]
+name    = "pickaxe_diff"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "pickaxe-diff"
+path = "src/main.rs"
+
+[dependencies]
+diffgrep = { path = "../diffgrep" }
+regex    = "1"

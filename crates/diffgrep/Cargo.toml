@@ -1,0 +1,15 @@
+[package]
+name    = "diffgrep"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "diffgrep"
+path = "src/lib.rs"
+
+[[bin]]
+name = "diffgrep"
+path = "src/main.rs"
+
+[dependencies]
+regex = "1"
