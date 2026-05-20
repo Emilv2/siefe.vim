@@ -31,6 +31,17 @@ function M.gitstatus(fullscreen, kwargs)
 
   local git_root = utils.get_git_root()
 
+  -- Resolve a git-relative path to an absolute path.  `git status --porcelain`
+  -- emits paths relative to *git_root*, but open_file() resolves relative paths
+  -- against Neovim's cwd (which may be a subdirectory).  This mirrors the
+  -- make_absolute() helper in history.lua.
+  local function resolve_path(fname)
+    if fname ~= '' and fname:sub(1, 1) ~= '/' and git_root ~= '' then
+      return git_root .. '/' .. fname
+    end
+    return fname
+  end
+
   -- Get git colours once (these are raw ANSI escape sequences)
   local c_added = vim.fn.system({ 'git', 'config', '--get-color', 'color.status.added', 'yellow' })
   local c_changed = vim.fn.system({ 'git', 'config', '--get-color', 'color.status.changed', 'green' })
@@ -177,7 +188,7 @@ function M.gitstatus(fullscreen, kwargs)
       if #filelist == 0 then
         return
       end
-      utils.open_file('edit', filelist[1].filename)
+      utils.open_file('edit', resolve_path(filelist[1].filename))
       if config.rg_loclist then
         utils.fill_loc(filelist)
       else
@@ -194,7 +205,7 @@ function M.gitstatus(fullscreen, kwargs)
         local items = get_items(selected, opts)
         local filelist = parse_files(items)
         for _, f in ipairs(filelist) do
-          utils.open_file(c, f.filename)
+          utils.open_file(c, resolve_path(f.filename))
         end
       end,
       desc = 'open ' .. c,

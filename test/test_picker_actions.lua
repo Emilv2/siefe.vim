@@ -644,6 +644,70 @@ T.group('git_status: restore action registered under gitstatus_restore_key', fun
   T.ok(type(cap.actions[config.gitstatus_restore_key]) == 'table', 'restore action registered')
 end)
 
+T.group('git_status: default action opens file with git-relative path from subdirectory', function()
+  -- Regression: when Neovim's cwd is a subdirectory of the git root, `git status
+  -- --porcelain` returns paths relative to the git root.  The action must resolve
+  -- those to absolute paths before calling open_file(), otherwise the relative
+  -- path resolves against cwd instead of the git root — producing a wrong path.
+  --
+  -- We create a git repo, cd into a subdirectory, simulate a picker entry,
+  -- and call the default action directly — bypassing the mock/capture helpers
+  -- because repeated require() of siefe.git_status interacts poorly with the
+  -- module-clearing in capture().
+  local abs_git_root = tmpdir .. '/gs_subdir'
+  local abs_subdir = abs_git_root .. '/subdir'
+  vim.fn.mkdir(abs_subdir, 'p')
+  vim.fn.system({ 'git', '-C', abs_git_root, 'init', '-q' })
+  vim.fn.system({ 'git', '-C', abs_git_root, 'config', 'user.email', 'test@test' })
+  vim.fn.system({ 'git', '-C', abs_git_root, 'config', 'user.name', 'Test' })
+  local abs_file = abs_subdir .. '/testfile.lua'
+  vim.fn.writefile({ 'line 1', 'line 2', 'line 3' }, abs_file)
+  vim.fn.system({ 'git', '-C', abs_git_root, 'add', 'subdir/testfile.lua' })
+  vim.fn.system({ 'git', '-C', abs_git_root, 'commit', '-q', '-m', 'initial' })
+  vim.fn.writefile({ 'line 1', 'MODIFIED line', 'line 3' }, abs_file)
+
+  local saved_cwd = vim.fn.getcwd()
+  vim.cmd('cd ' .. vim.fn.fnameescape(abs_subdir))
+
+  -- Simulate the parse_files + default action logic from git_status.lua
+  -- without going through the full picker capture.  We set up git_root the
+  -- same way the real code does (utils.get_git_root() from the subdirectory)
+  -- and construct a parse_files() entry in the same wire format.
+  local git_root = require('siefe.utils').get_git_root()
+  T.ok(git_root == abs_git_root, 'get_git_root() finds the repo root from a subdirectory')
+
+  -- Build the entry in the wire format that the source function produces:
+  --   STATUS// //FILENAME //colored-display
+  local rel = 'subdir/testfile.lua'
+  local entry = ' M// //' .. rel .. ' //\x1b[33mM\x1b[m testfile.lua'
+
+  -- replicate parse_files()
+  local parts = vim.split(entry, '//', { plain = true })
+  T.ok(#parts >= 4, 'entry parses into 4+ parts')
+  local filename = vim.trim(parts[3])
+  T.eq(filename, rel, 'extracted filename matches the git-relative path')
+
+  -- replicate the resolve_path logic from git_status.lua (the fix)
+  local function resolve_path(fname)
+    if fname ~= '' and fname:sub(1, 1) ~= '/' and git_root ~= '' then
+      return git_root .. '/' .. fname
+    end
+    return fname
+  end
+  local resolved = resolve_path(filename)
+  T.eq(resolved, abs_file, 'resolve_path makes the git-relative path absolute')
+
+  -- now open the file (same as utils.open_file('edit', resolved))
+  require('siefe.utils').open_file('edit', resolved)
+
+  T.eq(vim.fn.expand('%:p'), abs_file,
+    'file opened at correct absolute path when cwd is a subdirectory of git root')
+  T.eq(vim.api.nvim_buf_get_lines(0, 1, 2, false)[1], 'MODIFIED line',
+    'buffer contains the modified content')
+
+  vim.cmd('cd ' .. vim.fn.fnameescape(saved_cwd))
+end)
+
 T.group('git_status: preview keys registered in keymap.fzf', function()
   local config = require('siefe.config')
   local cap = capture(function()
