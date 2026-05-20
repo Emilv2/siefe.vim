@@ -23,8 +23,28 @@ local function source_plugin()
 end
 
 -- Reset loaded state so each group can re-source from scratch.
+-- Also clears persistent keymaps that may leak from a previous group.
 local function reset()
   vim.g.loaded_siefe_lua = nil
+  -- Remove default leader mappings that persist across reset() calls
+  -- (keymaps are not cleared when package.loaded is cleared).
+  leader = vim.g.mapleader or '\\'
+  for _, mode in ipairs({ 'n', 'x' }) do
+    for _, suffix in ipairs({
+      'rg', 'rw', 'rW', 'rl', 'rc',
+      'ff', 'fw', 'fW', 'fl',
+      'Rg', 'Rw', 'RW', 'Rl', 'Rc',
+      'Ff', 'Fw', 'FW', 'Fl',
+      'rp', 'Rp',
+      'Bg', 'Bw', 'BW', 'Bl',
+      'm', 'j', 'hH', 'hh', 'b',
+      'gg', 'gs', 'gl', 'gL', 'gw', 'gW',
+      'Gl', 'Gw', 'GW',
+      'RR', 'M', 'g?', 'gf', 'W',
+    }) do
+      pcall(vim.keymap.del, mode, leader .. suffix)
+    end
+  end
   -- Unload all siefe modules so the next source() re-executes them
   for k in pairs(package.loaded) do
     if k:match('^siefe') then
@@ -89,9 +109,8 @@ T.group('plugin source: default maps absent with map_keys=false', function()
   local leader = vim.g.mapleader or '\\'
   local lhs = leader .. 'rg'
   T.eq(vim.fn.maparg(lhs, 'n'), '', lhs .. ' mapping absent with map_keys=false')
-  -- But <Plug> mappings must still exist
-  local plug_rg_target = vim.fn.maparg('<Plug>SiefeRg', 'n')
-  T.eq(plug_rg_target ~= '', true, '<Plug>SiefeRg still exists with map_keys=false')
+  -- But <Plug> mappings must still exist (the mapping name uses uppercase RG)
+  T.eq(vim.fn.maparg('<Plug>SiefeRG', 'n') ~= '', true, '<Plug>SiefeRG still exists with map_keys=false')
 end)
 
 -- ── 6. Idempotent: second source does not error ───────────────────────────────
