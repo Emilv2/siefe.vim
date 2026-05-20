@@ -127,12 +127,16 @@ function M.gitlogfzf(fullscreen, kwargs)
     query_file = '/dev/null'
     G_prompt = ''
   else
-    cmd_fmt = git_SG
+    -- When the query is empty, skip -G/-S entirely (git has a bug with
+    -- an empty needle: "BUG: diffcore-pickaxe.c:240").  The reload command
+    -- always includes -G/-S because fzf's {q} is non-empty after typing.
+    local pickaxe_flag = kwargs.query ~= '' and (G .. vim.fn.shellescape(kwargs.query) .. ' ') or ''
+
+    local base_cmd = git_SG
       .. ' -C '
       .. git_root_cmd
       .. ' log '
-      .. G
-      .. '%s -z '
+      .. ' -z '
       .. ' --color=always '
       .. follow
       .. ' '
@@ -149,7 +153,8 @@ function M.gitlogfzf(fullscreen, kwargs)
     initial_command = logger
       .. write_init
       .. logger
-      .. string.format(cmd_fmt, vim.fn.shellescape(kwargs.query))
+      .. base_cmd
+      .. pickaxe_flag
       .. vim.fn.shellescape(format)
       .. ' -- '
       .. paths_str
@@ -158,7 +163,9 @@ function M.gitlogfzf(fullscreen, kwargs)
     reload_command = logger
       .. write_reload
       .. logger
-      .. string.format(cmd_fmt, '{q}')
+      .. base_cmd
+      .. G
+      .. '{q} '
       .. vim.fn.shellescape(format)
       .. ' -- '
       .. paths_str

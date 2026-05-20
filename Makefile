@@ -41,8 +41,8 @@ test-neovim:
 # Clone: git clone --depth=1 https://github.com/ibhagwan/fzf-lua /tmp/fzf-lua
 FZF_LUA_PATH ?= /tmp/fzf-lua
 test-e2e:
-	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -l test/test_e2e.lua
-	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -l test/test_e2e_gitlog.lua
+	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -c "set columns=120 lines=40" -l test/test_e2e.lua
+	FZF_LUA_PATH=$(FZF_LUA_PATH) $(NVIM) --headless -u NONE -c "set columns=120 lines=40" -l test/test_e2e_gitlog.lua
 
 # Integration tests call real external binaries; requires `make build` first.
 test-integration: build
