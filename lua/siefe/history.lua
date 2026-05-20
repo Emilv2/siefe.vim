@@ -59,7 +59,6 @@ local function make_absolute(fname, git_root, project)
   return fname
 end
 
-
 -- Format: fname:lnum:col\x01DISPLAY
 -- entry_to_file() splits on ':' to extract fname:lnum:col from the prefix;
 -- \x01 separates it from the display shown by fzf (--with-nth=2..).

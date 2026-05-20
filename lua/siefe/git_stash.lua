@@ -51,8 +51,12 @@ function M.gitstash(fullscreen, kwargs)
 
   -- Preview commands as dispatcher/toggle scripts (F7 cycles 4 modes).
   --   0 = all (patch+stat)   1 = matching files   2 = matching hunks   3 = diff
-  local current =
-    vim.fn.substitute(vim.fn.fnamemodify(vim.fn.expand('%'), ':p'), ((vim.fn.exists('*FugitiveFind') == 1 and vim.fn.FugitiveFind(':/')) or '') .. '/', '', '')
+  local current = vim.fn.substitute(
+    vim.fn.fnamemodify(vim.fn.expand('%'), ':p'),
+    ((vim.fn.exists('*FugitiveFind') == 1 and vim.fn.FugitiveFind(':/')) or '') .. '/',
+    '',
+    ''
+  )
   local orderfile = vim.fn.tempname()
   vim.fn.writefile({ current }, orderfile)
   local suffix = vim.fn.executable('delta') == 1 and ('| delta ' .. config.delta_options) or ''

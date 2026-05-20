@@ -73,9 +73,8 @@ local function format_buffer(b, git_dir)
   -- terminal buffers (is_term_buffer), which are then previewed by copying
   -- lines from the live buffer via nvim_buf_get_lines (no fs_stat needed).
   -- fzf hides field 1 (--with-nth=2.. --delimiter=\x01) showing only display.
-  local display = vim.trim(
-    string.format('[%s] %s\t%s%s\t%s', utils.yellow(tostring(b), 'Number'), flag, rel_name, extra, line_text)
-  )
+  local display =
+    vim.trim(string.format('[%s] %s\t%s%s\t%s', utils.yellow(tostring(b), 'Number'), flag, rel_name, extra, line_text))
   local nbsp = '\xe2\x80\x82' -- U+2002 EN SPACE: fzf-lua's utils.nbsp separator
   return string.format('[%d]%s%s:%d:0\x01%s', b, nbsp, abs_name ~= '' and abs_name or name, line, display)
 end

@@ -461,7 +461,9 @@ function M.git_file_existed(file)
   -- git rev-parse resolves correctly regardless of Neovim's CWD.
   local dir = vim.fn.fnamemodify(file, ':h')
   local out = vim.fn.system(
-    'git -C ' .. vim.fn.shellescape(dir) .. ' log --pretty=format: --name-only --diff-filter=A -- '
+    'git -C '
+      .. vim.fn.shellescape(dir)
+      .. ' log --pretty=format: --name-only --diff-filter=A -- '
       .. vim.fn.shellescape(file)
   )
   return out ~= '' and vim.v.shell_error == 0

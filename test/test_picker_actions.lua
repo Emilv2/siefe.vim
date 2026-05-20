@@ -444,7 +444,10 @@ T.group('history: delete action registered when history_delete_key is configured
   -- currently implement a delete action — verify only that the key exists
   -- in config so that future implementation has a stable default key.
   local config = require('siefe.config')
-  T.ok(type(config.history_delete_key) == 'string' and config.history_delete_key ~= '', 'history_delete_key is a non-empty string in config')
+  T.ok(
+    type(config.history_delete_key) == 'string' and config.history_delete_key ~= '',
+    'history_delete_key is a non-empty string in config'
+  )
   T.eq(config.history_delete_key, 'del', 'default history_delete_key is del')
 end)
 
@@ -530,10 +533,7 @@ T.group('buffers: toggle_preview_key registered in keymap.builtin with Neovim no
       'toggle_preview_key in keymap.builtin (' .. nk .. ') for buffers picker'
     )
   end
-  T.ok(
-    cap.keymap_builtin[config.toggle_preview_key] == nil,
-    'fzf-notation key not present in keymap.builtin'
-  )
+  T.ok(cap.keymap_builtin[config.toggle_preview_key] == nil, 'fzf-notation key not present in keymap.builtin')
   T.ok(
     cap.keymap_fzf[config.toggle_preview_key] == nil,
     'toggle_preview_key not in keymap.fzf for builtin-previewer picker'
@@ -599,10 +599,7 @@ T.group('git_log: F7 preview cycle key registered in keymap.fzf', function()
   local cap = capture(function()
     require('siefe.git_log').gitlogfzf(false, {})
   end)
-  T.ok(
-    cap.keymap_fzf[config.gitlog_preview_cycle_key] ~= nil,
-    'F7 preview cycle key in keymap.fzf'
-  )
+  T.ok(cap.keymap_fzf[config.gitlog_preview_cycle_key] ~= nil, 'F7 preview cycle key in keymap.fzf')
 end)
 
 T.group('git_log: fzf-mode key registered in keymap.fzf', function()
@@ -700,10 +697,8 @@ T.group('git_status: default action opens file with git-relative path from subdi
   -- now open the file (same as utils.open_file('edit', resolved))
   require('siefe.utils').open_file('edit', resolved)
 
-  T.eq(vim.fn.expand('%:p'), abs_file,
-    'file opened at correct absolute path when cwd is a subdirectory of git root')
-  T.eq(vim.api.nvim_buf_get_lines(0, 1, 2, false)[1], 'MODIFIED line',
-    'buffer contains the modified content')
+  T.eq(vim.fn.expand('%:p'), abs_file, 'file opened at correct absolute path when cwd is a subdirectory of git root')
+  T.eq(vim.api.nvim_buf_get_lines(0, 1, 2, false)[1], 'MODIFIED line', 'buffer contains the modified content')
 
   vim.cmd('cd ' .. vim.fn.fnameescape(saved_cwd))
 end)
@@ -713,14 +708,8 @@ T.group('git_status: preview keys registered in keymap.fzf', function()
   local cap = capture(function()
     require('siefe.git_status').gitstatus(false, {})
   end)
-  T.ok(
-    cap.keymap_fzf[config.gitstatus_preview_0_key] ~= nil,
-    'gitstatus_preview_0_key in keymap.fzf'
-  )
-  T.ok(
-    cap.keymap_fzf[config.gitstatus_preview_1_key] ~= nil,
-    'gitstatus_preview_1_key in keymap.fzf'
-  )
+  T.ok(cap.keymap_fzf[config.gitstatus_preview_0_key] ~= nil, 'gitstatus_preview_0_key in keymap.fzf')
+  T.ok(cap.keymap_fzf[config.gitstatus_preview_1_key] ~= nil, 'gitstatus_preview_1_key in keymap.fzf')
 end)
 
 -- ── Config / custom shortcuts tests ──────────────────────────────────────────

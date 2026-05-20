@@ -53,7 +53,10 @@ local T = require('test.helpers')
 -- Neovim stores other files there (e.g. named-pipe sockets, shell paths), so
 -- rg would find unexpected results when searching that directory.
 -- Use a plain OS temp path that is isolated from Neovim's internals instead.
-local tmpdir = '/tmp/siefe_e2e_' .. tostring(vim.loop.getpid()) .. '_' .. tostring(math.floor(vim.fn.reltimefloat(vim.fn.reltime()) * 1e6))
+local tmpdir = '/tmp/siefe_e2e_'
+  .. tostring(vim.loop.getpid())
+  .. '_'
+  .. tostring(math.floor(vim.fn.reltimefloat(vim.fn.reltime()) * 1e6))
 vim.fn.mkdir(tmpdir, 'p')
 
 local function make_file(name, lines)
@@ -254,11 +257,13 @@ T.group('e2e rg: type select (-t lua) filters results to only lua files', functi
   -- After selecting the 'lua' type, only the .lua file should appear.
   local token = 'UNIQUE_TYPE_E2E_TOKEN_XQZ'
   local lua_file = make_file('type_e2e.lua', { token, 'lua content' })
-  local py_file  = make_file('type_e2e.py',  { token, 'python content' })
-  local rs_file  = make_file('type_e2e.rs',  { token, 'rust content' })
+  local py_file = make_file('type_e2e.py', { token, 'python content' })
+  local rs_file = make_file('type_e2e.rs', { token, 'rust content' })
   -- Silence "unused" warnings; the files must exist on disk but paths aren't
   -- referenced again — rg discovers them by directory search.
-  local _ = lua_file; _ = py_file; _ = rs_file
+  local _ = lua_file
+  _ = py_file
+  _ = rs_file
 
   -- Step 1: Launch the rg picker.
   local h1 = launch_and_wait(function()
@@ -319,8 +324,8 @@ T.group('e2e rg: type select (-t lua) filters results to only lua files', functi
   E.wait_fzf_match(rg2_buf, 'type_e2e%.lua', 5000)
 
   T.ok(E.has_pattern(rg2_buf, 'type_e2e%.lua'), 'lua file present after -t lua filter')
-  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.py'),  'py file excluded by -t lua filter')
-  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.rs'),  'rs file excluded by -t lua filter')
+  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.py'), 'py file excluded by -t lua filter')
+  T.ok(not E.has_pattern(rg2_buf, 'type_e2e%.rs'), 'rs file excluded by -t lua filter')
 
   -- Close the filtered rg picker cleanly.
   vim.fn.chansend(rg2_chan, '\x1b')

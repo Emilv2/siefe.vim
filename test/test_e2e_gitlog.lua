@@ -97,10 +97,7 @@ git('add src/utils.lua')
 git("commit --no-gpg-sign -m 'GITLOGTEST_UTILS_B'")
 
 -- Commit C ─ adds UNIQUE_PICKAXE_TOKEN to main.lua (count 0 → 1)
-vim.fn.writefile(
-  { 'function setup()', 'local UNIQUE_PICKAXE_TOKEN = 1', 'return M' },
-  gitrepo .. '/src/main.lua'
-)
+vim.fn.writefile({ 'function setup()', 'local UNIQUE_PICKAXE_TOKEN = 1', 'return M' }, gitrepo .. '/src/main.lua')
 git('add src/main.lua')
 git("commit --no-gpg-sign -m 'GITLOGTEST_MARKER_C'")
 

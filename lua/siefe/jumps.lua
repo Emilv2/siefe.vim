@@ -46,15 +46,7 @@ local function printjump(git_dir, current, jump_max, lnum_max_len, index, jump)
     .. (jump.lnum or 0)
     .. string.rep(' ', lnum_max_len - #tostring(jump.lnum or 0) + 1)
     .. text
-  return bufname
-    .. ':'
-    .. (jump.lnum or 0)
-    .. ':'
-    .. (jump.col or 0)
-    .. '\x01'
-    .. rel_offset
-    .. '\x01'
-    .. display
+  return bufname .. ':' .. (jump.lnum or 0) .. ':' .. (jump.col or 0) .. '\x01' .. rel_offset .. '\x01' .. display
 end
 
 function M.jumps(fullscreen, kwargs)

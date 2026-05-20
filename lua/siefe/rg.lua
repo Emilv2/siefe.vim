@@ -81,7 +81,16 @@ local function build_files_command(kwargs)
   -- characters including colons and spaces.
   local fixed = bool_to_flag(kwargs.fixed_strings, '-F ')
   local pcre2 = bool_to_flag(kwargs.pcre2, '-P ')
-  return 'rg --null ' .. zip .. text .. fixed .. pcre2 .. no_ign .. hidden .. depth1 .. ' --color=always --files ' .. type_f
+  return 'rg --null '
+    .. zip
+    .. text
+    .. fixed
+    .. pcre2
+    .. no_ign
+    .. hidden
+    .. depth1
+    .. ' --color=always --files '
+    .. type_f
 end
 
 local function build_prompt(kwargs, mode)
@@ -224,9 +233,7 @@ function M.ripgrepfzf(fullscreen, dir, kwargs)
   --   opts.__call_opts.search = current typed query (live/rg mode)
   --   opts.__call_opts.query  = current typed query (exec/files/fzf mode)
   local function get_query(_selected, opts)
-    return (opts and opts.__call_opts and (opts.__call_opts.search or opts.__call_opts.query))
-      or kwargs.query
-      or ''
+    return (opts and opts.__call_opts and (opts.__call_opts.search or opts.__call_opts.query)) or kwargs.query or ''
   end
 
   local function get_entries(selected)
