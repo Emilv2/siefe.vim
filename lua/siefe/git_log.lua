@@ -100,7 +100,6 @@ function M.gitlogfzf(fullscreen, kwargs)
   local suffix = vim.fn.executable('delta') == 1 and ('| delta ' .. config.delta_options) or ''
 
   -- Build commands
-  local cmd_fmt
   local initial_command
   local reload_command
   local line_range_str = ''
@@ -155,6 +154,7 @@ function M.gitlogfzf(fullscreen, kwargs)
       .. logger
       .. base_cmd
       .. pickaxe_flag
+      .. ' '
       .. vim.fn.shellescape(format)
       .. ' -- '
       .. paths_str
