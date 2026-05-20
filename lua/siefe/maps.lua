@@ -156,7 +156,7 @@ function M.maps(fullscreen, query, modes)
 
   table.sort(lines)
 
-  local header = 'maps (' .. table.concat(modes, '/') .. ')'
+  -- local header = 'maps (' .. table.concat(modes, '/') .. ')'
 
   local function get_query(selected, opts)
     if opts and opts.last_query then

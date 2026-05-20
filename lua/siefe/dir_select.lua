@@ -61,10 +61,10 @@ function M.dir_select(
     .. fd_depth1_flag
     .. base_dir_flag
 
-  local header = vim.fn.getcwd()
-    .. (fd_hidden and ' -H' or '')
-    .. (fd_no_ignore and ' -u' or '')
-    .. (fd_depth1 and ' -d1' or '')
+  -- local header = vim.fn.getcwd()
+  --   .. (fd_hidden and ' -H' or '')
+  --   .. (fd_no_ignore and ' -u' or '')
+  --   .. (fd_depth1 and ' -d1' or '')
 
   local ds_km = utils.make_binds({
     ['change'] = 'first',
@@ -258,7 +258,6 @@ end
 function M.ripgrep_dir_sink(fullscreen, orig_dir, fd_hidden, fd_no_ignore, fd_depth1, kwargs, lines)
   local query = lines[1] or ''
   local key = lines[2] or ''
-  local new_dir = lines[3] or orig_dir
   kwargs.fd_query = query
 
   local rg = require('siefe.rg')

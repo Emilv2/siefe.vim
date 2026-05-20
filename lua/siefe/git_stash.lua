@@ -60,7 +60,7 @@ function M.gitstash(fullscreen, kwargs)
   local orderfile = vim.fn.tempname()
   vim.fn.writefile({ current }, orderfile)
   local suffix = vim.fn.executable('delta') == 1 and ('| delta ' .. config.delta_options) or ''
-  local git_root_cmd = '`git rev-parse --show-toplevel`'
+  -- local git_root_cmd = '`git rev-parse --show-toplevel`'
   local pickaxe_diff = utils.bin_path('pickaxe-diff')
   -- Reuse mode_file across reopens so F7 preview cycle position is preserved
   -- when toggle actions (-S/-G, -i, --pickaxe-regex) reopen.

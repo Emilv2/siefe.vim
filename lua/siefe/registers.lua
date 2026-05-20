@@ -57,7 +57,7 @@ function M.registers(fullscreen, kwargs)
   local entries = get_all_registers()
   local source = vim.tbl_map(printreg, entries)
 
-  local header = 'registers'
+  -- local header = 'registers'
 
   local function get_reg(line)
     -- Format: red("reg_char") blue("contents")

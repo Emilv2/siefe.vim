@@ -89,7 +89,7 @@ function M.marks(fullscreen, kwargs)
 
   local default_size = utils.preview_window_size()
 
-  local header = 'm\tl\tc\tfile/text'
+  -- local header = 'm\tl\tc\tfile/text'
 
   local marks_km = utils.make_binds({
     ['change'] = 'first',

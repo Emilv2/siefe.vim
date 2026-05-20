@@ -83,7 +83,7 @@ function M.jumps(fullscreen, kwargs)
 
   local default_size = utils.preview_window_size()
 
-  local header = 'jumps  current:' .. current
+  -- local header = 'jumps  current:' .. current
 
   local jumps_km = utils.make_binds({
     ['change'] = 'first',

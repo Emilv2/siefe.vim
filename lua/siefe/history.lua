@@ -83,12 +83,12 @@ function M.historyoldfiles(fullscreen, kwargs)
   local bufdir = utils.bufdir()
   local git_root = vim.trim(vim.fn.system('git -C ' .. vim.fn.shellescape(bufdir) .. ' rev-parse --show-toplevel'))
   local in_git = vim.v.shell_error == 0
-  local git_help = ''
-
-  if in_git then
-    local toggle = kwargs.project and 'off' or 'on'
-    git_help = ' ╱ ' .. utils.prettify_header(config.history_git_key, 'project history:' .. toggle)
-  end
+  -- local git_help = ''
+  --
+  -- if in_git then
+  --   local toggle = kwargs.project and 'off' or 'on'
+  --   git_help = ' ╱ ' .. utils.prettify_header(config.history_git_key, 'project history:' .. toggle)
+  -- end
 
   local source
   local project_prefix = ''
@@ -233,8 +233,8 @@ function M.historyoldfiles(fullscreen, kwargs)
       kwargs.prompt = utils.get_relative_git_or_bufdir()
       -- Compute recent plain file paths (same as rg.lua's rg_history_key action).
       -- `source` here is a display-entry list or coroutine — not suitable as rg paths.
-      local git_root = utils.get_git_root()
-      kwargs.paths = utils.recent_files(git_root ~= '' and git_root or nil)
+      local git_root_fn = utils.get_git_root()
+      kwargs.paths = utils.recent_files(git_root_fn ~= '' and git_root_fn or nil)
       kwargs.files = false
       local rg = require('siefe.rg')
       rg.ripgrepfzf(fullscreen, utils.bufdir(), kwargs)

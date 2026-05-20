@@ -27,8 +27,6 @@ function M.gitstatus(fullscreen, kwargs)
     ),
     ' '
   )
-  local paths_info = rel_paths == '' and '' or ('\npaths: ' .. rel_paths)
-
   local git_root = utils.get_git_root()
 
   -- Resolve a git-relative path to an absolute path.  `git status --porcelain`
@@ -133,7 +131,7 @@ function M.gitstatus(fullscreen, kwargs)
   local default_size, other_size = utils.preview_window_size()
   local default_preview = p0
 
-  local header = (kwargs.uno and '-uno ' or '') .. 'git status' .. paths_info
+  -- local header = (kwargs.uno and '-uno ' or '') .. 'git status' .. paths_info
 
   local gs_km = utils.make_binds({
     ['change'] = 'first',

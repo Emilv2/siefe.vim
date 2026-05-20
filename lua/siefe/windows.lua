@@ -82,7 +82,6 @@ function M.windows(fullscreen, kwargs)
 
   -- Put the current window first so it appears at the bottom (nearest to prompt)
   -- and is pre-selected when the picker opens.
-  local header_lines = source[1] and get_tab_win(source[1]) == cur_tab and 1 or 0
   -- reorder: current window first
   local ordered = {}
   local rest = {}
@@ -97,7 +96,7 @@ function M.windows(fullscreen, kwargs)
   for _, entry in ipairs(rest) do
     table.insert(ordered, entry)
   end
-  header_lines = 1 -- current window is always first entry
+  local header_lines = 1 -- current window is always first entry
 
   local win_km = utils.make_binds({
     [config.up_key] = 'up',

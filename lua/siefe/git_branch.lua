@@ -39,7 +39,7 @@ function M.branch_select(callback, fullscreen, is_not, standalone)
 
   local default_size, other_size = utils.preview_window_size()
 
-  local header = (is_not and '^' or '') .. 'branches' .. (standalone and '' or (has_all and ' ╱ --all' or ''))
+  -- local header = (is_not and '^' or '') .. 'branches' .. (standalone and '' or (has_all and ' ╱ --all' or ''))
 
   local br_km = utils.make_binds({
     ['change'] = 'first',

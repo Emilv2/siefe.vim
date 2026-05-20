@@ -187,7 +187,8 @@ local function call_action(cap, key, selected, opts)
 end
 
 -- Return true when the key is registered in either actions or keymap_fzf.
-local function has_bind(cap, key)
+-- Currently unused but kept as documentation for the keymap capture API.
+local function _has_bind(cap, key)
   if cap.actions[key] ~= nil then
     return true
   end
@@ -196,6 +197,7 @@ local function has_bind(cap, key)
   end
   return false
 end
+local _ = _has_bind -- suppress luacheck unused-function warning
 
 -- ── RG picker tests ───────────────────────────────────────────────────────────
 
@@ -330,8 +332,8 @@ end)
 
 T.group('rg: toggle_preview_key registered in keymap.builtin with Neovim notation', function()
   local config = require('siefe.config')
-  local utils = require('siefe.utils')
-  local keys = utils.builtin_toggle_keys(config.toggle_preview_key)
+  local u = require('siefe.utils')
+  local keys = u.builtin_toggle_keys(config.toggle_preview_key)
   local cap = capture(function()
     require('siefe.rg').ripgrepfzf(false, tmpdir, {})
   end)
@@ -522,8 +524,8 @@ end)
 
 T.group('buffers: toggle_preview_key registered in keymap.builtin with Neovim notation', function()
   local config = require('siefe.config')
-  local utils = require('siefe.utils')
-  local keys = utils.builtin_toggle_keys(config.toggle_preview_key)
+  local u = require('siefe.utils')
+  local keys = u.builtin_toggle_keys(config.toggle_preview_key)
   local cap = capture(function()
     require('siefe.buffers').buffers(false, {})
   end)
